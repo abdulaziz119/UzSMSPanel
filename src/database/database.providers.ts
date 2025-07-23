@@ -9,6 +9,12 @@ import {
   DB_SCHEMA,
   DB_USER,
 } from '../utils/env/env';
+import { UserEntity } from '../entity/user.entity';
+import { TransactionsEntity } from '../entity/transactions.entity';
+import { TariffEntity } from '../entity/tariffs.entity';
+import { SmsMessagesEntity } from '../entity/sms-messages.entity';
+import { MessageTemplatesEntity } from '../entity/message-templates.entity';
+import { OtpEntity } from '../entity/otps.entity';
 
 export const databaseProviders = [
   {
@@ -24,7 +30,14 @@ export const databaseProviders = [
         synchronize: true,
         logging: false,
         schema: DB_SCHEMA,
-        entities: [],
+        entities: [
+          UserEntity,
+          TransactionsEntity,
+          TariffEntity,
+          SmsMessagesEntity,
+          MessageTemplatesEntity,
+          OtpEntity,
+        ],
         // extra: {
         //   timezone: 'UTC',
         // },
