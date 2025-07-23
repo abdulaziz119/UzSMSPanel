@@ -9,18 +9,17 @@ dotenv.config();
 export class AuthorizationService {
   constructor() {}
 
-  async sign(id: number, phone: string, role: string,login?:string): Promise<string> {
+  async sign(id: number, email: string, role: string): Promise<string> {
     if (!id) {
       throw new HttpException(
-        'Id, phone and phone are required',
+        'Id, email and email are required',
         HttpStatus.UNAUTHORIZED,
       );
     }
     const data = {
       id: id,
-      phone: phone,
+      phone: email,
       role: role,
-      login: login,
     };
     const token = jwt.sign(data, JWT_SECRET, { expiresIn: '1d' });
     return token;
