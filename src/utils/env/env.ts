@@ -10,6 +10,9 @@ const DB_SCHEMA = process.env.DB_SCHEMA || '';
 
 const JWT_SECRET = process.env.JWT_SECRET || '';
 
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+
 // Port konfiguratsiyasi
 const DASHBOARD_PORT = process.env.DASHBOARD_PORT || 8080;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
@@ -19,6 +22,8 @@ if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
 }
 
 export {
+  SMTP_USER,
+  SMTP_PASS,
   DASHBOARD_PORT,
   DB_DB,
   DB_HOST,
