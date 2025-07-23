@@ -20,6 +20,8 @@ import {
   DashboardAuthRegisterDto,
 } from '../dashboard/v1/modules/auth/dto/dto';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
+import * as bcrypt from 'bcryptjs';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class AuthService {
@@ -34,6 +36,7 @@ export class AuthService {
     @Inject(MODELS.OTPS)
     private readonly otpRepo: Repository<OtpEntity>,
     private readonly authorizationService: AuthorizationService,
+    private readonly mailService: MailService,
   ) {}
 
   async login(
@@ -45,7 +48,7 @@ export class AuthService {
       });
 
       if (!user) {
-        await this.createNewUser(payload.email);
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
       await this.handleOtpCreation(payload.email);
@@ -55,6 +58,42 @@ export class AuthService {
     } catch (error: any) {
       throw new HttpException(
         { message: 'Login failed', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async verifyOtp(
+    payload: AuthLoginDto,
+  ): Promise<SingleResponse<{ user: string }>> {
+    try {
+      const otp: OtpEntity = await this.otpRepo.findOne({
+        where: { email: payload.email },
+      });
+
+      const newOtp = {
+        email: payload.email,
+        otp: Math.floor(100000 + Math.random() * 900000).toString(),
+        otpSendAt: new Date(),
+        retryCount: 1,
+      };
+
+      if (!otp) {
+        await this.otpRepo.save(newOtp);
+      } else {
+        newOtp.retryCount += otp.retryCount;
+        await this.otpRepo.update({ email: payload.email }, newOtp);
+      }
+      this.mailService
+        .sendOtpEmail(payload.email, newOtp.otp)
+        .catch((err: any): void =>
+          console.error('Failed to send OTP email:', err),
+        );
+
+      return { result: { user: '60 seconds' } };
+    } catch (error: any) {
+      throw new HttpException(
+        `Failed to create a user. ${error.message || 'Unknown error'}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -88,6 +127,13 @@ export class AuthService {
         id: user.id,
         email: user.email,
       };
+
+      const newUser: UserEntity = this.userRepo.create({
+        role: user.role,
+        email: user.email,
+      });
+
+      await this.userRepo.save(newUser);
 
       this.logger.log(`User verified successfully: ${user.id}`);
       return { result };

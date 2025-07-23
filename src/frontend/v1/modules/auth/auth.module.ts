@@ -9,6 +9,7 @@ import { AuthService } from '../../../../service/auth.service';
 import { DatabaseModule } from '../../../../database/database.module';
 import { userProviders } from '../../../../providers/user.providers';
 import { otpProviders } from './otp.providers';
+import { MailService } from '../../../../service/mail.service';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { otpProviders } from './otp.providers';
     JwtStrategy,
     AuthService,
     AuthorizationService,
+    MailService,
   ],
   exports: [PassportModule, JwtStrategy, AuthService],
 })

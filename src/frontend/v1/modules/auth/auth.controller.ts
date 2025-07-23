@@ -15,9 +15,19 @@ export class AuthController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(200)
   async login(
-    @Body() body: AuthLoginDto,
+    @Body() body: AuthVerifyDto,
   ): Promise<SingleResponse<{ user: string }>> {
     return await this.authService.login(body);
+  }
+
+  @ApiResponse({ type: ErrorResourceDto, status: 401 })
+  @Post('/verify-otp')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @HttpCode(200)
+  async verifyOtp(
+    @Body() body: AuthLoginDto,
+  ): Promise<SingleResponse<{ user: string }>> {
+    return this.authService.verifyOtp(body);
   }
 
   @ApiResponse({ type: ErrorResourceDto, status: 401 })
