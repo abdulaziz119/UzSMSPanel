@@ -5,6 +5,10 @@ import { language, UserRoleEnum } from '../utils/enum/user.enum';
 import { SmsMessagesEntity } from './sms-messages.entity';
 import { TransactionsEntity } from './transactions.entity';
 import { MessageTemplatesEntity } from './message-templates.entity';
+import { ApiLogsEntity } from './api-logs.entity';
+import { SenderIdsEntity } from './sender-ids.entity';
+import { ApiTokensEntity } from './api-tokens.entity';
+import { WebhooksEntity } from './webhooks.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'users' })
 @Index(['email', 'role', 'block'])
@@ -30,6 +34,30 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   block: boolean;
 
+  @Column({ type: 'varchar', nullable: true })
+  phone: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  company_name: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  website: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  two_factor_enabled: boolean;
+
+  @Column({ type: 'varchar', nullable: true })
+  two_factor_secret: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  allowed_ips: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  last_login_at: Date | null;
+
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  last_login_ip: string | null;
+
   @OneToMany(() => SmsMessagesEntity, (smsMessage) => smsMessage.user)
   smsMessages: SmsMessagesEntity[];
 
@@ -38,4 +66,16 @@ export class UserEntity extends BaseEntity {
 
   @OneToMany(() => MessageTemplatesEntity, (template) => template.user)
   templates: MessageTemplatesEntity[];
+
+  @OneToMany(() => ApiLogsEntity, (apiLog) => apiLog.user)
+  apiLogs: ApiLogsEntity[];
+
+  @OneToMany(() => SenderIdsEntity, (senderId) => senderId.user)
+  senderIds: SenderIdsEntity[];
+
+  @OneToMany(() => ApiTokensEntity, (apiToken) => apiToken.user)
+  apiTokens: ApiTokensEntity[];
+
+  @OneToMany(() => WebhooksEntity, (webhook) => webhook.user)
+  webhooks: WebhooksEntity[];
 }
