@@ -1,10 +1,12 @@
 import { DataSource } from 'typeorm';
 import { ApiTokensEntity } from '../entity/api-tokens.entity';
+import { MODELS, UZ_SMS_PANEL } from '../constants/constants';
 
 export const apiTokensProviders = [
   {
-    provide: 'API_TOKENS_REPOSITORY',
-    useFactory: (dataSource: DataSource) => dataSource.getRepository(ApiTokensEntity),
-    inject: ['DATA_SOURCE'],
+    provide: MODELS.API_TOKENS,
+    useFactory: (dataSource: DataSource) =>
+      dataSource.getRepository(ApiTokensEntity),
+    inject: [UZ_SMS_PANEL],
   },
 ];

@@ -1,10 +1,12 @@
 import { DataSource } from 'typeorm';
 import { ApiLogsEntity } from '../entity/api-logs.entity';
+import { MODELS, UZ_SMS_PANEL } from '../constants/constants';
 
 export const apiLogsProviders = [
   {
-    provide: 'API_LOGS_REPOSITORY',
-    useFactory: (dataSource: DataSource) => dataSource.getRepository(ApiLogsEntity),
-    inject: ['DATA_SOURCE'],
+    provide: MODELS.API_LOGS,
+    useFactory: (dataSource: DataSource) =>
+      dataSource.getRepository(ApiLogsEntity),
+    inject: [UZ_SMS_PANEL],
   },
 ];
