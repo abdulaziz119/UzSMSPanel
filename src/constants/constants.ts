@@ -2,6 +2,9 @@ export const UZ_SMS_PANEL = 'UZ_SMS_PANEL';
 
 export const MODELS = {
   USER: 'USER',
+  SMS_MESSAGES: 'SMS_MESSAGES',
+  MESSAGE_TEMPLATES: 'MESSAGE_TEMPLATES',
+  TARIFFS: 'TARIFFS',
+  TRANSACTIONS: 'TRANSACTIONS',
+  OTPS: 'OTPS',
 };
-
-export const LANGUAGES = ['uz', 'ru', 'en'];
