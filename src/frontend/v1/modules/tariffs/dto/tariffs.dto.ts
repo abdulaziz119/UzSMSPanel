@@ -4,8 +4,11 @@ import {
   IsString,
   IsOptional,
   IsNumber,
+  IsBoolean,
+  IsEnum,
   Min,
 } from 'class-validator';
+import { TariffStatusEnum } from '../../../../../utils/enum/tariff.enum';
 import { PaginationParams } from '../../../../../utils/dto/dto';
 
 export class CreateTariffDto {
@@ -24,6 +27,21 @@ export class CreateTariffDto {
   @IsOptional()
   @IsString()
   currency?: string;
+
+  @ApiProperty({ example: TariffStatusEnum.ACTIVE, enum: TariffStatusEnum, required: false })
+  @IsOptional()
+  @IsEnum(TariffStatusEnum)
+  status?: TariffStatusEnum;
+
+  @ApiProperty({ example: 'High quality SMS service', required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ example: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  is_default?: boolean;
 }
 
 export class UpdateTariffDto {
@@ -42,6 +60,21 @@ export class UpdateTariffDto {
   @IsOptional()
   @IsString()
   currency?: string;
+
+  @ApiProperty({ example: TariffStatusEnum.ACTIVE, enum: TariffStatusEnum, required: false })
+  @IsOptional()
+  @IsEnum(TariffStatusEnum)
+  status?: TariffStatusEnum;
+
+  @ApiProperty({ example: 'Updated description', required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ example: true, required: false })
+  @IsOptional()
+  @IsBoolean()
+  is_default?: boolean;
 }
 
 export class TariffQueryDto extends PaginationParams {
@@ -66,6 +99,16 @@ export class TariffQueryDto extends PaginationParams {
   @IsOptional()
   @IsString()
   currency?: string;
+
+  @ApiProperty({ example: TariffStatusEnum.ACTIVE, enum: TariffStatusEnum, required: false })
+  @IsOptional()
+  @IsEnum(TariffStatusEnum)
+  status?: TariffStatusEnum;
+
+  @ApiProperty({ example: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  is_default?: boolean;
 }
 
 export class CalculatePriceDto {

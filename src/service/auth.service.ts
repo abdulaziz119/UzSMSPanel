@@ -128,8 +128,10 @@ export class AuthService {
         user.role,
       );
 
-      // Update OTP retry count
       await this.updateOtpRetryCount(payload.email, otp.retryCount + 1);
+
+      user.last_login_at = new Date();
+      await this.userRepo.save(user);
 
       const result = {
         token,

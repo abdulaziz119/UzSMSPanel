@@ -12,24 +12,11 @@ import { UserEntity } from '../entity/user.entity';
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
-
-export interface CreateMessageTemplateDto {
-  template_name: string;
-  template_text: string;
-  user_id: number;
-}
-
-export interface UpdateMessageTemplateDto {
-  template_name?: string;
-  template_text?: string;
-  is_approved?: boolean;
-}
-
-export interface MessageTemplateFilters {
-  is_approved?: boolean;
-  user_id?: number;
-  search?: string;
-}
+import {
+  CreateMessageTemplateDto,
+  MessageTemplateFilters,
+  UpdateMessageTemplateDto,
+} from '../utils/interfaces/message-templates.interface';
 
 @Injectable()
 export class MessageTemplatesService {
@@ -140,7 +127,7 @@ export class MessageTemplatesService {
     id: number,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
     try {
-      const template = await this.templateRepo.findOne({
+      const template: MessageTemplatesEntity = await this.templateRepo.findOne({
         where: { id },
         relations: ['user'],
       });
@@ -197,7 +184,9 @@ export class MessageTemplatesService {
     payload: UpdateMessageTemplateDto,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
     try {
-      const template = await this.templateRepo.findOne({ where: { id } });
+      const template: MessageTemplatesEntity = await this.templateRepo.findOne({
+        where: { id },
+      });
 
       if (!template) {
         throw new HttpException(
@@ -207,12 +196,13 @@ export class MessageTemplatesService {
       }
 
       if (payload.template_name) {
-        const existingTemplate = await this.templateRepo.findOne({
-          where: {
-            template_name: payload.template_name,
-            user_id: template.user_id,
-          },
-        });
+        const existingTemplate: MessageTemplatesEntity =
+          await this.templateRepo.findOne({
+            where: {
+              template_name: payload.template_name,
+              user_id: template.user_id,
+            },
+          });
 
         if (existingTemplate && existingTemplate.id !== id) {
           throw new HttpException(
@@ -223,7 +213,8 @@ export class MessageTemplatesService {
       }
 
       Object.assign(template, payload);
-      const result = await this.templateRepo.save(template);
+      const result: MessageTemplatesEntity =
+        await this.templateRepo.save(template);
 
       this.logger.log(`Message template updated: ${result.id}`);
       return { result };
@@ -239,7 +230,9 @@ export class MessageTemplatesService {
     id: number,
   ): Promise<SingleResponse<{ message: string }>> {
     try {
-      const template = await this.templateRepo.findOne({ where: { id } });
+      const template: MessageTemplatesEntity = await this.templateRepo.findOne({
+        where: { id },
+      });
 
       if (!template) {
         throw new HttpException(
@@ -264,7 +257,9 @@ export class MessageTemplatesService {
     id: number,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
     try {
-      const template = await this.templateRepo.findOne({ where: { id } });
+      const template: MessageTemplatesEntity = await this.templateRepo.findOne({
+        where: { id },
+      });
 
       if (!template) {
         throw new HttpException(
@@ -274,7 +269,8 @@ export class MessageTemplatesService {
       }
 
       template.is_approved = !template.is_approved;
-      const result = await this.templateRepo.save(template);
+      const result: MessageTemplatesEntity =
+        await this.templateRepo.save(template);
 
       this.logger.log(
         `Message template ${template.is_approved ? 'approved' : 'disapproved'}: ${id}`,

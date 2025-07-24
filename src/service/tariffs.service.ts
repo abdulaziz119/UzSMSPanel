@@ -8,28 +8,15 @@ import {
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { TariffEntity } from '../entity/tariffs.entity';
+import { TariffStatusEnum } from '../utils/enum/tariff.enum';
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
-
-export interface CreateTariffDto {
-  operator: string;
-  price_per_sms: number;
-  currency?: string;
-}
-
-export interface UpdateTariffDto {
-  operator?: string;
-  price_per_sms?: number;
-  currency?: string;
-}
-
-export interface TariffFilters {
-  operator?: string;
-  min_price?: number;
-  max_price?: number;
-  currency?: string;
-}
+import {
+  CreateTariffDto,
+  TariffFilters,
+  UpdateTariffDto,
+} from '../utils/interfaces/tariffs.interface';
 
 @Injectable()
 export class TariffsService {
@@ -58,6 +45,8 @@ export class TariffsService {
       const newTariff = this.tariffRepo.create({
         ...payload,
         currency: payload.currency || 'UZS',
+        status: payload.status || TariffStatusEnum.ACTIVE,
+        is_default: payload.is_default || false,
       });
 
       const result = await this.tariffRepo.save(newTariff);
@@ -104,6 +93,18 @@ export class TariffsService {
         });
       }
 
+      if (filters?.status) {
+        query.andWhere('tariff.status = :status', {
+          status: filters.status,
+        });
+      }
+
+      if (filters?.is_default !== undefined) {
+        query.andWhere('tariff.is_default = :is_default', {
+          is_default: filters.is_default,
+        });
+      }
+
       query.orderBy('tariff.price_per_sms', 'ASC');
 
       const [tariffs, total] = await query
@@ -122,7 +123,9 @@ export class TariffsService {
 
   async getTariffById(id: number): Promise<SingleResponse<TariffEntity>> {
     try {
-      const tariff = await this.tariffRepo.findOne({ where: { id } });
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
+        where: { id },
+      });
 
       if (!tariff) {
         throw new HttpException('Tariff not found', HttpStatus.NOT_FOUND);
@@ -141,7 +144,9 @@ export class TariffsService {
     operator: string,
   ): Promise<SingleResponse<TariffEntity>> {
     try {
-      const tariff = await this.tariffRepo.findOne({ where: { operator } });
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
+        where: { operator },
+      });
 
       if (!tariff) {
         throw new HttpException('Tariff not found', HttpStatus.NOT_FOUND);
@@ -161,14 +166,16 @@ export class TariffsService {
     payload: UpdateTariffDto,
   ): Promise<SingleResponse<TariffEntity>> {
     try {
-      const tariff = await this.tariffRepo.findOne({ where: { id } });
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
+        where: { id },
+      });
 
       if (!tariff) {
         throw new HttpException('Tariff not found', HttpStatus.NOT_FOUND);
       }
 
       if (payload.operator && payload.operator !== tariff.operator) {
-        const existingTariff = await this.tariffRepo.findOne({
+        const existingTariff: TariffEntity = await this.tariffRepo.findOne({
           where: { operator: payload.operator },
         });
 
@@ -195,7 +202,9 @@ export class TariffsService {
 
   async deleteTariff(id: number): Promise<SingleResponse<{ message: string }>> {
     try {
-      const tariff = await this.tariffRepo.findOne({ where: { id } });
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
+        where: { id },
+      });
 
       if (!tariff) {
         throw new HttpException('Tariff not found', HttpStatus.NOT_FOUND);
@@ -233,7 +242,7 @@ export class TariffsService {
 
   async getCheapestTariff(): Promise<SingleResponse<TariffEntity | null>> {
     try {
-      const tariff = await this.tariffRepo
+      const tariff: TariffEntity = await this.tariffRepo
         .createQueryBuilder('tariff')
         .orderBy('tariff.price_per_sms', 'ASC')
         .getOne();
@@ -290,7 +299,9 @@ export class TariffsService {
     smsCount: number,
   ): Promise<SingleResponse<{ total_price: number; operator: string }>> {
     try {
-      const tariff = await this.tariffRepo.findOne({ where: { operator } });
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
+        where: { operator },
+      });
 
       if (!tariff) {
         throw new HttpException(
@@ -299,7 +310,7 @@ export class TariffsService {
         );
       }
 
-      const total_price = tariff.price_per_sms * smsCount;
+      const total_price: number = tariff.price_per_sms * smsCount;
 
       return {
         result: {

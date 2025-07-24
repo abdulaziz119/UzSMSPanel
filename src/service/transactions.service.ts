@@ -12,28 +12,11 @@ import { UserEntity } from '../entity/user.entity';
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
-
-export interface CreateTransactionDto {
-  amount: number;
-  payment_method: string;
-  user_id: number;
-}
-
-export interface UpdateTransactionDto {
-  amount?: number;
-  payment_method?: string;
-  status?: 'pending' | 'completed' | 'failed';
-}
-
-export interface TransactionFilters {
-  status?: 'pending' | 'completed' | 'failed';
-  user_id?: number;
-  payment_method?: string;
-  min_amount?: number;
-  max_amount?: number;
-  date_from?: Date;
-  date_to?: Date;
-}
+import {
+  CreateTransactionDto,
+  TransactionFilters,
+  UpdateTransactionDto,
+} from '../utils/interfaces/transactions.interface';
 
 @Injectable()
 export class TransactionsService {
@@ -205,10 +188,11 @@ export class TransactionsService {
     payload: UpdateTransactionDto,
   ): Promise<SingleResponse<TransactionsEntity>> {
     try {
-      const transaction = await this.transactionRepo.findOne({
-        where: { id },
-        relations: ['user'],
-      });
+      const transaction: TransactionsEntity =
+        await this.transactionRepo.findOne({
+          where: { id },
+          relations: ['user'],
+        });
 
       if (!transaction) {
         throw new HttpException('Transaction not found', HttpStatus.NOT_FOUND);
@@ -216,16 +200,18 @@ export class TransactionsService {
 
       const oldStatus = transaction.status;
       Object.assign(transaction, payload);
-      
-      // Agar transaction completed bo'lsa, user balansini yangilash
+
       if (oldStatus !== 'completed' && payload.status === 'completed') {
         const user = transaction.user;
         user.balance = (user.balance || 0) + transaction.amount;
         await this.userRepo.save(user);
-        this.logger.log(`User balance updated: ${user.id}, added: ${transaction.amount}`);
+        this.logger.log(
+          `User balance updated: ${user.id}, added: ${transaction.amount}`,
+        );
       }
 
-      const result = await this.transactionRepo.save(transaction);
+      const result: TransactionsEntity =
+        await this.transactionRepo.save(transaction);
 
       this.logger.log(`Transaction updated: ${result.id}`);
       return { result };
@@ -241,9 +227,10 @@ export class TransactionsService {
     id: number,
   ): Promise<SingleResponse<{ message: string }>> {
     try {
-      const transaction = await this.transactionRepo.findOne({
-        where: { id },
-      });
+      const transaction: TransactionsEntity =
+        await this.transactionRepo.findOne({
+          where: { id },
+        });
 
       if (!transaction) {
         throw new HttpException('Transaction not found', HttpStatus.NOT_FOUND);
@@ -272,10 +259,11 @@ export class TransactionsService {
     id: number,
   ): Promise<SingleResponse<TransactionsEntity>> {
     try {
-      const transaction = await this.transactionRepo.findOne({
-        where: { id },
-        relations: ['user'],
-      });
+      const transaction: TransactionsEntity =
+        await this.transactionRepo.findOne({
+          where: { id },
+          relations: ['user'],
+        });
 
       if (!transaction) {
         throw new HttpException('Transaction not found', HttpStatus.NOT_FOUND);
@@ -289,13 +277,13 @@ export class TransactionsService {
       }
 
       transaction.status = 'completed';
-      
-      // User balansini yangilash
-      const user = transaction.user;
+
+      const user: UserEntity = transaction.user;
       user.balance = (user.balance || 0) + transaction.amount;
       await this.userRepo.save(user);
 
-      const result = await this.transactionRepo.save(transaction);
+      const result: TransactionsEntity =
+        await this.transactionRepo.save(transaction);
 
       this.logger.log(`Transaction approved: ${result.id}`);
       return { result };
@@ -361,11 +349,11 @@ export class TransactionsService {
         .select([
           'COUNT(*) as total_transactions',
           'SUM(transaction.amount) as total_amount',
-          'SUM(CASE WHEN transaction.status = \'pending\' THEN 1 ELSE 0 END) as pending_count',
-          'SUM(CASE WHEN transaction.status = \'completed\' THEN 1 ELSE 0 END) as completed_count',
-          'SUM(CASE WHEN transaction.status = \'failed\' THEN 1 ELSE 0 END) as failed_count',
-          'SUM(CASE WHEN transaction.status = \'pending\' THEN transaction.amount ELSE 0 END) as pending_amount',
-          'SUM(CASE WHEN transaction.status = \'completed\' THEN transaction.amount ELSE 0 END) as completed_amount',
+          "SUM(CASE WHEN transaction.status = 'pending' THEN 1 ELSE 0 END) as pending_count",
+          "SUM(CASE WHEN transaction.status = 'completed' THEN 1 ELSE 0 END) as completed_count",
+          "SUM(CASE WHEN transaction.status = 'failed' THEN 1 ELSE 0 END) as failed_count",
+          "SUM(CASE WHEN transaction.status = 'pending' THEN transaction.amount ELSE 0 END) as pending_amount",
+          "SUM(CASE WHEN transaction.status = 'completed' THEN transaction.amount ELSE 0 END) as completed_amount",
         ])
         .getRawOne();
 

@@ -30,6 +30,24 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   block: boolean;
 
+  @Column({ type: 'varchar', nullable: true })
+  phone: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  company_name: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  website: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  allowed_ips: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  last_login_at: Date | null;
+
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  last_login_ip: string | null;
+
   @OneToMany(() => SmsMessagesEntity, (smsMessage) => smsMessage.user)
   smsMessages: SmsMessagesEntity[];
 

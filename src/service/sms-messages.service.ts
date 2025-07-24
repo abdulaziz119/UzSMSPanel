@@ -13,28 +13,11 @@ import { TariffEntity } from '../entity/tariffs.entity';
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
-
-export interface CreateSmsMessageDto {
-  recipient_phone: string;
-  message_text: string;
-  user_id: number;
-  tariff_ids?: number[];
-}
-
-export interface UpdateSmsMessageDto {
-  recipient_phone?: string;
-  message_text?: string;
-  status?: 'pending' | 'sent' | 'failed';
-  sent_at?: Date;
-}
-
-export interface SmsMessageFilters {
-  status?: 'pending' | 'sent' | 'failed';
-  user_id?: number;
-  recipient_phone?: string;
-  date_from?: Date;
-  date_to?: Date;
-}
+import {
+  CreateSmsMessageDto,
+  SmsMessageFilters,
+  UpdateSmsMessageDto,
+} from '../utils/interfaces/sms-messages.interface';
 
 @Injectable()
 export class SmsMessagesService {
@@ -202,14 +185,17 @@ export class SmsMessagesService {
     payload: UpdateSmsMessageDto,
   ): Promise<SingleResponse<SmsMessagesEntity>> {
     try {
-      const smsMessage = await this.smsMessageRepo.findOne({ where: { id } });
+      const smsMessage: SmsMessagesEntity = await this.smsMessageRepo.findOne({
+        where: { id },
+      });
 
       if (!smsMessage) {
         throw new HttpException('SMS message not found', HttpStatus.NOT_FOUND);
       }
 
       Object.assign(smsMessage, payload);
-      const result = await this.smsMessageRepo.save(smsMessage);
+      const result: SmsMessagesEntity =
+        await this.smsMessageRepo.save(smsMessage);
 
       this.logger.log(`SMS message updated: ${result.id}`);
       return { result };
@@ -225,7 +211,9 @@ export class SmsMessagesService {
     id: number,
   ): Promise<SingleResponse<{ message: string }>> {
     try {
-      const smsMessage = await this.smsMessageRepo.findOne({ where: { id } });
+      const smsMessage: SmsMessagesEntity = await this.smsMessageRepo.findOne({
+        where: { id },
+      });
 
       if (!smsMessage) {
         throw new HttpException('SMS message not found', HttpStatus.NOT_FOUND);
@@ -243,11 +231,9 @@ export class SmsMessagesService {
     }
   }
 
-  async sendSmsMessage(
-    id: number,
-  ): Promise<SingleResponse<SmsMessagesEntity>> {
+  async sendSmsMessage(id: number): Promise<SingleResponse<SmsMessagesEntity>> {
     try {
-      const smsMessage = await this.smsMessageRepo.findOne({
+      const smsMessage: SmsMessagesEntity = await this.smsMessageRepo.findOne({
         where: { id },
         relations: ['user', 'tariffs'],
       });
@@ -262,13 +248,11 @@ export class SmsMessagesService {
           HttpStatus.BAD_REQUEST,
         );
       }
-
-      // SMS jo'natish logikasi bu yerda amalga oshiriladi
-      // Hozircha faqat status'ni o'zgartiramiz
       smsMessage.status = 'sent';
       smsMessage.sent_at = new Date();
 
-      const result = await this.smsMessageRepo.save(smsMessage);
+      const result: SmsMessagesEntity =
+        await this.smsMessageRepo.save(smsMessage);
 
       this.logger.log(`SMS message sent: ${result.id}`);
       return { result };

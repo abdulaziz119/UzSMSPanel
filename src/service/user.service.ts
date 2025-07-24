@@ -13,24 +13,10 @@ import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
 import * as bcrypt from 'bcryptjs';
-
-export interface CreateUserDto {
-  name?: string;
-  email: string;
-  role: UserRoleEnum;
-  password?: string;
-  language?: language;
-}
-
-export interface UpdateUserDto {
-  name?: string;
-  email?: string;
-  role?: UserRoleEnum;
-  password?: string;
-  language?: language;
-  balance?: number;
-  block?: boolean;
-}
+import {
+  CreateUserDto,
+  UpdateUserDto,
+} from '../utils/interfaces/user.interface';
 
 @Injectable()
 export class UserService {
@@ -41,7 +27,9 @@ export class UserService {
     private readonly userRepo: Repository<UserEntity>,
   ) {}
 
-  async createUser(payload: CreateUserDto): Promise<SingleResponse<UserEntity>> {
+  async createUser(
+    payload: CreateUserDto,
+  ): Promise<SingleResponse<UserEntity>> {
     try {
       const existingUser = await this.userRepo.findOne({
         where: { email: payload.email },
@@ -222,25 +210,78 @@ export class UserService {
       }
 
       const currentBalance = user.balance || 0;
-      
+
       if (operation === 'add') {
         user.balance = currentBalance + amount;
       } else {
         if (currentBalance < amount) {
-          throw new HttpException('Insufficient balance', HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            'Insufficient balance',
+            HttpStatus.BAD_REQUEST,
+          );
         }
         user.balance = currentBalance - amount;
       }
 
       const result = await this.userRepo.save(user);
 
-      this.logger.log(`User balance updated: ${id}, new balance: ${result.balance}`);
+      this.logger.log(
+        `User balance updated: ${id}, new balance: ${result.balance}`,
+      );
       return { result };
     } catch (error: any) {
       throw new HttpException(
         `Failed to update balance: ${error.message}`,
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async updateLastLogin(
+    id: number,
+    ip?: string,
+  ): Promise<SingleResponse<UserEntity>> {
+    try {
+      const user = await this.userRepo.findOne({ where: { id } });
+
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      user.last_login_at = new Date();
+      if (ip) {
+        user.last_login_ip = ip;
+      }
+
+      const result = await this.userRepo.save(user);
+
+      this.logger.log(`User last login updated: ${id}`);
+      return { result };
+    } catch (error: any) {
+      throw new HttpException(
+        `Failed to update last login: ${error.message}`,
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async checkIpAccess(userId: number, ip: string): Promise<boolean> {
+    try {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+
+      if (!user) {
+        return false;
+      }
+
+      if (!user.allowed_ips) {
+        return true;
+      }
+
+      const allowedIps = user.allowed_ips.split(',').map((ip) => ip.trim());
+      return allowedIps.includes(ip);
+    } catch (error: any) {
+      this.logger.error(`Failed to check IP access: ${error.message}`);
+      return false;
     }
   }
 }

@@ -9,15 +9,7 @@ import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { OtpEntity } from '../entity/otps.entity';
 import { MailService } from './mail.service';
-
-export interface CreateOtpDto {
-  email: string;
-}
-
-export interface VerifyOtpDto {
-  email: string;
-  otp: string;
-}
+import { CreateOtpDto, VerifyOtpDto } from '../utils/interfaces/otps.interface';
 
 @Injectable()
 export class OtpsService {
@@ -35,11 +27,10 @@ export class OtpsService {
 
   async generateOtp(payload: CreateOtpDto): Promise<{ message: string }> {
     try {
-      const existingOtp = await this.otpRepo.findOne({
+      const existingOtp: OtpEntity = await this.otpRepo.findOne({
         where: { email: payload.email },
       });
 
-      // Agar retry count limit oshgan bo'lsa, xatolik qaytarish
       if (existingOtp && existingOtp.retryCount >= this.MAX_RETRY_COUNT) {
         throw new HttpException(
           'OTP retry limit exceeded. Please try again later.',
@@ -47,7 +38,7 @@ export class OtpsService {
         );
       }
 
-      const otpCode = this.generateOtpCode();
+      const otpCode: string = this.generateOtpCode();
       const otpData = {
         email: payload.email,
         otp: otpCode,
@@ -61,7 +52,6 @@ export class OtpsService {
         await this.otpRepo.save(otpData);
       }
 
-      // Email orqali OTP jo'natish
       await this.mailService.sendOtpEmail(payload.email, otpCode);
 
       this.logger.log(`OTP sent to email: ${payload.email}`);
@@ -76,7 +66,7 @@ export class OtpsService {
 
   async verifyOtp(payload: VerifyOtpDto): Promise<{ message: string }> {
     try {
-      const otp = await this.otpRepo.findOne({
+      const otp: OtpEntity = await this.otpRepo.findOne({
         where: { email: payload.email },
       });
 
@@ -88,13 +78,11 @@ export class OtpsService {
         throw new HttpException('Invalid OTP', HttpStatus.UNAUTHORIZED);
       }
 
-      // OTP muddatini tekshirish
       const otpExpiryTime = new Date(Date.now() - this.OTP_EXPIRY_TIME);
       if (otp.otpSendAt < otpExpiryTime) {
         throw new HttpException('OTP expired', HttpStatus.UNAUTHORIZED);
       }
 
-      // OTP tasdiqlangandan so'ng o'chirish
       await this.otpRepo.delete({ email: payload.email });
 
       this.logger.log(`OTP verified for email: ${payload.email}`);
@@ -121,7 +109,7 @@ export class OtpsService {
   async deleteExpiredOtps(): Promise<{ deleted_count: number }> {
     try {
       const expiryDate = new Date(Date.now() - this.OTP_EXPIRY_TIME);
-      
+
       const result = await this.otpRepo
         .createQueryBuilder()
         .delete()
@@ -145,7 +133,7 @@ export class OtpsService {
     time_remaining?: number;
   }> {
     try {
-      const otp = await this.otpRepo.findOne({ where: { email } });
+      const otp: OtpEntity = await this.otpRepo.findOne({ where: { email } });
 
       if (!otp) {
         return {
@@ -154,8 +142,11 @@ export class OtpsService {
         };
       }
 
-      const timeElapsed = Date.now() - otp.otpSendAt.getTime();
-      const timeRemaining = Math.max(0, this.OTP_EXPIRY_TIME - timeElapsed);
+      const timeElapsed: number = Date.now() - otp.otpSendAt.getTime();
+      const timeRemaining: number = Math.max(
+        0,
+        this.OTP_EXPIRY_TIME - timeElapsed,
+      );
 
       return {
         exists: true,

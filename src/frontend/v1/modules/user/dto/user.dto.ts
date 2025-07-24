@@ -38,6 +38,26 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(language)
   language?: language;
+
+  @ApiProperty({ example: '+998901234567', required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ example: 'My Company LLC', required: false })
+  @IsOptional()
+  @IsString()
+  company_name?: string;
+
+  @ApiProperty({ example: 'https://mycompany.com', required: false })
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @ApiProperty({ example: '192.168.1.1,10.0.0.1', required: false })
+  @IsOptional()
+  @IsString()
+  allowed_ips?: string;
 }
 
 export class UpdateUserDto {
@@ -76,6 +96,26 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   block?: boolean;
+
+  @ApiProperty({ example: '+998901234567', required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ example: 'My Company LLC', required: false })
+  @IsOptional()
+  @IsString()
+  company_name?: string;
+
+  @ApiProperty({ example: 'https://mycompany.com', required: false })
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @ApiProperty({ example: '192.168.1.1,10.0.0.1', required: false })
+  @IsOptional()
+  @IsString()
+  allowed_ips?: string;
 }
 
 export class UpdateBalanceDto {
