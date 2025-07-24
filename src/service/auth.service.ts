@@ -12,6 +12,7 @@ import { UserEntity } from '../entity/user.entity';
 import {
   AuthLoginDto,
   AuthVerifyDto,
+  VerifyOtpDto,
 } from '../frontend/v1/modules/auth/dto/dto';
 import { SingleResponse } from '../utils/dto/dto';
 import { OtpEntity } from 'src/entity/otps.entity';
@@ -51,6 +52,13 @@ export class AuthService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
+      if (!user || !(await bcrypt.compare(payload.password, user.password))) {
+        throw new HttpException(
+          'Invalid email or password',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
       await this.handleOtpCreation(payload.email);
 
       this.logger.log(`OTP sent to email: ${payload.email}`);
@@ -64,19 +72,14 @@ export class AuthService {
   }
 
   async verifyOtp(
-    payload: AuthLoginDto,
+    payload: VerifyOtpDto,
   ): Promise<SingleResponse<{ user: string }>> {
     try {
       const otp: OtpEntity = await this.otpRepo.findOne({
         where: { email: payload.email },
       });
 
-      const newUser: UserEntity = this.userRepo.create({
-        role: UserRoleEnum.CLIENT,
-        email: payload.email,
-      });
-
-      await this.userRepo.save(newUser);
+      await this.createNewUser(payload.email);
 
       const newOtp = {
         email: payload.email,

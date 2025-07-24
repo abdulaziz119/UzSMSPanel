@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiResponse, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
-import { AuthLoginDto, AuthVerifyDto } from './dto/dto';
+import { AuthLoginDto, AuthVerifyDto, VerifyOtpDto } from './dto/dto';
 import { SingleResponse } from '../../../../utils/dto/dto';
 import { AuthService } from '../../../../service/auth.service';
 
@@ -15,7 +15,7 @@ export class AuthController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(200)
   async login(
-    @Body() body: AuthVerifyDto,
+    @Body() body: AuthLoginDto,
   ): Promise<SingleResponse<{ user: string }>> {
     return await this.authService.login(body);
   }
@@ -25,7 +25,7 @@ export class AuthController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(200)
   async verifyOtp(
-    @Body() body: AuthLoginDto,
+    @Body() body: VerifyOtpDto,
   ): Promise<SingleResponse<{ user: string }>> {
     return this.authService.verifyOtp(body);
   }

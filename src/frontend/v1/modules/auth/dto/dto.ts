@@ -6,6 +6,18 @@ export class AuthLoginDto {
   @IsString()
   @IsNotEmpty()
   email: string;
+
+  @ApiProperty({ example: 'test' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
+export class VerifyOtpDto {
+  @ApiProperty({ example: 'test@test.com' })
+  @IsString()
+  @IsNotEmpty()
+  email: string;
 }
 
 export class AuthVerifyDto {
