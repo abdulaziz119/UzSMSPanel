@@ -71,6 +71,13 @@ export class AuthService {
         where: { email: payload.email },
       });
 
+      const newUser: UserEntity = this.userRepo.create({
+        role: UserRoleEnum.CLIENT,
+        email: payload.email,
+      });
+
+      await this.userRepo.save(newUser);
+
       const newOtp = {
         email: payload.email,
         otp: Math.floor(100000 + Math.random() * 900000).toString(),
@@ -127,13 +134,6 @@ export class AuthService {
         id: user.id,
         email: user.email,
       };
-
-      const newUser: UserEntity = this.userRepo.create({
-        role: user.role,
-        email: user.email,
-      });
-
-      await this.userRepo.save(newUser);
 
       this.logger.log(`User verified successfully: ${user.id}`);
       return { result };

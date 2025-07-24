@@ -58,12 +58,13 @@ export class MessageTemplatesService {
         throw new HttpException('User is blocked', HttpStatus.FORBIDDEN);
       }
 
-      const existingTemplate = await this.templateRepo.findOne({
-        where: {
-          template_name: payload.template_name,
-          user_id: payload.user_id,
-        },
-      });
+      const existingTemplate: MessageTemplatesEntity =
+        await this.templateRepo.findOne({
+          where: {
+            template_name: payload.template_name,
+            user_id: payload.user_id,
+          },
+        });
 
       if (existingTemplate) {
         throw new HttpException(
@@ -72,12 +73,13 @@ export class MessageTemplatesService {
         );
       }
 
-      const newTemplate = this.templateRepo.create({
+      const newTemplate: MessageTemplatesEntity = this.templateRepo.create({
         ...payload,
         is_approved: false,
       });
 
-      const result = await this.templateRepo.save(newTemplate);
+      const result: MessageTemplatesEntity =
+        await this.templateRepo.save(newTemplate);
 
       this.logger.log(`New message template created: ${result.id}`);
       return { result };

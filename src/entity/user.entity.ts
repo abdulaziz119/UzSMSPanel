@@ -21,7 +21,7 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', default: language })
   language: language;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
   password: string | null;
 
   @Column({ nullable: true, type: 'float', scale: 1, default: 0 })
