@@ -8,13 +8,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiResponse,
-  ApiBadRequestResponse,
-  ApiOperation,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiBadRequestResponse } from '@nestjs/swagger';
 import { TransactionsService } from '../../../../service/transactions.service';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { User } from '../auth/decorators/user.decorator';
@@ -33,10 +27,8 @@ import {
 export class TransactionsController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
-  @ApiOperation({ summary: 'Create new transaction' })
-  @ApiResponse({ status: 201, description: 'Transaction created successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Post()
+  @Post('/create')
   @Auth()
   @HttpCode(HttpStatus.CREATED)
   async createTransaction(
@@ -49,10 +41,9 @@ export class TransactionsController {
     });
   }
 
-  @ApiOperation({ summary: 'Get user transactions' })
-  @ApiResponse({ status: 200, description: 'Transactions retrieved successfully' })
   @Get('my-transactions')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async getUserTransactions(
     @Query() query: TransactionQueryDto,
     @User('id') userId: number,
@@ -65,39 +56,36 @@ export class TransactionsController {
     );
   }
 
-  @ApiOperation({ summary: 'Get transaction by ID' })
-  @ApiResponse({ status: 200, description: 'Transaction retrieved successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Get(':id')
+  @Get('/findOne/:id')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async getTransactionById(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<TransactionsEntity>> {
     return this.transactionsService.getTransactionById(params.id);
   }
 
-  @ApiOperation({ summary: 'Get transaction statistics' })
-  @ApiResponse({ status: 200, description: 'Transaction statistics retrieved successfully' })
   @Get('statistics/overview')
   @Auth()
-  async getTransactionStatistics(
-    @User('id') userId: number,
-  ): Promise<SingleResponse<{
-    total_transactions: number;
-    total_amount: number;
-    pending_count: number;
-    completed_count: number;
-    failed_count: number;
-    pending_amount: number;
-    completed_amount: number;
-  }>> {
+  @HttpCode(HttpStatus.OK)
+  async getTransactionStatistics(@User('id') userId: number): Promise<
+    SingleResponse<{
+      total_transactions: number;
+      total_amount: number;
+      pending_count: number;
+      completed_count: number;
+      failed_count: number;
+      pending_amount: number;
+      completed_amount: number;
+    }>
+  > {
     return this.transactionsService.getTransactionStatistics(userId);
   }
 
-  @ApiOperation({ summary: 'Get available payment methods' })
-  @ApiResponse({ status: 200, description: 'Payment methods retrieved successfully' })
   @Get('payment-methods')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async getPaymentMethods(): Promise<SingleResponse<string[]>> {
     return this.transactionsService.getPaymentMethods();
   }

@@ -10,13 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiResponse,
-  ApiBadRequestResponse,
-  ApiOperation,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiBadRequestResponse } from '@nestjs/swagger';
 import { TariffsService } from '../../../../service/tariffs.service';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -37,10 +31,8 @@ import {
 export class TariffsController {
   constructor(private readonly tariffsService: TariffsService) {}
 
-  @ApiOperation({ summary: 'Create new tariff' })
-  @ApiResponse({ status: 201, description: 'Tariff created successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Post()
+  @Post('/create')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
   @HttpCode(HttpStatus.CREATED)
@@ -50,44 +42,37 @@ export class TariffsController {
     return this.tariffsService.createTariff(createTariffDto);
   }
 
-  @ApiOperation({ summary: 'Get all tariffs' })
-  @ApiResponse({ status: 200, description: 'Tariffs retrieved successfully' })
-  @Get()
+  @Get('findAll')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @HttpCode(HttpStatus.OK)
   async getAllTariffs(
     @Query() query: TariffQueryDto,
   ): Promise<PaginationResponse<TariffEntity[]>> {
-    return this.tariffsService.getAllTariffs(
-      query.page,
-      query.limit,
-      {
-        operator: query.operator,
-        min_price: query.min_price,
-        max_price: query.max_price,
-        currency: query.currency,
-      },
-    );
+    return this.tariffsService.getAllTariffs(query.page, query.limit, {
+      operator: query.operator,
+      min_price: query.min_price,
+      max_price: query.max_price,
+      currency: query.currency,
+    });
   }
 
-  @ApiOperation({ summary: 'Get tariff by ID' })
-  @ApiResponse({ status: 200, description: 'Tariff retrieved successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Get(':id')
+  @Get('/findOne/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @HttpCode(HttpStatus.OK)
   async getTariffById(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<TariffEntity>> {
     return this.tariffsService.getTariffById(params.id);
   }
 
-  @ApiOperation({ summary: 'Update tariff' })
-  @ApiResponse({ status: 200, description: 'Tariff updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Put(':id')
+  @Put('/update/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
+  @HttpCode(HttpStatus.OK)
   async updateTariff(
     @Param() params: ParamIdDto,
     @Body() updateTariffDto: UpdateTariffDto,
@@ -95,48 +80,46 @@ export class TariffsController {
     return this.tariffsService.updateTariff(params.id, updateTariffDto);
   }
 
-  @ApiOperation({ summary: 'Delete tariff' })
-  @ApiResponse({ status: 200, description: 'Tariff deleted successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Delete(':id')
+  @Delete('/delete/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
+  @HttpCode(HttpStatus.OK)
   async deleteTariff(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<{ message: string }>> {
     return this.tariffsService.deleteTariff(params.id);
   }
 
-  @ApiOperation({ summary: 'Get available operators' })
-  @ApiResponse({ status: 200, description: 'Operators retrieved successfully' })
   @Get('operators/list')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @HttpCode(HttpStatus.OK)
   async getAvailableOperators(): Promise<SingleResponse<string[]>> {
     return this.tariffsService.getAvailableOperators();
   }
 
-  @ApiOperation({ summary: 'Get cheapest tariff' })
-  @ApiResponse({ status: 200, description: 'Cheapest tariff retrieved successfully' })
   @Get('cheapest/get')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @HttpCode(HttpStatus.OK)
   async getCheapestTariff(): Promise<SingleResponse<TariffEntity | null>> {
     return this.tariffsService.getCheapestTariff();
   }
 
-  @ApiOperation({ summary: 'Get tariff statistics' })
-  @ApiResponse({ status: 200, description: 'Tariff statistics retrieved successfully' })
   @Get('statistics/overview')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
-  async getTariffStatistics(): Promise<SingleResponse<{
-    total_tariffs: number;
-    average_price: number;
-    min_price: number;
-    max_price: number;
-    operators_count: number;
-  }>> {
+  @HttpCode(HttpStatus.OK)
+  async getTariffStatistics(): Promise<
+    SingleResponse<{
+      total_tariffs: number;
+      average_price: number;
+      min_price: number;
+      max_price: number;
+      operators_count: number;
+    }>
+  > {
     return this.tariffsService.getTariffStatistics();
   }
 }

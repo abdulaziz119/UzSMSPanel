@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiResponse,
@@ -23,7 +23,7 @@ export class AuthController {
   @ApiResponse({ type: ErrorResourceDto, status: 401 })
   @Post('/login')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async login(
     @Body() body: DashboardAuthLoginDto,
   ): Promise<SingleResponse<{ id: number; role: string; token: string }>> {
@@ -35,7 +35,7 @@ export class AuthController {
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @HttpCode(200)
+  @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() body: DashboardAuthRegisterDto,
   ): Promise<SingleResponse<UserEntity>> {

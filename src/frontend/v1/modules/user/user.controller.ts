@@ -24,10 +24,7 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
 import { UserEntity } from '../../../../entity/user.entity';
-import {
-  UpdateUserDto,
-  UpdateBalanceDto,
-} from './dto/user.dto';
+import { UpdateUserDto, UpdateBalanceDto } from './dto/user.dto';
 
 @ApiTags('User Profile')
 @ApiBearerAuth()
@@ -35,21 +32,19 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
   @Get('profile')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async getCurrentUser(
     @User('id') userId: number,
   ): Promise<SingleResponse<UserEntity>> {
     return this.userService.getUserById(userId);
   }
 
-  @ApiOperation({ summary: 'Update user profile' })
-  @ApiResponse({ status: 200, description: 'User profile updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Put('profile')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async updateProfile(
     @Body() updateUserDto: UpdateUserDto,
     @User('id') userId: number,
@@ -57,10 +52,9 @@ export class UserController {
     return this.userService.updateUser(userId, updateUserDto);
   }
 
-  @ApiOperation({ summary: 'Get user balance' })
-  @ApiResponse({ status: 200, description: 'User balance retrieved successfully' })
   @Get('balance')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async getUserBalance(
     @User('id') userId: number,
   ): Promise<SingleResponse<{ balance: number }>> {
@@ -68,27 +62,26 @@ export class UserController {
     return { result: { balance: user.result.balance || 0 } };
   }
 
-  @ApiOperation({ summary: 'Get user statistics' })
-  @ApiResponse({ status: 200, description: 'User statistics retrieved successfully' })
   @Get('statistics')
   @Auth()
-  async getUserStatistics(
-    @User('id') userId: number,
-  ): Promise<SingleResponse<{
-    total_sms: number;
-    sent_sms: number;
-    pending_sms: number;
-    failed_sms: number;
-    total_templates: number;
-    approved_templates: number;
-    total_transactions: number;
-    completed_transactions: number;
-    balance: number;
-  }>> {
+  @HttpCode(HttpStatus.OK)
+  async getUserStatistics(@User('id') userId: number): Promise<
+    SingleResponse<{
+      total_sms: number;
+      sent_sms: number;
+      pending_sms: number;
+      failed_sms: number;
+      total_templates: number;
+      approved_templates: number;
+      total_transactions: number;
+      completed_transactions: number;
+      balance: number;
+    }>
+  > {
     // Bu yerda boshqa service lardan ma'lumot olish kerak
     // Hozircha mock data qaytaramiz
     const user = await this.userService.getUserById(userId);
-    
+
     return {
       result: {
         total_sms: 0,
@@ -100,7 +93,7 @@ export class UserController {
         total_transactions: 0,
         completed_transactions: 0,
         balance: user.result.balance || 0,
-      }
+      },
     };
   }
 }

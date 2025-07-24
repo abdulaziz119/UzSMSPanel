@@ -10,13 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiResponse,
-  ApiBadRequestResponse,
-  ApiOperation,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiBadRequestResponse } from '@nestjs/swagger';
 import { MessageTemplatesService } from '../../../../service/message-templates.service';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { User } from '../auth/decorators/user.decorator';
@@ -34,10 +28,10 @@ import {
 @ApiBearerAuth()
 @Controller({ path: 'message-templates', version: '1' })
 export class MessageTemplatesController {
-  constructor(private readonly messageTemplatesService: MessageTemplatesService) {}
+  constructor(
+    private readonly messageTemplatesService: MessageTemplatesService,
+  ) {}
 
-  @ApiOperation({ summary: 'Create new message template' })
-  @ApiResponse({ status: 201, description: 'Message template created successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Post()
   @Auth()
@@ -52,10 +46,9 @@ export class MessageTemplatesController {
     });
   }
 
-  @ApiOperation({ summary: 'Get user message templates' })
-  @ApiResponse({ status: 200, description: 'Message templates retrieved successfully' })
   @Get('my-templates')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async getUserTemplates(
     @Query() query: MessageTemplateQueryDto,
     @User('id') userId: number,
@@ -68,10 +61,9 @@ export class MessageTemplatesController {
     );
   }
 
-  @ApiOperation({ summary: 'Get approved templates (public)' })
-  @ApiResponse({ status: 200, description: 'Approved templates retrieved successfully' })
   @Get('approved')
   @Auth(true) // Optional auth
+  @HttpCode(HttpStatus.OK)
   async getApprovedTemplates(
     @Query() query: MessageTemplateQueryDto,
   ): Promise<PaginationResponse<MessageTemplatesEntity[]>> {
@@ -81,51 +73,51 @@ export class MessageTemplatesController {
     );
   }
 
-  @ApiOperation({ summary: 'Get message template by ID' })
-  @ApiResponse({ status: 200, description: 'Message template retrieved successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Get(':id')
+  @Get('/findOne/:id')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async getTemplateById(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
     return this.messageTemplatesService.getTemplateById(params.id);
   }
 
-  @ApiOperation({ summary: 'Update message template' })
-  @ApiResponse({ status: 200, description: 'Message template updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Put(':id')
+  @Put('/update/:id')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async updateTemplate(
     @Param() params: ParamIdDto,
     @Body() updateTemplateDto: UpdateMessageTemplateDto,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
-    return this.messageTemplatesService.updateTemplate(params.id, updateTemplateDto);
+    return this.messageTemplatesService.updateTemplate(
+      params.id,
+      updateTemplateDto,
+    );
   }
 
-  @ApiOperation({ summary: 'Delete message template' })
-  @ApiResponse({ status: 200, description: 'Message template deleted successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Delete(':id')
+  @Delete('/delete/:id')
   @Auth()
+  @HttpCode(HttpStatus.OK)
   async deleteTemplate(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<{ message: string }>> {
     return this.messageTemplatesService.deleteTemplate(params.id);
   }
 
-  @ApiOperation({ summary: 'Get template statistics' })
-  @ApiResponse({ status: 200, description: 'Template statistics retrieved successfully' })
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Get('statistics/overview')
   @Auth()
-  async getTemplateStatistics(
-    @User('id') userId: number,
-  ): Promise<SingleResponse<{
-    total: number;
-    approved: number;
-    pending: number;
-  }>> {
+  @HttpCode(HttpStatus.OK)
+  async getTemplateStatistics(@User('id') userId: number): Promise<
+    SingleResponse<{
+      total: number;
+      approved: number;
+      pending: number;
+    }>
+  > {
     return this.messageTemplatesService.getTemplateStatistics(userId);
   }
 }

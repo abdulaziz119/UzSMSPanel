@@ -10,13 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiResponse,
-  ApiBadRequestResponse,
-  ApiOperation,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiBadRequestResponse } from '@nestjs/swagger';
 import { MessageTemplatesService } from '../../../../service/message-templates.service';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -35,14 +29,14 @@ import {
 @ApiBearerAuth()
 @Controller({ path: '/dashboard/message-templates', version: '1' })
 export class MessageTemplatesController {
-  constructor(private readonly messageTemplatesService: MessageTemplatesService) {}
+  constructor(
+    private readonly messageTemplatesService: MessageTemplatesService,
+  ) {}
 
-  @ApiOperation({ summary: 'Create new message template' })
-  @ApiResponse({ status: 201, description: 'Message template created successfully' })
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Post()
-  @Auth()
+  @Post('/create')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Auth()
   @HttpCode(HttpStatus.CREATED)
   async createTemplate(
     @Body() createTemplateDto: CreateMessageTemplateDto,
@@ -50,11 +44,10 @@ export class MessageTemplatesController {
     return this.messageTemplatesService.createTemplate(createTemplateDto);
   }
 
-  @ApiOperation({ summary: 'Get all message templates' })
-  @ApiResponse({ status: 200, description: 'Message templates retrieved successfully' })
-  @Get()
-  @Auth()
+  @Get('getAll')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @Auth()
+  @HttpCode(HttpStatus.OK)
   async getAllTemplates(
     @Query() query: MessageTemplateQueryDto,
   ): Promise<PaginationResponse<MessageTemplatesEntity[]>> {
@@ -69,45 +62,43 @@ export class MessageTemplatesController {
     );
   }
 
-  @ApiOperation({ summary: 'Get message template by ID' })
-  @ApiResponse({ status: 200, description: 'Message template retrieved successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Get(':id')
-  @Auth()
+  @Get('/findOne/:id')
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @HttpCode(HttpStatus.OK)
+  @Auth()
   async getTemplateById(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
     return this.messageTemplatesService.getTemplateById(params.id);
   }
 
-  @ApiOperation({ summary: 'Update message template' })
-  @ApiResponse({ status: 200, description: 'Message template updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Put(':id')
+  @Put('/update/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
+  @HttpCode(HttpStatus.OK)
   async updateTemplate(
     @Param() params: ParamIdDto,
     @Body() updateTemplateDto: UpdateMessageTemplateDto,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
-    return this.messageTemplatesService.updateTemplate(params.id, updateTemplateDto);
+    return this.messageTemplatesService.updateTemplate(
+      params.id,
+      updateTemplateDto,
+    );
   }
 
-  @ApiOperation({ summary: 'Delete message template' })
-  @ApiResponse({ status: 200, description: 'Message template deleted successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Delete(':id')
+  @Delete('/delete/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
+  @HttpCode(HttpStatus.OK)
   async deleteTemplate(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<{ message: string }>> {
     return this.messageTemplatesService.deleteTemplate(params.id);
   }
 
-  @ApiOperation({ summary: 'Approve/Disapprove message template' })
-  @ApiResponse({ status: 200, description: 'Template approval status updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Post(':id/approve')
   @Auth()
@@ -119,16 +110,17 @@ export class MessageTemplatesController {
     return this.messageTemplatesService.approveTemplate(params.id);
   }
 
-  @ApiOperation({ summary: 'Get template statistics' })
-  @ApiResponse({ status: 200, description: 'Template statistics retrieved successfully' })
   @Get('statistics/overview')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
-  async getTemplateStatistics(): Promise<SingleResponse<{
-    total: number;
-    approved: number;
-    pending: number;
-  }>> {
+  @HttpCode(HttpStatus.OK)
+  async getTemplateStatistics(): Promise<
+    SingleResponse<{
+      total: number;
+      approved: number;
+      pending: number;
+    }>
+  > {
     return this.messageTemplatesService.getTemplateStatistics();
   }
 }

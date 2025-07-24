@@ -10,13 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiResponse,
-  ApiBadRequestResponse,
-  ApiOperation,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiBadRequestResponse } from '@nestjs/swagger';
 import { UserService } from '../../../../service/user.service';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -38,10 +32,8 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @ApiOperation({ summary: 'Create new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Post()
+  @Post('create')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
   @HttpCode(HttpStatus.CREATED)
@@ -51,11 +43,10 @@ export class UserController {
     return this.userService.createUser(createUserDto);
   }
 
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
-  @Get()
+  @Get('findAll')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @HttpCode(HttpStatus.OK)
   async getAllUsers(
     @Query() query: UserQueryDto,
   ): Promise<PaginationResponse<UserEntity[]>> {
@@ -67,24 +58,22 @@ export class UserController {
     );
   }
 
-  @ApiOperation({ summary: 'Get user by ID' })
-  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Get(':id')
+  @Get('/findOne/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN, UserRoleEnum.OPERATOR)
+  @HttpCode(HttpStatus.OK)
   async getUserById(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<UserEntity>> {
     return this.userService.getUserById(params.id);
   }
 
-  @ApiOperation({ summary: 'Update user' })
-  @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Put(':id')
+  @Put('/update/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN, UserRoleEnum.ADMIN)
+  @HttpCode(HttpStatus.OK)
   async updateUser(
     @Param() params: ParamIdDto,
     @Body() updateUserDto: UpdateUserDto,
@@ -92,20 +81,17 @@ export class UserController {
     return this.userService.updateUser(params.id, updateUserDto);
   }
 
-  @ApiOperation({ summary: 'Delete user' })
-  @ApiResponse({ status: 200, description: 'User deleted successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Delete(':id')
+  @Delete('/delete/:id')
   @Auth()
   @Roles(UserRoleEnum.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
   async deleteUser(
     @Param() params: ParamIdDto,
   ): Promise<SingleResponse<{ message: string }>> {
     return this.userService.deleteUser(params.id);
   }
 
-  @ApiOperation({ summary: 'Block/Unblock user' })
-  @ApiResponse({ status: 200, description: 'User block status updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Post(':id/block')
   @Auth()
@@ -117,8 +103,6 @@ export class UserController {
     return this.userService.blockUser(params.id);
   }
 
-  @ApiOperation({ summary: 'Update user balance' })
-  @ApiResponse({ status: 200, description: 'User balance updated successfully' })
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Post(':id/balance')
   @Auth()
