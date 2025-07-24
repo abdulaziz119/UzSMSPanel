@@ -36,7 +36,7 @@ export class SmsMessagesService {
     payload: CreateSmsMessageDto,
   ): Promise<SingleResponse<SmsMessagesEntity>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: payload.user_id },
       });
 
@@ -53,7 +53,7 @@ export class SmsMessagesService {
         tariffs = await this.tariffRepo.findByIds(payload.tariff_ids);
       }
 
-      const newSmsMessage = this.smsMessageRepo.create({
+      const newSmsMessage: SmsMessagesEntity = this.smsMessageRepo.create({
         recipient_phone: payload.recipient_phone,
         message_text: payload.message_text,
         user_id: payload.user_id,
@@ -61,7 +61,8 @@ export class SmsMessagesService {
         tariffs,
       });
 
-      const result = await this.smsMessageRepo.save(newSmsMessage);
+      const result: SmsMessagesEntity =
+        await this.smsMessageRepo.save(newSmsMessage);
 
       this.logger.log(`New SMS message created: ${result.id}`);
       return { result };

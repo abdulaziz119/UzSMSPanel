@@ -33,7 +33,7 @@ export class TransactionsService {
     payload: CreateTransactionDto,
   ): Promise<SingleResponse<TransactionsEntity>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: payload.user_id },
       });
 
@@ -45,7 +45,7 @@ export class TransactionsService {
         throw new HttpException('User is blocked', HttpStatus.FORBIDDEN);
       }
 
-      const newTransaction = this.transactionRepo.create({
+      const newTransaction: TransactionsEntity = this.transactionRepo.create({
         ...payload,
         status: 'pending',
       });

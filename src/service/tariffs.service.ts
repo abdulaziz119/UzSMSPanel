@@ -31,7 +31,7 @@ export class TariffsService {
     payload: CreateTariffDto,
   ): Promise<SingleResponse<TariffEntity>> {
     try {
-      const existingTariff = await this.tariffRepo.findOne({
+      const existingTariff: TariffEntity = await this.tariffRepo.findOne({
         where: { operator: payload.operator },
       });
 
@@ -42,14 +42,14 @@ export class TariffsService {
         );
       }
 
-      const newTariff = this.tariffRepo.create({
+      const newTariff: TariffEntity = this.tariffRepo.create({
         ...payload,
         currency: payload.currency || 'UZS',
         status: payload.status || TariffStatusEnum.ACTIVE,
         is_default: payload.is_default || false,
       });
 
-      const result = await this.tariffRepo.save(newTariff);
+      const result: TariffEntity = await this.tariffRepo.save(newTariff);
 
       this.logger.log(`New tariff created: ${result.id}`);
       return { result };

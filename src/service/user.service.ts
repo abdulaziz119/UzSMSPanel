@@ -101,7 +101,7 @@ export class UserService {
 
   async getUserById(id: number): Promise<SingleResponse<UserEntity>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id },
         relations: ['smsMessages', 'transactions', 'templates'],
       });
@@ -124,7 +124,7 @@ export class UserService {
     payload: UpdateUserDto,
   ): Promise<SingleResponse<UserEntity>> {
     try {
-      const user = await this.userRepo.findOne({ where: { id } });
+      const user: UserEntity = await this.userRepo.findOne({ where: { id } });
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -144,7 +144,7 @@ export class UserService {
       }
 
       Object.assign(user, payload);
-      const result = await this.userRepo.save(user);
+      const result: UserEntity = await this.userRepo.save(user);
 
       this.logger.log(`User updated: ${result.id}`);
       return { result };
@@ -158,7 +158,7 @@ export class UserService {
 
   async deleteUser(id: number): Promise<SingleResponse<{ message: string }>> {
     try {
-      const user = await this.userRepo.findOne({ where: { id } });
+      const user: UserEntity = await this.userRepo.findOne({ where: { id } });
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -178,14 +178,14 @@ export class UserService {
 
   async blockUser(id: number): Promise<SingleResponse<UserEntity>> {
     try {
-      const user = await this.userRepo.findOne({ where: { id } });
+      const user: UserEntity = await this.userRepo.findOne({ where: { id } });
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
       user.block = !user.block;
-      const result = await this.userRepo.save(user);
+      const result: UserEntity = await this.userRepo.save(user);
 
       this.logger.log(`User ${user.block ? 'blocked' : 'unblocked'}: ${id}`);
       return { result };
@@ -203,7 +203,7 @@ export class UserService {
     operation: 'add' | 'subtract' = 'add',
   ): Promise<SingleResponse<UserEntity>> {
     try {
-      const user = await this.userRepo.findOne({ where: { id } });
+      const user: UserEntity = await this.userRepo.findOne({ where: { id } });
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -223,7 +223,7 @@ export class UserService {
         user.balance = currentBalance - amount;
       }
 
-      const result = await this.userRepo.save(user);
+      const result: UserEntity = await this.userRepo.save(user);
 
       this.logger.log(
         `User balance updated: ${id}, new balance: ${result.balance}`,
@@ -242,7 +242,7 @@ export class UserService {
     ip?: string,
   ): Promise<SingleResponse<UserEntity>> {
     try {
-      const user = await this.userRepo.findOne({ where: { id } });
+      const user: UserEntity = await this.userRepo.findOne({ where: { id } });
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -253,7 +253,7 @@ export class UserService {
         user.last_login_ip = ip;
       }
 
-      const result = await this.userRepo.save(user);
+      const result: UserEntity = await this.userRepo.save(user);
 
       this.logger.log(`User last login updated: ${id}`);
       return { result };
@@ -267,7 +267,9 @@ export class UserService {
 
   async checkIpAccess(userId: number, ip: string): Promise<boolean> {
     try {
-      const user = await this.userRepo.findOne({ where: { id: userId } });
+      const user: UserEntity = await this.userRepo.findOne({
+        where: { id: userId },
+      });
 
       if (!user) {
         return false;

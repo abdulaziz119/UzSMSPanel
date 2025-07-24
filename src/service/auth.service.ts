@@ -122,7 +122,7 @@ export class AuthService {
 
       const user: UserEntity = await this.findUserByPhone(payload.email);
 
-      const token = await this.authorizationService.sign(
+      const token: string = await this.authorizationService.sign(
         user.id,
         user.email,
         user.role,

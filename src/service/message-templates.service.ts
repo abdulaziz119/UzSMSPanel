@@ -33,7 +33,7 @@ export class MessageTemplatesService {
     payload: CreateMessageTemplateDto,
   ): Promise<SingleResponse<MessageTemplatesEntity>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: payload.user_id },
       });
 
