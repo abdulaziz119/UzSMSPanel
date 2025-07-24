@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { TariffStatusEnum } from '../utils/enum/tariff.enum';
-import { PaginationBuilder } from '../utils/pagination.builder';
+import { getPaginationResponse } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
 import {
@@ -112,7 +112,7 @@ export class TariffsService {
         .take(limit)
         .getManyAndCount();
 
-      return PaginationBuilder.build(tariffs, page, limit, total);
+      return getPaginationResponse<TariffEntity>(tariffs, page, limit, total);
     } catch (error: any) {
       throw new HttpException(
         `Failed to get tariffs: ${error.message}`,

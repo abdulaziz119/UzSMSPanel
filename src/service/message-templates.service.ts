@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { MessageTemplatesEntity } from '../entity/message-templates.entity';
 import { UserEntity } from '../entity/user.entity';
-import { PaginationBuilder } from '../utils/pagination.builder';
+import { getPaginationResponse } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
 import {
@@ -114,7 +114,7 @@ export class MessageTemplatesService {
         .take(limit)
         .getManyAndCount();
 
-      return PaginationBuilder.build(templates, page, limit, total);
+      return getPaginationResponse<MessageTemplatesEntity>(templates, page, limit, total);
     } catch (error: any) {
       throw new HttpException(
         `Failed to get message templates: ${error.message}`,
@@ -170,7 +170,7 @@ export class MessageTemplatesService {
         .take(limit)
         .getManyAndCount();
 
-      return PaginationBuilder.build(templates, page, limit, total);
+      return getPaginationResponse<MessageTemplatesEntity>(templates, page, limit, total);
     } catch (error: any) {
       throw new HttpException(
         `Failed to get user templates: ${error.message}`,
@@ -300,7 +300,7 @@ export class MessageTemplatesService {
         .take(limit)
         .getManyAndCount();
 
-      return PaginationBuilder.build(templates, page, limit, total);
+      return getPaginationResponse<MessageTemplatesEntity>(templates, page, limit, total);
     } catch (error: any) {
       throw new HttpException(
         `Failed to get approved templates: ${error.message}`,

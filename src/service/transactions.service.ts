@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { TransactionsEntity } from '../entity/transactions.entity';
 import { UserEntity } from '../entity/user.entity';
-import { PaginationBuilder } from '../utils/pagination.builder';
+import { getPaginationResponse } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
 import {
@@ -121,7 +121,7 @@ export class TransactionsService {
         .take(limit)
         .getManyAndCount();
 
-      return PaginationBuilder.build(transactions, page, limit, total);
+      return getPaginationResponse<TransactionsEntity>(transactions, page, limit, total);
     } catch (error: any) {
       throw new HttpException(
         `Failed to get transactions: ${error.message}`,
@@ -174,7 +174,7 @@ export class TransactionsService {
         .take(limit)
         .getManyAndCount();
 
-      return PaginationBuilder.build(transactions, page, limit, total);
+      return getPaginationResponse<TransactionsEntity>(transactions, page, limit, total);
     } catch (error: any) {
       throw new HttpException(
         `Failed to get user transactions: ${error.message}`,

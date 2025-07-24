@@ -8,7 +8,7 @@ import {
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { UserEntity } from '../entity/user.entity';
-import { PaginationBuilder } from '../utils/pagination.builder';
+import { getPaginationResponse } from '../utils/pagination.builder';
 import { PaginationResponse } from '../utils/pagination.response';
 import { SingleResponse } from '../utils/dto/dto';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
@@ -90,7 +90,7 @@ export class UserService {
         .take(limit)
         .getManyAndCount();
 
-      return PaginationBuilder.build(users, page, limit, total);
+      return getPaginationResponse<UserEntity>(users, page, limit, total);
     } catch (error: any) {
       throw new HttpException(
         `Failed to get users: ${error.message}`,
