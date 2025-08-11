@@ -1,19 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
 
-export class AuthLoginDto {
-  @ApiProperty({
-    example: '+998901234567',
-    description: 'Uzbekistan phone number in format +998XXXXXXXXX',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^\+998[0-9]{9}$/, {
-    message: 'Phone number must be in format +998XXXXXXXXX',
-  })
-  phone: string;
-}
-
 export class AuthVerifyDto {
   @ApiProperty({
     example: '+998901234567',
