@@ -1,9 +1,11 @@
-import { Entity, Column, Index, OneToMany } from 'typeorm';
+import { Entity, Column, Index, OneToMany, Unique } from 'typeorm';
 import { DB_SCHEMA } from '../utils/env/env';
-import { BaseEntity } from './base.entity';
+import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
+import { SmsGroupEntity } from './sms-group.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'users' })
+@Unique(['login'])
 @Index(['email', 'role', 'block'])
 export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
@@ -24,10 +26,10 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'enum', enum: UserRoleEnum })
   role: UserRoleEnum;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 4, nullable: true })
   country_code: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   ip: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
@@ -50,4 +52,11 @@ export class UserEntity extends BaseEntity {
 
   @Column({ select: false, nullable: true })
   login: string | null;
+
+  @OneToMany(
+    () => SmsGroupEntity,
+    (entity) => entity.user,
+    cascadeUpdateRelationOptions,
+  )
+  smsGroup: SmsGroupEntity[];
 }
