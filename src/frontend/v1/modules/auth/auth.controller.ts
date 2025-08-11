@@ -1,40 +1,33 @@
 import { Body, Controller, HttpCode, Post, Req } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthService } from '../../../../service/auth.service';
 import { SingleResponse } from '../../../../utils/dto/dto';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { Auth } from './decorators/auth.decorator';
 import { Roles } from './decorators/roles.decorator';
-import {
-  AuthLoginDto,
-  AuthResendOtpDto,
-  AuthVerifyDto,
-  RefreshTokenDto,
-} from './dto/dto';
+import { AuthResendOtpDto, AuthVerifyDto, RefreshTokenDto } from './dto/dto';
+import { User } from './decorators/user.decorator';
 
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    phone: string;
-    role: string;
-  };
-}
-
+@ApiBearerAuth()
 @ApiTags('Auth')
-@Controller({ path: 'auth', version: '1' })
+@Controller({ path: '/frontend/auth', version: '1' })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiResponse({ type: ErrorResourceDto, status: 401 })
-  @Post('/login')
+  @ApiResponse({ type: ErrorResourceDto, status: 429 })
+  @Post('/resend-otp')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(200)
-  async login(
-    @Body() body: AuthLoginDto,
-  ): Promise<SingleResponse<{ expiresIn: number }>> {
-    return await this.authService.login(body);
+  async resendOtp(
+    @Body() body: AuthResendOtpDto,
+  ): Promise<SingleResponse<{ message: string }>> {
+    return await this.authService.resendOtp(body);
   }
 
   @ApiResponse({ type: ErrorResourceDto, status: 401 })
@@ -51,16 +44,6 @@ export class AuthController {
     const result = await this.authService.signVerify(body);
 
     return result;
-  }
-
-  @ApiResponse({ type: ErrorResourceDto, status: 429 })
-  @Post('/resend-otp')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @HttpCode(200)
-  async resendOtp(
-    @Body() body: AuthResendOtpDto,
-  ): Promise<SingleResponse<{ message: string }>> {
-    return await this.authService.resendOtp(body);
   }
 
   @Post('/otp-status')
@@ -111,11 +94,11 @@ export class AuthController {
   @Post('/logout')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(200)
-  @Auth()
+  @Auth(false)
   @Roles(UserRoleEnum.CLIENT)
   async logout(
-    @Req() req: AuthenticatedRequest,
+    @User('id') user_id: number,
   ): Promise<SingleResponse<{ message: string }>> {
-    return await this.authService.logout(req.user.id);
+    return await this.authService.logout(user_id);
   }
 }

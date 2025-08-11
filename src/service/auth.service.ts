@@ -15,7 +15,6 @@ import {
 import { OtpEntity } from '../entity/otp.entity';
 import { UserEntity } from '../entity/user.entity';
 import {
-  AuthLoginDto,
   AuthResendOtpDto,
   AuthVerifyDto,
 } from '../frontend/v1/modules/auth/dto/dto';
@@ -41,36 +40,6 @@ export class AuthService {
     private readonly otpRepo: Repository<OtpEntity>,
     private readonly authorizationService: AuthorizationService,
   ) {}
-
-  async login(
-    payload: AuthLoginDto,
-  ): Promise<SingleResponse<{ expiresIn: number }>> {
-    try {
-      // Check if phone is blocked
-      await this.checkPhoneBlocked(payload.phone);
-
-      const user: UserEntity = await this.userRepo.findOne({
-        where: { phone: payload.phone },
-      });
-
-      if (!user) {
-        await this.createNewUser(payload.phone);
-      }
-
-      await this.handleOtpCreation(payload.phone);
-
-      this.logger.log(`OTP sent to phone: ${payload.phone}`);
-      return { result: { expiresIn: 120 } };
-    } catch (error) {
-      throw new HttpException(
-        {
-          message: 'Tizimga kirish muvaffaqiyatsiz yakunlandi',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   async signVerify(payload: AuthVerifyDto): Promise<
     SingleResponse<{
@@ -360,7 +329,7 @@ export class AuthService {
             (this.RESEND_COOLDOWN - timeSinceLastSend) / 1000,
           );
           throw new HttpException(
-            `Yangi tasdiqlash kodi so'rashdan oldin ${remainingTime} soniya kuting`,
+            `Before requesting a new verification code ${remainingTime} wait a second`,
             HttpStatus.TOO_MANY_REQUESTS,
           );
         }
@@ -371,7 +340,7 @@ export class AuthService {
 
       this.logger.log(`OTP resent to phone: ${payload.phone}`);
       return {
-        result: { message: 'Tasdiqlash kodi muvaffaqiyatli yuborildi' },
+        result: { message: 'Verification code sent successfully' },
       };
     } catch (error: any) {
       throw new HttpException(
@@ -398,13 +367,16 @@ export class AuthService {
         };
       }
 
-      const now = Date.now();
-      const otpSentTime = otp.otpSendAt.getTime();
-      const expiryTime = otpSentTime + this.OTP_EXPIRY_TIME;
-      const resendCooldownTime = otpSentTime + this.RESEND_COOLDOWN;
+      const now: number = Date.now();
+      const otpSentTime: number = otp.otpSendAt.getTime();
+      const expiryTime: number = otpSentTime + this.OTP_EXPIRY_TIME;
+      const resendCooldownTime: number = otpSentTime + this.RESEND_COOLDOWN;
 
-      const remainingTime = Math.max(0, Math.ceil((expiryTime - now) / 1000));
-      const canResend = now >= resendCooldownTime;
+      const remainingTime: number = Math.max(
+        0,
+        Math.ceil((expiryTime - now) / 1000),
+      );
+      const canResend: boolean = now >= resendCooldownTime;
 
       return {
         result: {
@@ -473,7 +445,7 @@ export class AuthService {
 
     if (!otp) {
       throw new HttpException(
-        'Tasdiqlash kodi topilmadi',
+        'Verification code not found',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -481,7 +453,7 @@ export class AuthService {
     // Check if phone is blocked
     if (otp.blockedUntil && otp.blockedUntil > new Date()) {
       throw new HttpException(
-        "Telefon raqami vaqtincha bloklangan. Keyinroq urinib ko'ring.",
+        'The phone number is temporarily blocked. Please try again later.',
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -490,7 +462,7 @@ export class AuthService {
     const otpExpiryTime = new Date(Date.now() - this.OTP_EXPIRY_TIME);
     if (otp.otpSendAt < otpExpiryTime) {
       throw new HttpException(
-        'Tasdiqlash kodining vaqti tugagan',
+        'Verification code has expired.',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -510,14 +482,14 @@ export class AuthService {
           },
         );
         throw new HttpException(
-          "Juda ko'p noto'g'ri urinishlar. Telefon raqami 15 daqiqa davomida bloklandi.",
+          'Too many incorrect attempts. The phone number has been blocked for 15 minutes.',
           HttpStatus.TOO_MANY_REQUESTS,
         );
       } else {
         // Just increment attempts
         await this.otpRepo.update({ phone }, { attempts: newAttempts });
         throw new HttpException(
-          `Noto'g'ri tasdiqlash kodi. ${this.MAX_ATTEMPTS - newAttempts} ta urinish qoldi.`,
+          `Invalid verification code. ${this.MAX_ATTEMPTS - newAttempts} There are only a few attempts left.`,
           HttpStatus.UNAUTHORIZED,
         );
       }
