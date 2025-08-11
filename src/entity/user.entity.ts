@@ -42,6 +42,9 @@ export class UserEntity extends BaseEntity {
   balance: number;
 
   @Column({ select: false, nullable: true })
+  secret_key: string | null;
+
+  @Column({ select: false, nullable: true })
   refreshToken: string | null;
 
   @Column({ type: 'timestamp', nullable: true })

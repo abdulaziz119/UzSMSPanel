@@ -2,7 +2,6 @@ export const UZ_SMS_PANEL = 'UZ_SMS_PANEL';
 
 export const MODELS = {
   USER: 'USER',
-  API_KEY: 'API_KEY',
   TRANSACTION: 'TRANSACTION',
   CONTACT: 'CONTACT',
   OTP: 'OTP',

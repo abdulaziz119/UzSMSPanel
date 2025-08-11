@@ -9,7 +9,6 @@ import {
   DB_SCHEMA,
   DB_USER,
 } from '../utils/env/env';
-import { ApiKeyEntity } from '../entity/api-key.entity';
 import { TransactionEntity } from '../entity/transaction.entity';
 import { ContactEntity } from '../entity/contact.entity';
 import { OtpEntity } from '../entity/otp.entity';
@@ -37,7 +36,6 @@ export const databaseProviders = [
         logging: false,
         schema: DB_SCHEMA,
         entities: [
-          ApiKeyEntity,
           TransactionEntity,
           ContactEntity,
           OtpEntity,
