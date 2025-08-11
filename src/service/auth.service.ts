@@ -123,10 +123,19 @@ export class AuthService {
       );
 
       // Get full user data
-      const fullUser = await this.userRepo.findOne({
+      const fullUser: UserEntity = await this.userRepo.findOne({
         where: { id: user.id },
-        relations: ['file'],
-        select: ['id', 'role', 'name', 'phone', 'email'],
+        select: [
+          'id',
+          'phone',
+          'role',
+          'name',
+          'language',
+          'country_code',
+          'block',
+          'created_at',
+          'updated_at',
+        ],
       });
 
       const result = {
@@ -140,7 +149,7 @@ export class AuthService {
     } catch (error: any) {
       throw new HttpException(
         {
-          message: 'Tasdiqlash jarayoni muvaffaqiyatsiz yakunlandi',
+          message: 'The verification process failed.',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
