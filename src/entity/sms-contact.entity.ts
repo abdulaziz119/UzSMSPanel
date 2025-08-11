@@ -27,8 +27,3 @@ export class SmsContactEntity extends BaseEntity {
   @JoinColumn({ name: 'group_id' })
   smsGroup: SmsGroupEntity;
 }
-
-// name;
-// phone;
-// group_id;
-// group_name;
