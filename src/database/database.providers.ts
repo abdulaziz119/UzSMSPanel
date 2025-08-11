@@ -9,12 +9,17 @@ import {
   DB_SCHEMA,
   DB_USER,
 } from '../utils/env/env';
-import { UserEntity } from '../entity/user.entity';
-import { TransactionsEntity } from '../entity/transactions.entity';
+import { ApiKeyEntity } from '../entity/api-key.entity';
+import { BalanceTransactionEntity } from '../entity/balance-transaction.entity';
+import { ContactEntity } from '../entity/contact.entity';
+import { OtpEntity } from '../entity/otp.entity';
+import { SmsCampaignEntity } from '../entity/sms-campaign.entity';
+import { SmsCompanyEntity } from '../entity/sms-company.entity';
+import { SmsContactEntity } from '../entity/sms-contact.entity';
+import { SmsGroupEntity } from '../entity/sms-group.entity';
+import { SmsPriceEntity } from '../entity/sms-price.entity';
 import { TariffEntity } from '../entity/tariffs.entity';
-import { SmsMessagesEntity } from '../entity/sms-messages.entity';
-import { MessageTemplatesEntity } from '../entity/message-templates.entity';
-import { OtpEntity } from '../entity/otps.entity';
+import { UserEntity } from '../entity/user.entity';
 
 export const databaseProviders = [
   {
@@ -31,12 +36,18 @@ export const databaseProviders = [
         logging: false,
         schema: DB_SCHEMA,
         entities: [
-          UserEntity,
-          TransactionsEntity,
-          TariffEntity,
-          SmsMessagesEntity,
-          MessageTemplatesEntity,
+          ApiKeyEntity,
+          BalanceTransactionEntity,
+          ContactEntity,
           OtpEntity,
+          SmsCampaignEntity,
+          SmsCompanyEntity,
+          SmsContactEntity,
+          SmsGroupEntity,
+          SmsPriceEntity,
+          SmsTransactionEntity,
+          TariffEntity,
+          UserEntity,
         ],
         // extra: {
         //   timezone: 'UTC',
