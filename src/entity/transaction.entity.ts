@@ -10,13 +10,13 @@ import {
   PaymentMethodEnum,
   TransactionStatusEnum,
   TransactionTypeEnum,
-} from 'src/utils/enum/balance-transaction.enum';
+} from '../utils/enum/transaction.enum';
 
-@Entity({ schema: DB_SCHEMA, name: 'balance_transactions' })
+@Entity({ schema: DB_SCHEMA, name: 'transactions' })
 @Index(['user_id', 'type', 'status'])
 @Index(['created_at', 'status'])
 @Index(['transaction_id'])
-export class BalanceTransactionEntity extends BaseEntity {
+export class TransactionEntity extends BaseEntity {
   @Column({ type: 'bigint', transformer: new BigintTransformer() })
   user_id: number;
 

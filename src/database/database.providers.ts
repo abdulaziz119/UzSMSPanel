@@ -10,7 +10,7 @@ import {
   DB_USER,
 } from '../utils/env/env';
 import { ApiKeyEntity } from '../entity/api-key.entity';
-import { BalanceTransactionEntity } from '../entity/balance-transaction.entity';
+import { TransactionEntity } from '../entity/transaction.entity';
 import { ContactEntity } from '../entity/contact.entity';
 import { OtpEntity } from '../entity/otp.entity';
 import { SmsCampaignEntity } from '../entity/sms-campaign.entity';
@@ -38,7 +38,7 @@ export const databaseProviders = [
         schema: DB_SCHEMA,
         entities: [
           ApiKeyEntity,
-          BalanceTransactionEntity,
+          TransactionEntity,
           ContactEntity,
           OtpEntity,
           SmsCampaignEntity,
