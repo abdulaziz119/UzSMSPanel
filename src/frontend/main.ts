@@ -1,8 +1,9 @@
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
-import * as bodyParser from 'body-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as bodyParser from 'body-parser';
+import * as cookieParser from 'cookie-parser';
 import { FRONTEND_PORT } from '../utils/env/env';
 import { ModulesFrontendModule } from './v1/modules/modules.module';
 
@@ -12,6 +13,8 @@ async function bootstrap() {
   );
 
   app.enableCors();
+
+  app.use(cookieParser());
 
   app.use(bodyParser.json({ limit: '100mb' }));
   app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
