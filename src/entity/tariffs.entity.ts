@@ -3,7 +3,6 @@ import { BaseEntity } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 
 @Entity({ schema: DB_SCHEMA, name: 'tariffs' })
-@Index(['operator', 'status'])
 export class TariffEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 4, nullable: true })
   code: string | null;
