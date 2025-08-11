@@ -19,14 +19,8 @@ export class ApiKeyEntity extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @Column({ type: 'varchar', length: 100, nullable: false })
-  name: string;
-
   @Column({ type: 'varchar', length: 255, unique: true })
   key_hash: string;
-
-  @Column({ type: 'varchar', length: 20, nullable: true })
-  prefix: string | null;
 
   @Column({
     type: 'enum',
@@ -34,25 +28,4 @@ export class ApiKeyEntity extends BaseEntity {
     default: ApiKeyStatusEnum.ACTIVE,
   })
   status: ApiKeyStatusEnum;
-
-  @Column({ type: 'json', nullable: true })
-  permissions: any;
-
-  @Column({ type: 'timestamp', nullable: true })
-  expires_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  last_used_at: Date | null;
-
-  @Column({ type: 'varchar', length: 45, nullable: true })
-  last_used_ip: string | null;
-
-  @Column({ type: 'integer', default: 0 })
-  requests_count: number;
-
-  @Column({ type: 'integer', default: 1000 })
-  requests_limit: number;
-
-  @Column({ type: 'text', nullable: true })
-  description: string | null;
 }
