@@ -6,8 +6,8 @@ import {
 } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
-import { MessageTypeEnum } from './sms-price.entity';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
+import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_templates' })
 @Index(['user_id', 'status'])
