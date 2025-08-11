@@ -6,13 +6,7 @@ import {
 } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
-
-export enum ApiKeyStatusEnum {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  EXPIRED = 'expired',
-  REVOKED = 'revoked',
-}
+import { ApiKeyStatusEnum } from '../utils/enum/api-key.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'api_keys' })
 @Index(['user_id', 'status'])
@@ -21,11 +15,7 @@ export class ApiKeyEntity extends BaseEntity {
   @Column({ type: 'bigint', transformer: new BigintTransformer() })
   user_id: number;
 
-  @ManyToOne(
-    () => UserEntity,
-    (entity) => entity,
-    cascadeUpdateRelationOptions,
-  )
+  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -38,7 +28,11 @@ export class ApiKeyEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 20, nullable: true })
   prefix: string | null;
 
-  @Column({ type: 'enum', enum: ApiKeyStatusEnum, default: ApiKeyStatusEnum.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: ApiKeyStatusEnum,
+    default: ApiKeyStatusEnum.ACTIVE,
+  })
   status: ApiKeyStatusEnum;
 
   @Column({ type: 'json', nullable: true })

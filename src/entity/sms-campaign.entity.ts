@@ -8,23 +8,11 @@ import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { SmsGroupEntity } from './sms-group.entity';
 import { SmsTemplateEntity } from './sms-template.entity';
-import { MessageTypeEnum } from './sms-price.entity';
-
-export enum CampaignStatusEnum {
-  DRAFT = 'draft',
-  SCHEDULED = 'scheduled',
-  RUNNING = 'running',
-  PAUSED = 'paused',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
-  FAILED = 'failed',
-}
-
-export enum CampaignTypeEnum {
-  IMMEDIATE = 'immediate',
-  SCHEDULED = 'scheduled',
-  RECURRING = 'recurring',
-}
+import {
+  CampaignStatusEnum,
+  CampaignTypeEnum,
+} from '../utils/enum/sms-campaign.enum';
+import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_campaigns' })
 @Index(['user_id', 'status'])
@@ -34,11 +22,7 @@ export class SmsCampaignEntity extends BaseEntity {
   @Column({ type: 'bigint', transformer: new BigintTransformer() })
   user_id: number;
 
-  @ManyToOne(
-    () => UserEntity,
-    (entity) => entity,
-    cascadeUpdateRelationOptions,
-  )
+  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -48,13 +32,25 @@ export class SmsCampaignEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ type: 'enum', enum: CampaignStatusEnum, default: CampaignStatusEnum.DRAFT })
+  @Column({
+    type: 'enum',
+    enum: CampaignStatusEnum,
+    default: CampaignStatusEnum.DRAFT,
+  })
   status: CampaignStatusEnum;
 
-  @Column({ type: 'enum', enum: CampaignTypeEnum, default: CampaignTypeEnum.IMMEDIATE })
+  @Column({
+    type: 'enum',
+    enum: CampaignTypeEnum,
+    default: CampaignTypeEnum.IMMEDIATE,
+  })
   type: CampaignTypeEnum;
 
-  @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
+  @Column({
+    type: 'bigint',
+    transformer: new BigintTransformer(),
+    nullable: true,
+  })
   group_id: number | null;
 
   @ManyToOne(
@@ -65,7 +61,11 @@ export class SmsCampaignEntity extends BaseEntity {
   @JoinColumn({ name: 'group_id' })
   group: SmsGroupEntity;
 
-  @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
+  @Column({
+    type: 'bigint',
+    transformer: new BigintTransformer(),
+    nullable: true,
+  })
   template_id: number | null;
 
   @ManyToOne(

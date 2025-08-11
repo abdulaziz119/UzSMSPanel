@@ -7,13 +7,7 @@ import {
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { MessageTypeEnum } from './sms-price.entity';
-
-export enum TemplateStatusEnum {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  PENDING_APPROVAL = 'pending_approval',
-  REJECTED = 'rejected',
-}
+import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_templates' })
 @Index(['user_id', 'status'])
@@ -22,11 +16,7 @@ export class SmsTemplateEntity extends BaseEntity {
   @Column({ type: 'bigint', transformer: new BigintTransformer() })
   user_id: number;
 
-  @ManyToOne(
-    () => UserEntity,
-    (entity) => entity,
-    cascadeUpdateRelationOptions,
-  )
+  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -42,7 +32,11 @@ export class SmsTemplateEntity extends BaseEntity {
   @Column({ type: 'enum', enum: MessageTypeEnum, default: MessageTypeEnum.SMS })
   message_type: MessageTypeEnum;
 
-  @Column({ type: 'enum', enum: TemplateStatusEnum, default: TemplateStatusEnum.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: TemplateStatusEnum,
+    default: TemplateStatusEnum.ACTIVE,
+  })
   status: TemplateStatusEnum;
 
   @Column({ type: 'text', nullable: true })

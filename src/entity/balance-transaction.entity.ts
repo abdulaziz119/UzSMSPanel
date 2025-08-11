@@ -6,32 +6,11 @@ import {
 } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
-
-export enum TransactionTypeEnum {
-  DEPOSIT = 'deposit',
-  WITHDRAWAL = 'withdrawal',
-  SMS_PAYMENT = 'sms_payment',
-  REFUND = 'refund',
-  BONUS = 'bonus',
-  PENALTY = 'penalty',
-}
-
-export enum TransactionStatusEnum {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
-}
-
-export enum PaymentMethodEnum {
-  CLICK = 'click',
-  PAYME = 'payme',
-  UZCARD = 'uzcard',
-  HUMO = 'humo',
-  BANK_TRANSFER = 'bank_transfer',
-  CASH = 'cash',
-  SYSTEM = 'system',
-}
+import {
+  PaymentMethodEnum,
+  TransactionStatusEnum,
+  TransactionTypeEnum,
+} from 'src/utils/enum/balance-transaction.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'balance_transactions' })
 @Index(['user_id', 'type', 'status'])
@@ -41,11 +20,7 @@ export class BalanceTransactionEntity extends BaseEntity {
   @Column({ type: 'bigint', transformer: new BigintTransformer() })
   user_id: number;
 
-  @ManyToOne(
-    () => UserEntity,
-    (entity) => entity,
-    cascadeUpdateRelationOptions,
-  )
+  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -55,7 +30,11 @@ export class BalanceTransactionEntity extends BaseEntity {
   @Column({ type: 'enum', enum: TransactionTypeEnum })
   type: TransactionTypeEnum;
 
-  @Column({ type: 'enum', enum: TransactionStatusEnum, default: TransactionStatusEnum.PENDING })
+  @Column({
+    type: 'enum',
+    enum: TransactionStatusEnum,
+    default: TransactionStatusEnum.PENDING,
+  })
   status: TransactionStatusEnum;
 
   @Column({ type: 'decimal', precision: 15, scale: 2 })

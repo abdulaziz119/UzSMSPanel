@@ -1,20 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
-
-export enum OperatorEnum {
-  UCELL = 'ucell',
-  BEELINE = 'beeline',
-  UMS = 'ums',
-  HUMANS = 'humans',
-  PERFECTUM = 'perfectum',
-}
-
-export enum MessageTypeEnum {
-  SMS = 'sms',
-  FLASH = 'flash',
-  UNICODE = 'unicode',
-}
+import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_prices' })
 @Index(['operator', 'message_type', 'active'])

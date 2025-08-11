@@ -7,12 +7,7 @@ import {
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { language } from '../utils/enum/user.enum';
-
-export enum ContactStatusEnum {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  BLOCKED = 'blocked',
-}
+import { ContactStatusEnum } from '../utils/enum/contact.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'contacts' })
 @Index(['user_id', 'status'])
@@ -21,15 +16,15 @@ export class ContactEntity extends BaseEntity {
   @Column({ type: 'bigint', transformer: new BigintTransformer() })
   user_id: number;
 
-  @ManyToOne(
-    () => UserEntity,
-    (entity) => entity,
-    cascadeUpdateRelationOptions,
-  )
+  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @Column({ type: 'enum', enum: ContactStatusEnum, default: ContactStatusEnum.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: ContactStatusEnum,
+    default: ContactStatusEnum.ACTIVE,
+  })
   status: ContactStatusEnum;
 
   @Column({ type: 'varchar', nullable: true })
