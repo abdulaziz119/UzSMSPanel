@@ -1,6 +1,7 @@
 export enum language {
   UZ = 'uz',
   RU = 'ru',
+  EN = 'en',
 }
 
 export enum UserRoleEnum {
