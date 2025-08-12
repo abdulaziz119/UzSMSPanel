@@ -20,6 +20,7 @@ import { SmsPriceEntity } from '../entity/sms-price.entity';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { UserEntity } from '../entity/user.entity';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
+import { FileEntity } from '../entity/file.entity';
 
 export const databaseProviders = [
   {
@@ -47,6 +48,7 @@ export const databaseProviders = [
           SmsTemplateEntity,
           TariffEntity,
           UserEntity,
+          FileEntity,
         ],
         // extra: {
         //   timezone: 'UTC',

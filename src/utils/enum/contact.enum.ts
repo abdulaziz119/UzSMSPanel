@@ -3,3 +3,8 @@ export enum ContactStatusEnum {
   INACTIVE = 'inactive',
   BLOCKED = 'blocked',
 }
+
+export enum ContactTypeEnum {
+  INDIVIDUAL = 'individual',
+  COMPANY = 'company',
+}

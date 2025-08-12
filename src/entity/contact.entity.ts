@@ -7,7 +7,7 @@ import {
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { language } from '../utils/enum/user.enum';
-import { ContactStatusEnum } from '../utils/enum/contact.enum';
+import { ContactStatusEnum, ContactTypeEnum } from '../utils/enum/contact.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'contacts' })
 @Index(['user_id', 'status'])
@@ -26,6 +26,13 @@ export class ContactEntity extends BaseEntity {
     default: ContactStatusEnum.ACTIVE,
   })
   status: ContactStatusEnum;
+
+  @Column({
+    type: 'enum',
+    enum: ContactTypeEnum,
+    default: ContactTypeEnum.INDIVIDUAL,
+  })
+  type: ContactTypeEnum;
 
   @Column({ type: 'varchar', nullable: true })
   name: string | null;
@@ -61,8 +68,14 @@ export class ContactEntity extends BaseEntity {
   @Column({ type: 'date', nullable: true })
   passport_expiration_date: Date | null;
 
+  @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
+  passport_file_id: number | null;
+
   @Column({ type: 'text', nullable: true })
   address: string | null;
+
+  @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
+  address_file_id: number | null;
 
   @Column({ type: 'varchar', nullable: true })
   company_name: string | null;

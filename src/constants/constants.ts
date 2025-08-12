@@ -13,4 +13,5 @@ export const MODELS = {
   SMS_PRICE: 'SMS_PRICE',
   SMS_TEMPLATE: 'SMS_TEMPLATE',
   TARIFFS: 'TARIFFS',
+  FILE: 'FILE',
 };
