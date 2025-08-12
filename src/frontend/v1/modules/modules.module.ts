@@ -7,6 +7,8 @@ import { UserModule } from './user/user.module';
 import { SmsGroupModule } from './sms-group/sms-group.module';
 import { SmsContactModule } from './sms-contact/sms-contact.module';
 import { SmsTemplateModule } from './sms-template/sms-template.module';
+import { SmsSenderModule } from './sms-sender/sms-sender.module';
+import { SenderPriceModule } from './sender-price/sender-price.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { SmsTemplateModule } from './sms-template/sms-template.module';
     SmsGroupModule,
     SmsContactModule,
     SmsTemplateModule,
+  SmsSenderModule,
+  SenderPriceModule,
   ],
 })
 export class ModulesFrontendModule {}

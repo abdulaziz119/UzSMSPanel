@@ -32,7 +32,7 @@ export class SmsTemplateService {
       const newSmsTemplate: SmsTemplateEntity = this.smsTemplateRepo.create({
         name: payload.name,
         content: payload.content,
-        sender: payload.sender || null,
+  sender_id: payload.sender_id || null,
         description: payload.description || null,
         variables: payload.variables || null,
         user_id: user_id,
@@ -63,6 +63,7 @@ export class SmsTemplateService {
       const queryBuilder = this.smsTemplateRepo
         .createQueryBuilder('sms_templates')
         .leftJoinAndSelect('sms_templates.user', 'user')
+        .leftJoinAndSelect('sms_templates.sender', 'sender')
         .where('sms_templates.id IS NOT NULL');
 
       const [smsTemplateData, total] = await queryBuilder
@@ -90,7 +91,7 @@ export class SmsTemplateService {
   ): Promise<SingleResponse<SmsTemplateEntity>> {
     const smsTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne({
       where: { id: payload.id },
-      relations: ['user'],
+      relations: ['user', 'sender'],
     });
 
     if (!smsTemplate) {
@@ -116,7 +117,7 @@ export class SmsTemplateService {
       await this.smsTemplateRepo.update(updateData.id, updateData);
       const updatedSmsTemplate = await this.smsTemplateRepo.findOne({
         where: { id: updateData.id },
-        relations: ['user'],
+        relations: ['user', 'sender'],
       });
       return { result: updatedSmsTemplate };
     } catch (error) {

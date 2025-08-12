@@ -21,6 +21,8 @@ import { TariffEntity } from '../entity/tariffs.entity';
 import { UserEntity } from '../entity/user.entity';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { FileEntity } from '../entity/file.entity';
+import { SmsSenderEntity } from '../entity/sms-sender.entity';
+import { SenderPriceEntity } from '../entity/sender-price.entity';
 
 export const databaseProviders = [
   {
@@ -46,6 +48,8 @@ export const databaseProviders = [
           SmsGroupEntity,
           SmsPriceEntity,
           SmsTemplateEntity,
+          SmsSenderEntity,
+          SenderPriceEntity,
           TariffEntity,
           UserEntity,
           FileEntity,

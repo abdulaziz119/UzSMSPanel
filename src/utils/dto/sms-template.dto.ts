@@ -1,14 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsDefined,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Length,
-  IsEnum,
-  IsArray,
-  IsNumber,
-} from 'class-validator';
+import { IsDefined, IsNotEmpty, IsOptional, IsString, Length, IsEnum, IsArray, IsNumber } from 'class-validator';
 import { TemplateStatusEnum } from '../enum/sms-template.enum';
 
 export class CreateSmsTemplateDto {
@@ -26,14 +17,10 @@ export class CreateSmsTemplateDto {
   @IsNotEmpty()
   content: string;
 
-  @ApiPropertyOptional({
-    example: 'UzSMS',
-    description: 'SMS sender name',
-  })
-  @IsString()
+  @ApiPropertyOptional({ example: 1, description: 'Sender ID (nik) bog\'lanadi)' })
+  @IsNumber()
   @IsOptional()
-  @Length(1, 20)
-  sender?: string;
+  sender_id?: number;
 
   @ApiPropertyOptional({
     example: 'Welcome message template for new users',
@@ -75,14 +62,10 @@ export class UpdateSmsTemplateDto {
   @IsOptional()
   content?: string;
 
-  @ApiPropertyOptional({
-    example: 'UzSMS',
-    description: 'SMS sender name',
-  })
-  @IsString()
+  @ApiPropertyOptional({ example: 1, description: 'Sender ID' })
+  @IsNumber()
   @IsOptional()
-  @Length(1, 20)
-  sender?: string;
+  sender_id?: number;
 
   @ApiPropertyOptional({
     enum: TemplateStatusEnum,
