@@ -1,16 +1,38 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  Get,
+  Put,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiBadRequestResponse,
+  ApiOperation,
+} from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
-import { SingleResponse } from '../../../../utils/dto/dto';
+import {
+  SingleResponse,
+  PaginationParams,
+  ParamIdDto,
+} from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
+import { SmsGroupEntity } from '../../../../entity/sms-group.entity';
 import { User } from '../auth/decorators/user.decorator';
 import { SmsGroupService } from '../../../../service/sms-group.service';
-import { SmsGroupEntity } from '../../../../entity/sms-group.entity';
+import {
+  CreateSmsGroupDto,
+  UpdateSmsGroupDto,
+} from '../../../../utils/dto/sms-group.dto';
+import { PaginationResponse } from '../../../../utils/pagination.response';
 
 @ApiBearerAuth()
-@ApiTags('Sms Group')
+@ApiTags('frontend-sms-group')
 @Controller({ path: '/frontend/sms-group', version: '1' })
 export class SmsGroupController {
   constructor(private readonly smsGroupService: SmsGroupService) {}
@@ -18,12 +40,56 @@ export class SmsGroupController {
   @Post('/create')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.CLIENT)
+  @ApiOperation({ summary: 'Create SMS group' })
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
   @Auth(false)
   async create(
     @Body() body: CreateSmsGroupDto,
     @User('id') user_id: number,
   ): Promise<SingleResponse<SmsGroupEntity>> {
     return await this.smsGroupService.create(body, user_id);
+  }
+
+  @Post('/findAll')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @ApiOperation({ summary: 'Get all SMS groups' })
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findAll(
+    @Body() query: PaginationParams,
+  ): Promise<PaginationResponse<SmsGroupEntity[]>> {
+    return await this.smsGroupService.findAll(query);
+  }
+
+  @Get('/findOne')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @ApiOperation({ summary: 'Get SMS group by ID' })
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findOne(
+    @Body() param: ParamIdDto,
+  ): Promise<SingleResponse<SmsGroupEntity>> {
+    return await this.smsGroupService.findOne(param);
+  }
+
+  @Put('/update')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @ApiOperation({ summary: 'Update SMS group by ID' })
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Auth(false)
+  async update(
+    @Body() body: UpdateSmsGroupDto,
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<SmsGroupEntity>> {
+    return await this.smsGroupService.update(body, user_id);
+  }
+
+  @Delete('/delete')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @ApiOperation({ summary: 'Delete SMS group by ID' })
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Auth(false)
+  async delete(@Body() param: ParamIdDto): Promise<{ result: true }> {
+    return await this.smsGroupService.delete(param);
   }
 }

@@ -11,6 +11,10 @@ import { PaginationParams, ParamIdDto, SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { SmsGroupEntity } from '../entity/sms-group.entity';
+import {
+  CreateSmsGroupDto,
+  UpdateSmsGroupDto,
+} from '../utils/dto/sms-group.dto';
 
 @Injectable()
 export class SmsGroupService {
@@ -24,10 +28,15 @@ export class SmsGroupService {
     user_id: number,
   ): Promise<SingleResponse<SmsGroupEntity>> {
     try {
-      const newOrder: SmsGroupEntity = this.smsGroupRepo.create({});
+      const newSmsGroup: SmsGroupEntity = this.smsGroupRepo.create({
+        title: payload.title,
+        user_id: user_id,
+        contact_count: 0,
+      });
 
-      const savedOrder: SmsGroupEntity = await this.smsGroupRepo.save(newOrder);
-      return { result: savedOrder };
+      const savedSmsGroup: SmsGroupEntity =
+        await this.smsGroupRepo.save(newSmsGroup);
+      return { result: savedSmsGroup };
     } catch (error) {
       throw new HttpException(
         { message: 'Error creating Sms Group', error: error.message },
@@ -40,43 +49,72 @@ export class SmsGroupService {
     payload: PaginationParams,
   ): Promise<PaginationResponse<SmsGroupEntity[]>> {
     const { page = 1, limit = 10 } = payload;
-    const skip = (page - 1) * limit;
+    const skip: number = (page - 1) * limit;
 
     try {
       const queryBuilder = this.smsGroupRepo
-        .createQueryBuilder('orders')
-        .where('orders.id IS NOT NULL');
+        .createQueryBuilder('sms_groups')
+        .leftJoinAndSelect('sms_groups.user', 'user')
+        .where('sms_groups.id IS NOT NULL');
 
-      const [orderData, total] = await queryBuilder
+      const [smsGroupData, total] = await queryBuilder
         .skip(skip)
         .take(limit)
-        .orderBy('orders.created_at', 'DESC')
+        .orderBy('sms_groups.created_at', 'DESC')
         .getManyAndCount();
 
       return getPaginationResponse<SmsGroupEntity>(
-        orderData,
+        smsGroupData,
         page,
         limit,
         total,
       );
     } catch (error) {
       throw new HttpException(
-        { message: 'Error fetching orders', error: error.message },
+        { message: 'Error fetching SMS Groups', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
   async findOne(payload: ParamIdDto): Promise<SingleResponse<SmsGroupEntity>> {
-    const order: SmsGroupEntity = await this.smsGroupRepo.findOne({
+    const smsGroup: SmsGroupEntity = await this.smsGroupRepo.findOne({
       where: { id: payload.id },
+      relations: ['user'],
     });
 
-    if (!order) {
+    if (!smsGroup) {
       throw new NotFoundException('Sms Group not found');
     }
 
-    return { result: order };
+    return { result: smsGroup };
+  }
+
+  async update(
+    updateData: UpdateSmsGroupDto,
+    user_id: number,
+  ): Promise<SingleResponse<SmsGroupEntity>> {
+    const smsGroup = await this.smsGroupRepo.findOne({
+      where: { id: updateData.id, user_id: user_id },
+    });
+
+    if (!smsGroup) {
+      throw new NotFoundException('Sms Group not found');
+    }
+
+    try {
+      await this.smsGroupRepo.update(updateData.id, updateData);
+      const updatedSmsGroup = await this.smsGroupRepo.findOne({
+        where: { id: updateData.id },
+        relations: ['user'],
+      });
+      return { result: updatedSmsGroup };
+    } catch (error) {
+      throw new HttpException(
+        { message: 'Error updating Sms Group', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   async delete(payload: ParamIdDto): Promise<{ result: true }> {

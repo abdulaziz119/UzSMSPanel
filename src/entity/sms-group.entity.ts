@@ -20,9 +20,6 @@ export class SmsGroupEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   title: string | null;
 
-  @Column({ type: 'varchar', length: 8, nullable: true })
-  phone_ext: string | null;
-
   @Column({ type: 'integer', nullable: true, default: 0 })
   contact_count: number | null;
 
