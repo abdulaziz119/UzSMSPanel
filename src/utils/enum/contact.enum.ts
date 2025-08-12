@@ -7,4 +7,5 @@ export enum ContactStatusEnum {
 export enum ContactTypeEnum {
   INDIVIDUAL = 'individual',
   COMPANY = 'company',
+  BOTH = 'both',
 }

@@ -40,7 +40,7 @@ import { FileCategory } from '../../../../utils/enum/file.enum';
 
 @ApiBearerAuth()
 @ApiTags('File')
-@Controller('/dashboard/file')
+@Controller('/frontend/file')
 export class FileController {
   constructor(private readonly fileService: FileService) {}
 
