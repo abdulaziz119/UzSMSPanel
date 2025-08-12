@@ -3,8 +3,10 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { DASHBOARD_PORT } from '../utils/env/env';
+import { DASHBOARD_PORT, MEDIA_DIRECTORY } from '../utils/env/env';
 import { ModulesDashboardModule } from './v1/modules/modules.module';
+import * as express from 'express';
+import * as path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
@@ -30,6 +32,11 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+
+  app.use(
+    `/${MEDIA_DIRECTORY}`,
+    express.static(path.resolve(process.cwd(), MEDIA_DIRECTORY)),
+  );
 
   app.setGlobalPrefix('api');
   const document = SwaggerModule.createDocument(app, options);

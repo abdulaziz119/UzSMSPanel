@@ -4,8 +4,10 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
-import { FRONTEND_PORT } from '../utils/env/env';
+import * as express from 'express';
+import { FRONTEND_PORT, MEDIA_DIRECTORY } from '../utils/env/env';
 import { ModulesFrontendModule } from './v1/modules/modules.module';
+import * as path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
@@ -33,6 +35,11 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+
+  app.use(
+    `/${MEDIA_DIRECTORY}`,
+    express.static(path.resolve(process.cwd(), MEDIA_DIRECTORY)),
+  );
 
   app.setGlobalPrefix('api');
   const document = SwaggerModule.createDocument(app, options);
