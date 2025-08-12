@@ -11,7 +11,10 @@ import { PaginationParams, ParamIdDto, SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
-import { CreateSmsContactDto, UpdateSmsContactDto } from '../utils/dto/sms-contact.dto';
+import {
+  CreateSmsContactDto,
+  UpdateSmsContactDto,
+} from '../utils/dto/sms-contact.dto';
 
 @Injectable()
 export class SmsContactService {
@@ -31,7 +34,8 @@ export class SmsContactService {
         group_id: payload.group_id,
       });
 
-      const savedSmsContact: SmsContactEntity = await this.smsContactRepo.save(newSmsContact);
+      const savedSmsContact: SmsContactEntity =
+        await this.smsContactRepo.save(newSmsContact);
       return { result: savedSmsContact };
     } catch (error) {
       throw new HttpException(
@@ -50,7 +54,6 @@ export class SmsContactService {
     try {
       const queryBuilder = this.smsContactRepo
         .createQueryBuilder('sms_contacts')
-        .leftJoinAndSelect('sms_contacts.smsGroup', 'smsGroup')
         .where('sms_contacts.id IS NOT NULL')
         .addSelect(['sms_contacts.phone']); // Explicitly select phone field
 
@@ -74,7 +77,9 @@ export class SmsContactService {
     }
   }
 
-  async findOne(payload: ParamIdDto): Promise<SingleResponse<SmsContactEntity>> {
+  async findOne(
+    payload: ParamIdDto,
+  ): Promise<SingleResponse<SmsContactEntity>> {
     const smsContact: SmsContactEntity = await this.smsContactRepo.findOne({
       where: { id: payload.id },
       relations: ['smsGroup'],
@@ -91,7 +96,7 @@ export class SmsContactService {
     payload: UpdateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {
     const { id, ...updateData } = payload as any;
-    
+
     const smsContact = await this.smsContactRepo.findOne({
       where: { id: id },
     });
