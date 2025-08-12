@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import {
   BaseEntity,
   BigintTransformer,
@@ -8,9 +8,13 @@ import { DB_SCHEMA } from '../utils/env/env';
 import { SmsGroupEntity } from './sms-group.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_contacts' })
+@Index(['phone'])
 export class SmsContactEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   name: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: false })
+  phone: string;
 
   @Column({ type: 'varchar', nullable: true })
   group_name: string | null;
