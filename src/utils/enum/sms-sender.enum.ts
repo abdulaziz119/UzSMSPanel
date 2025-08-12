@@ -7,5 +7,4 @@ export enum SenderStatusEnum {
 
 export enum PricePeriodicityEnum {
   MONTHLY = 'monthly',
-  ONE_TIME = 'one_time',
 }

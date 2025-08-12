@@ -22,8 +22,7 @@ export class SmsSenderService {
         description: payload.description ?? null,
         links: payload.links ?? null,
         operator: payload.operator ?? null,
-        monthly_price: payload.monthly_price ?? 0,
-        one_time_price: payload.one_time_price ?? 0,
+  monthly_price: payload.monthly_price ?? 0,
       });
       const saved = await this.smsSenderRepo.save(entity);
       return { result: saved };

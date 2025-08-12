@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDefined, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Length } from 'class-validator';
+import { IsDefined, IsEnum, IsNumber, IsOptional, IsString, Length } from 'class-validator';
 import { SenderStatusEnum } from '../enum/sms-sender.enum';
 import { OperatorEnum } from '../enum/sms-price.enum';
 
@@ -27,10 +27,6 @@ export class CreateSmsSenderDto {
   @ApiPropertyOptional({ example: 250000, description: "Oylik abon to'lov (so'm)" })
   @IsOptional()
   monthly_price?: number;
-
-  @ApiPropertyOptional({ example: 600000, description: "Bir martalik to'lov (so'm)" })
-  @IsOptional()
-  one_time_price?: number;
 }
 
 export class UpdateSmsSenderDto {
@@ -68,8 +64,4 @@ export class UpdateSmsSenderDto {
   @ApiPropertyOptional()
   @IsOptional()
   monthly_price?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  one_time_price?: number;
 }
