@@ -40,8 +40,7 @@ export class SmsGroupController {
   @Post('/create')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @ApiOperation({ summary: 'Create SMS group' })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async create(
     @Body() body: CreateSmsGroupDto,
@@ -52,8 +51,7 @@ export class SmsGroupController {
 
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @ApiOperation({ summary: 'Get all SMS groups' })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async findAll(
     @Body() query: PaginationParams,
@@ -63,8 +61,7 @@ export class SmsGroupController {
 
   @Post('/findOne')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @ApiOperation({ summary: 'Get SMS group by ID' })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async findOne(
     @Body() param: ParamIdDto,
@@ -74,8 +71,7 @@ export class SmsGroupController {
 
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @ApiOperation({ summary: 'Update SMS group by ID' })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async update(
     @Body() body: UpdateSmsGroupDto,
@@ -86,8 +82,7 @@ export class SmsGroupController {
 
   @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @ApiOperation({ summary: 'Delete SMS group by ID' })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
+  @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async delete(@Body() param: ParamIdDto): Promise<{ result: true }> {
     return await this.smsGroupService.delete(param);

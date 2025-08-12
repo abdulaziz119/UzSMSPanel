@@ -27,7 +27,6 @@ export class ContactController {
   @Post('/create/individual')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @ApiOperation({ summary: 'Create individual contact' })
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async createIndividual(
@@ -40,7 +39,6 @@ export class ContactController {
   @Post('/create/company')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @ApiOperation({ summary: 'Create company contact' })
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async createCompany(
