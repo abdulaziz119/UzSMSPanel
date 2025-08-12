@@ -29,9 +29,6 @@ export class SmsTemplateEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 20, nullable: true })
   sender: string | null;
 
-  @Column({ type: 'enum', enum: MessageTypeEnum, default: MessageTypeEnum.SMS })
-  message_type: MessageTypeEnum;
-
   @Column({
     type: 'enum',
     enum: TemplateStatusEnum,

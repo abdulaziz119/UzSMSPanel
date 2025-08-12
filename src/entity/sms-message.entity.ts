@@ -82,8 +82,5 @@ export class SmsMessageEntity extends BaseEntity {
   external_id: string | null;
 
   @Column({ type: 'json', nullable: true })
-  delivery_report: any;
-
-  @Column({ type: 'varchar', length: 45, nullable: true })
-  ip_address: string | null;
+  delivery_report: any | null;
 }
