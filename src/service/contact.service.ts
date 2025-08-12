@@ -12,7 +12,6 @@ import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { ContactEntity } from '../entity/contact.entity';
 import {
-  CreateContactDto,
   CreateIndividualContactDto,
   CreateCompanyContactDto,
 } from '../utils/dto/contact.dto';
@@ -39,6 +38,17 @@ export class ContactService {
 
       if (!userData) {
         throw new NotFoundException('User not found');
+      }
+
+      const contactData: ContactEntity = await this.contactRepo.findOne({
+        where: { id: user_id, type: ContactTypeEnum.INDIVIDUAL },
+      });
+
+      if (contactData) {
+        throw new HttpException(
+          { message: 'Contact already exists' },
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       const newContact: ContactEntity = this.contactRepo.create({
@@ -79,6 +89,17 @@ export class ContactService {
         throw new NotFoundException('User not found');
       }
 
+      const contactData: ContactEntity = await this.contactRepo.findOne({
+        where: { id: user_id, type: ContactTypeEnum.COMPANY },
+      });
+
+      if (contactData) {
+        throw new HttpException(
+          { message: 'Contact already exists' },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const newContact: ContactEntity = this.contactRepo.create({
         ...payload,
         user_id,
@@ -109,7 +130,7 @@ export class ContactService {
     payload: PaginationParams,
   ): Promise<PaginationResponse<ContactEntity[]>> {
     const { page = 1, limit = 10 } = payload;
-    const skip = (page - 1) * limit;
+    const skip: number = (page - 1) * limit;
 
     try {
       const queryBuilder = this.contactRepo
