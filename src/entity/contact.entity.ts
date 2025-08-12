@@ -8,6 +8,7 @@ import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { language } from '../utils/enum/user.enum';
 import { ContactStatusEnum, ContactTypeEnum } from '../utils/enum/contact.enum';
+import { FileEntity } from './file.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'contacts' })
 @Index(['user_id', 'status'])
@@ -68,11 +69,19 @@ export class ContactEntity extends BaseEntity {
   @Column({ type: 'date', nullable: true })
   passport_expiration_date: Date | null;
 
+  @ManyToOne(() => FileEntity)
+  @JoinColumn({ name: 'passport_file_id' })
+  passport_file: FileEntity;
+
   @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
   passport_file_id: number | null;
 
   @Column({ type: 'text', nullable: true })
   address: string | null;
+
+  @ManyToOne(() => FileEntity)
+  @JoinColumn({ name: 'address_file_id' })
+  address_file: FileEntity;
 
   @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
   address_file_id: number | null;

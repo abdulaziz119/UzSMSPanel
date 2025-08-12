@@ -18,9 +18,22 @@ export class UserService {
   private async getUserProfile(
     user_id: number,
   ): Promise<SingleResponse<UserEntity>> {
-    const user: UserEntity = await this.userRepo.findOne({
-      where: { id: user_id },
-    });
+    const user: UserEntity = await this.userRepo
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.contact', 'contact')
+      .leftJoinAndSelect('contact.address_file', 'address_file')
+      .leftJoinAndSelect('contact.passport_file', 'passport_file')
+      .where('user.id = :user_id', { user_id })
+      .select([
+        'user',
+        'contact',
+        'address_file.id',
+        'address_file.public_url',
+        'passport_file.id',
+        'passport_file.public_url',
+      ])
+      .addSelect('user.refreshToken')
+      .getOne();
 
     if (!user) {
       throw new NotFoundException('User not found');

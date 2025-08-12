@@ -1,8 +1,9 @@
-import { Entity, Column, Index, OneToMany, Unique } from 'typeorm';
+import { Entity, Column, Index, OneToMany, Unique, OneToOne } from 'typeorm';
 import { DB_SCHEMA } from '../utils/env/env';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
 import { SmsGroupEntity } from './sms-group.entity';
+import { ContactEntity } from './contact.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'users' })
 @Unique(['login'])
@@ -55,6 +56,9 @@ export class UserEntity extends BaseEntity {
 
   @Column({ select: false, nullable: true })
   login: string | null;
+
+  @OneToOne(() => ContactEntity, (entity) => entity.user)
+  contact: ContactEntity;
 
   @OneToMany(
     () => SmsGroupEntity,
