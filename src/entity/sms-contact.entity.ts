@@ -17,7 +17,7 @@ export class SmsContactEntity extends BaseEntity {
   @Column({
     type: 'enum',
     enum: SMSContactStatusEnum,
-    default: SMSContactStatusEnum.APPROVED,
+    default: SMSContactStatusEnum.ACTIVE,
   })
   status: SMSContactStatusEnum;
 

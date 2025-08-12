@@ -5,7 +5,9 @@ import {
   IsString,
   IsNumber,
   Length,
+  IsEnum,
 } from 'class-validator';
+import { SMSContactStatusEnum } from '../enum/sms-contact.enum';
 
 export class CreateSmsContactDto {
   @ApiProperty({ example: 'John Doe', description: 'SMS contact name' })
@@ -13,10 +15,11 @@ export class CreateSmsContactDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ 
-    example: '998901234567', 
-    description: 'Phone number (max 20 characters)',
-    maxLength: 20
+  @ApiProperty({
+    example: '998901234567',
+    description:
+      'Phone number (max 20 characters) - Status will be determined automatically by backend',
+    maxLength: 20,
   })
   @IsString()
   @IsNotEmpty()
@@ -45,10 +48,20 @@ export class UpdateSmsContactDto {
   @IsOptional()
   name?: string;
 
-  @ApiPropertyOptional({ 
-    example: '998901234567', 
+  @ApiPropertyOptional({
+    enum: SMSContactStatusEnum,
+    example: SMSContactStatusEnum.ACTIVE,
+    description:
+      'Contact status: approved (tasdiqlangan), invalid_format (hech bir davlatga tegishli bolmagani), banned_number (taqiqlangan raqamlar)',
+  })
+  @IsEnum(SMSContactStatusEnum)
+  @IsOptional()
+  status?: SMSContactStatusEnum;
+
+  @ApiPropertyOptional({
+    example: '998901234567',
     description: 'Phone number (max 20 characters)',
-    maxLength: 20
+    maxLength: 20,
   })
   @IsString()
   @IsOptional()
