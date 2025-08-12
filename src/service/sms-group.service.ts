@@ -54,7 +54,6 @@ export class SmsGroupService {
     try {
       const queryBuilder = this.smsGroupRepo
         .createQueryBuilder('sms_groups')
-        .leftJoinAndSelect('sms_groups.user', 'user')
         .where('sms_groups.id IS NOT NULL');
 
       const [smsGroupData, total] = await queryBuilder
