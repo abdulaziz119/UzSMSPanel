@@ -20,8 +20,6 @@ export class UserService {
   ): Promise<SingleResponse<UserEntity>> {
     const user: UserEntity = await this.userRepo.findOne({
       where: { id: user_id },
-      relations: ['file'],
-      select: {},
     });
 
     if (!user) {
