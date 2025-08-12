@@ -8,6 +8,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { SMSContactStatusEnum } from '../enum/sms-contact.enum';
+import { PaginationParams } from './dto';
 
 export class CreateSmsContactDto {
   @ApiProperty({ example: 'John Doe', description: 'SMS contact name' })
@@ -77,4 +78,21 @@ export class UpdateSmsContactDto {
   @IsNumber()
   @IsOptional()
   group_id?: number;
+}
+
+export class SmsContactFindAllDto extends PaginationParams {
+  @ApiPropertyOptional({ example: '99890', description: 'Filter by phone (partial is ok)' })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiPropertyOptional({ enum: SMSContactStatusEnum, example: SMSContactStatusEnum.ACTIVE })
+  @IsEnum(SMSContactStatusEnum)
+  @IsOptional()
+  status?: SMSContactStatusEnum;
+
+  @ApiPropertyOptional({ example: 'John', description: 'Filter by name (partial match)' })
+  @IsString()
+  @IsOptional()
+  name?: string;
 }

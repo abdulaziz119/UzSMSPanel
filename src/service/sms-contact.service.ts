@@ -8,13 +8,14 @@ import {
 import { Repository } from 'typeorm';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { MODELS } from '../constants/constants';
-import { PaginationParams, ParamIdDto, SingleResponse } from '../utils/dto/dto';
+import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
 import {
   CreateSmsContactDto,
   UpdateSmsContactDto,
+  SmsContactFindAllDto,
 } from '../utils/dto/sms-contact.dto';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 
@@ -89,16 +90,30 @@ export class SmsContactService {
   }
 
   async findAll(
-    payload: PaginationParams,
+    payload: SmsContactFindAllDto,
   ): Promise<PaginationResponse<SmsContactEntity[]>> {
-    const { page = 1, limit = 10 } = payload;
+    const { page = 1, limit = 10, phone, status, name } = payload;
     const skip = (page - 1) * limit;
 
     try {
       const queryBuilder = this.smsContactRepo
         .createQueryBuilder('sms_contacts')
         .where('sms_contacts.id IS NOT NULL')
-        .addSelect(['sms_contacts.phone']); // Explicitly select phone field
+        .addSelect(['sms_contacts.phone']);
+
+      if (phone) {
+        queryBuilder.andWhere('sms_contacts.phone ILIKE :phone', {
+          phone: `%${phone}%`,
+        });
+      }
+      if (status) {
+        queryBuilder.andWhere('sms_contacts.status = :status', { status });
+      }
+      if (name) {
+        queryBuilder.andWhere('sms_contacts.name ILIKE :name', {
+          name: `%${name}%`,
+        });
+      }
 
       const [smsContactData, total] = await queryBuilder
         .skip(skip)
@@ -150,6 +165,7 @@ export class SmsContactService {
     try {
       if (updateData.phone) {
         updateData.status = this.validatePhoneNumber(updateData.phone);
+  updateData.phone = this.normalizePhone(updateData.phone);
       }
 
       await this.smsContactRepo.update(id, updateData);

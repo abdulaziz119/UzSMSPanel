@@ -46,15 +46,15 @@ export class SmsGroupController {
     return await this.smsGroupService.findAll(query);
   }
 
-  @Post('/findOne')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
-  async findOne(
-    @Body() param: ParamIdDto,
-  ): Promise<SingleResponse<SmsGroupEntity>> {
-    return await this.smsGroupService.findOne(param);
-  }
+  // @Post('/findOne')
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.CLIENT)
+  // @Auth(false)
+  // async findOne(
+  //   @Body() param: ParamIdDto,
+  // ): Promise<SingleResponse<SmsGroupEntity>> {
+  //   return await this.smsGroupService.findOne(param);
+  // }
 
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
