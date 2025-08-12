@@ -2,8 +2,8 @@ import {
   Inject,
   Injectable,
   HttpException,
-  HttpStatus,
   NotFoundException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
@@ -30,15 +30,12 @@ export class SmsContactService {
    */
   private validatePhoneNumber(phone: string): SMSContactStatusEnum {
     const cleanPhone = (phone || '').toString().trim();
-    // Quick banned check on raw input (simple heuristic); extend as needed
     const bannedPatterns = [/666/, /999/, /000{3,}/];
     if (bannedPatterns.some((p) => p.test(cleanPhone))) {
       return SMSContactStatusEnum.BANNED_NUMBER;
     }
 
     try {
-      // Try parsing assuming it includes country code. If not, fallback to UZ as a default region.
-      // You may inject default region from env if needed.
       let parsed = parsePhoneNumberFromString(cleanPhone);
       if (!parsed) {
         parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
@@ -59,7 +56,7 @@ export class SmsContactService {
       let parsed = parsePhoneNumberFromString(phone);
       if (!parsed) parsed = parsePhoneNumberFromString(phone, 'UZ');
       if (parsed && parsed.isValid()) {
-        return parsed.number; // E.164 format
+        return parsed.number;
       }
     } catch {}
     return phone;
@@ -128,7 +125,6 @@ export class SmsContactService {
   ): Promise<SingleResponse<SmsContactEntity>> {
     const smsContact: SmsContactEntity = await this.smsContactRepo.findOne({
       where: { id: payload.id },
-      relations: ['smsGroup'],
     });
 
     if (!smsContact) {
@@ -152,16 +148,13 @@ export class SmsContactService {
     }
 
     try {
-      // If phone number is being updated, re-validate and set new status
       if (updateData.phone) {
         updateData.status = this.validatePhoneNumber(updateData.phone);
-        updateData.phone = this.normalizePhone(updateData.phone);
       }
 
       await this.smsContactRepo.update(id, updateData);
       const updatedSmsContact = await this.smsContactRepo.findOne({
         where: { id: id },
-        relations: ['smsGroup'],
       });
       return { result: updatedSmsContact };
     } catch (error) {
