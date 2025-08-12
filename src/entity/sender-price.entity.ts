@@ -16,10 +16,6 @@ export class SenderPriceEntity extends BaseEntity {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   monthly_fee: number;
 
-  // bir martalik
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
-  one_time_fee: number;
-
   @Column({ type: 'varchar', length: 10, default: 'UZS' })
   currency: string;
 

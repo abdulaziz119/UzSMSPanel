@@ -1,5 +1,9 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import { BaseEntity, BigintTransformer, cascadeUpdateRelationOptions } from './base.entity';
+import {
+  BaseEntity,
+  BigintTransformer,
+  cascadeUpdateRelationOptions,
+} from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { SenderStatusEnum } from '../utils/enum/sms-sender.enum';
@@ -20,7 +24,11 @@ export class SmsSenderEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 20 })
   name: string;
 
-  @Column({ type: 'enum', enum: SenderStatusEnum, default: SenderStatusEnum.PENDING })
+  @Column({
+    type: 'enum',
+    enum: SenderStatusEnum,
+    default: SenderStatusEnum.PENDING,
+  })
   status: SenderStatusEnum;
 
   @Column({ type: 'text', nullable: true })
@@ -35,7 +43,4 @@ export class SmsSenderEntity extends BaseEntity {
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   monthly_price: number;
-
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
-  one_time_price: number;
 }
