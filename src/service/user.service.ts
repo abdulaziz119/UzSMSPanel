@@ -20,13 +20,13 @@ export class UserService {
   ): Promise<SingleResponse<UserEntity>> {
     const user: UserEntity = await this.userRepo
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.contact', 'contact')
-      .leftJoinAndSelect('contact.address_file', 'address_file')
-      .leftJoinAndSelect('contact.passport_file', 'passport_file')
+      .leftJoinAndSelect('user.contacts', 'contacts')
+      .leftJoinAndSelect('contacts.address_file', 'address_file')
+      .leftJoinAndSelect('contacts.passport_file', 'passport_file')
       .where('user.id = :user_id', { user_id })
       .select([
         'user',
-        'contact',
+        'contacts',
         'address_file.id',
         'address_file.public_url',
         'passport_file.id',

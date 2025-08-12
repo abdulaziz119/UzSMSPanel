@@ -57,8 +57,8 @@ export class UserEntity extends BaseEntity {
   @Column({ select: false, nullable: true })
   login: string | null;
 
-  @OneToOne(() => ContactEntity, (entity) => entity.user)
-  contact: ContactEntity;
+  @OneToMany(() => ContactEntity, (entity) => entity.user, cascadeUpdateRelationOptions)
+  contacts: ContactEntity[];
 
   @OneToMany(
     () => SmsGroupEntity,
