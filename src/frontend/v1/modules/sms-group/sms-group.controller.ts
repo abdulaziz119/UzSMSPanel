@@ -61,7 +61,7 @@ export class SmsGroupController {
     return await this.smsGroupService.findAll(query);
   }
 
-  @Get('/findOne')
+  @Post('/findOne')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @ApiOperation({ summary: 'Get SMS group by ID' })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
@@ -72,7 +72,7 @@ export class SmsGroupController {
     return await this.smsGroupService.findOne(param);
   }
 
-  @Put('/update')
+  @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @ApiOperation({ summary: 'Update SMS group by ID' })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)
@@ -84,7 +84,7 @@ export class SmsGroupController {
     return await this.smsGroupService.update(body, user_id);
   }
 
-  @Delete('/delete')
+  @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @ApiOperation({ summary: 'Delete SMS group by ID' })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN, UserRoleEnum.CLIENT)

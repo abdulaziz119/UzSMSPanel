@@ -79,7 +79,6 @@ export class SmsGroupService {
   async findOne(payload: ParamIdDto): Promise<SingleResponse<SmsGroupEntity>> {
     const smsGroup: SmsGroupEntity = await this.smsGroupRepo.findOne({
       where: { id: payload.id },
-      relations: ['user'],
     });
 
     if (!smsGroup) {
