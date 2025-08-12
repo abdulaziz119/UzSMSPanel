@@ -15,6 +15,7 @@ import {
 import { OtpEntity } from '../entity/otp.entity';
 import { UserEntity } from '../entity/user.entity';
 import {
+  AuthLoginDto,
   AuthResendOtpDto,
   AuthVerifyDto,
 } from '../frontend/v1/modules/auth/dto/dto';
@@ -41,6 +42,36 @@ export class AuthService {
     private readonly authorizationService: AuthorizationService,
   ) {}
 
+  async login(
+    payload: AuthLoginDto,
+  ): Promise<SingleResponse<{ expiresIn: number }>> {
+    try {
+      // Check if phone is blocked
+      await this.checkPhoneBlocked(payload.phone);
+
+      const user: UserEntity = await this.userRepo.findOne({
+        where: { phone: payload.phone, phone_ext: payload.phone_ext },
+      });
+
+      if (!user) {
+        await this.createNewUser(payload.phone, payload.phone_ext);
+      }
+
+      await this.handleOtpCreation(payload.phone);
+
+      this.logger.log(`OTP sent to phone: ${payload.phone}`);
+      return { result: { expiresIn: 120 } };
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: 'Tizimga kirish muvaffaqiyatsiz yakunlandi',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async signVerify(payload: AuthVerifyDto): Promise<
     SingleResponse<{
       token: string;
@@ -52,12 +83,12 @@ export class AuthService {
       const user: UserEntity = await this.findUserByPhone(payload.phone);
 
       const isTestUser: boolean =
-        (payload.phone === '+998901234576' && payload.otp === '123456') ||
-        (payload.phone === '+998901234574' && payload.otp === '123456') ||
-        (payload.phone === '+998901234573' && payload.otp === '123456') ||
-        (payload.phone === '+998901234571' && payload.otp === '123456') ||
-        (payload.phone === '+998901234570' && payload.otp === '123456') ||
-        (payload.phone === '+998901234569' && payload.otp === '123456');
+        (payload.phone === '901234576' && payload.otp === '123456') ||
+        (payload.phone === '901234574' && payload.otp === '123456') ||
+        (payload.phone === '901234573' && payload.otp === '123456') ||
+        (payload.phone === '901234571' && payload.otp === '123456') ||
+        (payload.phone === '901234570' && payload.otp === '123456') ||
+        (payload.phone === '901234569' && payload.otp === '123456');
 
       if (!isTestUser) {
         // Validate OTP for regular users
@@ -392,11 +423,15 @@ export class AuthService {
     }
   }
 
-  private async createNewUser(phone: string): Promise<UserEntity> {
+  private async createNewUser(
+    phone: string,
+    phone_ext: string,
+  ): Promise<UserEntity> {
     const newUser: UserEntity = this.userRepo.create({
       role: UserRoleEnum.CLIENT,
       phone,
       language: language.UZ,
+      phone_ext: phone_ext,
     });
 
     return await this.userRepo.save(newUser);

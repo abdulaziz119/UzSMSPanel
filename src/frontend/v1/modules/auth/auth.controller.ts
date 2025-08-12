@@ -11,7 +11,12 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { Auth } from './decorators/auth.decorator';
 import { Roles } from './decorators/roles.decorator';
-import { AuthResendOtpDto, AuthVerifyDto, RefreshTokenDto } from './dto/dto';
+import {
+  AuthLoginDto,
+  AuthResendOtpDto,
+  AuthVerifyDto,
+  RefreshTokenDto,
+} from './dto/dto';
 import { User } from './decorators/user.decorator';
 
 @ApiBearerAuth()
@@ -19,6 +24,16 @@ import { User } from './decorators/user.decorator';
 @Controller({ path: '/frontend/auth', version: '1' })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @ApiResponse({ type: ErrorResourceDto, status: 401 })
+  @Post('/login')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @HttpCode(200)
+  async login(
+    @Body() body: AuthLoginDto,
+  ): Promise<SingleResponse<{ expiresIn: number }>> {
+    return await this.authService.login(body);
+  }
 
   @ApiResponse({ type: ErrorResourceDto, status: 429 })
   @Post('/resend-otp')

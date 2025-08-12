@@ -1,16 +1,37 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDefined,
+  IsNotEmpty,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
 
-export class AuthVerifyDto {
+export class AuthLoginDto {
   @ApiProperty({
-    example: '+998901234567',
-    description: 'Uzbekistan phone number in format +998XXXXXXXXX',
+    example: '901234567',
+    description: 'Phone number without country code',
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\+998[0-9]{9}$/, {
-    message: 'Phone number must be in format +998XXXXXXXXX',
+  @Length(7, 15)
+  phone: string;
+
+  @ApiPropertyOptional({ example: '998', description: 'Country phone code' })
+  @IsString()
+  @IsDefined()
+  @Length(1, 5)
+  phone_ext: string;
+}
+
+export class AuthVerifyDto {
+  @ApiProperty({
+    example: '901234567',
+    description: 'Phone number without country code',
   })
+  @IsString()
+  @IsNotEmpty()
+  @Length(7, 15)
   phone: string;
 
   @ApiProperty({
@@ -28,14 +49,12 @@ export class AuthVerifyDto {
 
 export class AuthResendOtpDto {
   @ApiProperty({
-    example: '+998901234567',
-    description: 'Uzbekistan phone number in format +998XXXXXXXXX',
+    example: '901234567',
+    description: 'Phone number without country code',
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\+998[0-9]{9}$/, {
-    message: 'Phone number must be in format +998XXXXXXXXX',
-  })
+  @Length(7, 15)
   phone: string;
 }
 
