@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -31,19 +31,6 @@ export class SmsTemplateDashboardController {
     @Body() query: PaginationParams,
   ): Promise<PaginationResponse<SmsTemplateEntity[]>> {
     return await this.smsTemplateService.findAll(query);
-  }
-
-  /**
-   * Bitta shablon tafsilotlari
-   */
-  @Post('/findOne')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async findOne(
-    @Body() param: ParamIdDto,
-  ): Promise<SingleResponse<SmsTemplateEntity>> {
-    return await this.smsTemplateService.findOne(param);
   }
 
   /**
