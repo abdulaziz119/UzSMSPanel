@@ -238,6 +238,7 @@ export class TariffService {
         price: data.price,
         operator: data.operator,
         public: data.public ?? true,
+        country_id: data.country_id,
       });
 
       const savedTariff = await this.tariffRepo.save(tariff);

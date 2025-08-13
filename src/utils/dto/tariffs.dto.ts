@@ -55,9 +55,9 @@ export class CreateTariffDto {
   public?: boolean;
 
   @ApiProperty({ example: 1, description: 'Davlat ID' })
-  @IsOptional()
   @IsNumber()
-  country_id?: number;
+  @IsNotEmpty()
+  country_id: number;
 }
 
 export class UpdateTariffDto {
