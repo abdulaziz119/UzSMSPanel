@@ -72,7 +72,6 @@ export class SmsTemplateService {
         );
       }
 
-      // Add status filter
       if (status) {
         queryBuilder.andWhere('sms_templates.status = :status', { status });
       }
@@ -101,7 +100,7 @@ export class SmsTemplateService {
     updateData: UpdateSmsTemplateDto,
     user_id: number,
   ): Promise<SingleResponse<SmsTemplateEntity>> {
-    const smsTemplate = await this.smsTemplateRepo.findOne({
+    const smsTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne({
       where: { id: updateData.id, user_id: user_id },
     });
 
@@ -111,10 +110,11 @@ export class SmsTemplateService {
 
     try {
       await this.smsTemplateRepo.update(updateData.id, updateData);
-      const updatedSmsTemplate = await this.smsTemplateRepo.findOne({
-        where: { id: updateData.id },
-        relations: ['user', 'sender'],
-      });
+      const updatedSmsTemplate: SmsTemplateEntity =
+        await this.smsTemplateRepo.findOne({
+          where: { id: updateData.id },
+          relations: ['user', 'sender'],
+        });
       return { result: updatedSmsTemplate };
     } catch (error) {
       throw new HttpException(
@@ -126,7 +126,7 @@ export class SmsTemplateService {
 
   async delete(payload: ParamIdDto): Promise<{ result: true }> {
     const { id } = payload;
-    const smsTemplate = await this.smsTemplateRepo.findOne({
+    const smsTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne({
       where: { id },
     });
 
