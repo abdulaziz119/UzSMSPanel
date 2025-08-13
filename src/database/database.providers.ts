@@ -15,6 +15,7 @@ import { OtpEntity } from '../entity/otp.entity';
 import { SmsCampaignEntity } from '../entity/sms-campaign.entity';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
 import { SmsGroupEntity } from '../entity/sms-group.entity';
+import { SmsMessageEntity } from '../entity/sms-message.entity';
 import { SmsPriceEntity } from '../entity/sms-price.entity';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { UserEntity } from '../entity/user.entity';
@@ -22,6 +23,7 @@ import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { FileEntity } from '../entity/file.entity';
 import { SmsSenderEntity } from '../entity/sms-sender.entity';
 import { SenderPriceEntity } from '../entity/sender-price.entity';
+import { CountryEntity } from '../entity/country.entity';
 
 export const databaseProviders = [
   {
@@ -44,11 +46,13 @@ export const databaseProviders = [
           SmsCampaignEntity,
           SmsContactEntity,
           SmsGroupEntity,
+          SmsMessageEntity,
           SmsPriceEntity,
           SmsTemplateEntity,
           SmsSenderEntity,
           SenderPriceEntity,
           TariffEntity,
+          CountryEntity,
           UserEntity,
           FileEntity,
         ],

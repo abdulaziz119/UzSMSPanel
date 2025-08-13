@@ -32,6 +32,11 @@ export class CreateTariffDto {
   @IsOptional()
   @IsBoolean()
   public?: boolean;
+
+  @ApiProperty({ example: 1, description: 'Davlat ID' })
+  @IsOptional()
+  @IsNumber()
+  country_id?: number;
 }
 
 export class UpdateTariffDto {
@@ -69,6 +74,11 @@ export class UpdateTariffDto {
   @IsOptional()
   @IsBoolean()
   public?: boolean;
+
+  @ApiProperty({ example: 1, description: 'Davlat ID', required: false })
+  @IsOptional()
+  @IsNumber()
+  country_id?: number;
 }
 
 export class TariffFilterDto extends PaginationParams {
@@ -101,4 +111,9 @@ export class TariffFilterDto extends PaginationParams {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiProperty({ example: 1, description: 'Davlat ID boyicha filter', required: false })
+  @IsOptional()
+  @IsNumber()
+  country_id?: number;
 }
