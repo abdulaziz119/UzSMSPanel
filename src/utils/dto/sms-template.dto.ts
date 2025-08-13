@@ -10,6 +10,7 @@ import {
   IsNumber,
 } from 'class-validator';
 import { TemplateStatusEnum } from '../enum/sms-template.enum';
+import { PaginationParams } from './dto';
 
 export class CreateSmsTemplateDto {
   @ApiProperty({ example: 'Welcome Template', description: 'Template name' })
@@ -73,4 +74,23 @@ export class UpdateSmsTemplateDto {
   @IsString()
   @IsOptional()
   description?: string;
+}
+
+export class SmsTemplateFrontendFilterDto extends PaginationParams {
+  @ApiPropertyOptional({
+    example: 'Welcome',
+    description: 'Shablon nomida qidiruv',
+  })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @ApiPropertyOptional({
+    enum: TemplateStatusEnum,
+    description: 'Shablon holati boyicha filter',
+    example: TemplateStatusEnum.ACTIVE,
+  })
+  @IsEnum(TemplateStatusEnum)
+  @IsOptional()
+  status?: TemplateStatusEnum;
 }

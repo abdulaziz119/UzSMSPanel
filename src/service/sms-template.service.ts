@@ -14,9 +14,8 @@ import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import {
   CreateSmsTemplateDto,
   UpdateSmsTemplateDto,
+  SmsTemplateFrontendFilterDto,
 } from '../utils/dto/sms-template.dto';
-import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
-import { SmsTemplateFrontendFilterDto } from '../frontend/v1/modules/sms-template/dto/sms-template.dto';
 
 @Injectable()
 export class SmsTemplateService {
@@ -33,7 +32,7 @@ export class SmsTemplateService {
       const newSmsTemplate: SmsTemplateEntity = this.smsTemplateRepo.create({
         name: payload.name,
         content: payload.content,
-        description: payload.description || null,
+        description: payload.description,
         user_id: user_id,
         status: TemplateStatusEnum.PENDING_APPROVAL,
         usage_count: 0,
