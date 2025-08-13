@@ -220,9 +220,7 @@ export class TariffService {
     }
   }
 
-  async createTariff(
-    data: CreateTariffDto,
-  ): Promise<SingleResponse<TariffEntity>> {
+  async create(data: CreateTariffDto): Promise<SingleResponse<TariffEntity>> {
     try {
       // Check if tariff with same code already exists
       const existingTariff = await this.tariffRepo.findOne({
@@ -253,9 +251,7 @@ export class TariffService {
     }
   }
 
-  async updateTariff(
-    data: UpdateTariffDto,
-  ): Promise<SingleResponse<TariffEntity>> {
+  async update(data: UpdateTariffDto): Promise<SingleResponse<TariffEntity>> {
     try {
       const tariff = await this.tariffRepo.findOne({ where: { id: data.id } });
 

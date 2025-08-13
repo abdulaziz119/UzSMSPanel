@@ -15,7 +15,7 @@ import {
 } from '../../../../utils/dto/tariffs.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-tariffs')
+@ApiTags('tariffs')
 @Controller({ path: '/dashboard/tariffs', version: '1' })
 export class TariffsController {
   constructor(private readonly tariffService: TariffService) {}
@@ -40,10 +40,10 @@ export class TariffsController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async createTariff(
+  async create(
     @Body() body: CreateTariffDto,
   ): Promise<SingleResponse<TariffEntity>> {
-    return await this.tariffService.createTariff(body);
+    return await this.tariffService.create(body);
   }
 
   /**
@@ -53,10 +53,10 @@ export class TariffsController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async updateTariff(
+  async update(
     @Body() body: UpdateTariffDto,
   ): Promise<SingleResponse<TariffEntity>> {
-    return await this.tariffService.updateTariff(body);
+    return await this.tariffService.update(body);
   }
 
   /**
@@ -124,7 +124,7 @@ export class TariffsController {
   async togglePublic(
     @Body() body: { id: number; public: boolean },
   ): Promise<SingleResponse<TariffEntity>> {
-    return await this.tariffService.updateTariff({
+    return await this.tariffService.update({
       id: body.id,
       public: body.public,
     } as any);
@@ -149,7 +149,7 @@ export class TariffsController {
 
     for (const tariffData of body.tariffs) {
       try {
-        await this.tariffService.createTariff(tariffData);
+        await this.tariffService.create(tariffData);
         importedCount++;
       } catch (error) {
         failedCount++;
