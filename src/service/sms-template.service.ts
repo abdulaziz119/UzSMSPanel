@@ -16,6 +16,7 @@ import {
   UpdateSmsTemplateDto,
   SmsTemplateFrontendFilterDto,
 } from '../utils/dto/sms-template.dto';
+import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 
 @Injectable()
 export class SmsTemplateService {
@@ -55,7 +56,7 @@ export class SmsTemplateService {
     payload: SmsTemplateFrontendFilterDto,
     user_id?: number,
   ): Promise<PaginationResponse<SmsTemplateEntity[]>> {
-    const { page = 1, limit = 10 } = payload;
+    const { page = 1, limit = 10, search, status } = payload;
     const skip: number = (page - 1) * limit;
 
     try {
@@ -63,6 +64,18 @@ export class SmsTemplateService {
         .createQueryBuilder('sms_templates')
         .where('sms_templates.id IS NOT NULL')
         .andWhere('sms_templates.user_id = :user_id', { user_id });
+
+      if (search) {
+        queryBuilder.andWhere(
+          '(sms_templates.title ILIKE :search OR sms_templates.content ILIKE :search)',
+          { search: `%${search}%` },
+        );
+      }
+
+      // Add status filter
+      if (status) {
+        queryBuilder.andWhere('sms_templates.status = :status', { status });
+      }
 
       const [smsTemplateData, total] = await queryBuilder
         .skip(skip)
