@@ -246,9 +246,6 @@ export class TariffService {
 
       return { result: savedTariff };
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error creating tariff', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -293,12 +290,6 @@ export class TariffService {
 
       return { result: updatedTariff };
     } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
-      ) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error updating tariff', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -318,9 +309,6 @@ export class TariffService {
 
       return { result: { message: 'Tariff deleted successfully' } };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error deleting tariff', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -338,9 +326,6 @@ export class TariffService {
 
       return { result: tariff };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error fetching tariff details', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -432,9 +417,6 @@ export class TariffService {
         },
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error performing bulk price update', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,

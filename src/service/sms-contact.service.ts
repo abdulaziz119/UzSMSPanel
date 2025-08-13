@@ -12,6 +12,7 @@ import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
+import { TariffEntity } from '../entity/tariffs.entity';
 import {
   CreateSmsContactDto,
   UpdateSmsContactDto,
@@ -24,18 +25,61 @@ export class SmsContactService {
   constructor(
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,
+    @Inject(MODELS.TARIFFS)
+    private readonly tariffRepo: Repository<TariffEntity>,
   ) {}
 
   /**
    * Normalize and validate phone globally via libphonenumber-js and map to status
    */
-  private validatePhoneNumber(phone: string): SMSContactStatusEnum {
+  private async validatePhoneNumber(
+    phone: string,
+  ): Promise<SMSContactStatusEnum> {
     const cleanPhone = (phone || '').toString().trim();
+
+    // First check basic banned patterns
     const bannedPatterns = [/666/, /999/, /000{3,}/];
     if (bannedPatterns.some((p) => p.test(cleanPhone))) {
       return SMSContactStatusEnum.BANNED_NUMBER;
     }
 
+    // Check against tariffs table for banned numbers
+    // Extract phone prefix (first 3-8 digits after country code)
+    let phonePrefix = '';
+    if (cleanPhone.startsWith('+998')) {
+      phonePrefix = cleanPhone.substring(4, 8); // Remove +998 and take next 4 digits
+    } else if (cleanPhone.startsWith('998')) {
+      phonePrefix = cleanPhone.substring(3, 7); // Remove 998 and take next 4 digits
+    } else if (cleanPhone.length >= 9) {
+      phonePrefix = cleanPhone.substring(0, 4); // Take first 4 digits
+    }
+
+    if (phonePrefix.length >= 3) {
+      try {
+        // Check if this phone prefix exists in tariffs
+        const tariff = await this.tariffRepo.findOne({
+          where: [
+            { phone_ext: phonePrefix },
+            { code: phonePrefix.substring(0, 4) },
+            { phone_ext: phonePrefix.substring(0, 3) },
+          ],
+        });
+
+        // If no tariff found OR tariff is not public, it's banned
+        if (!tariff || !tariff.public) {
+          return SMSContactStatusEnum.BANNED_NUMBER;
+        }
+      } catch (error) {
+        // If tariff check fails, consider it banned for safety
+        console.warn('Tariff check failed:', error.message);
+        return SMSContactStatusEnum.BANNED_NUMBER;
+      }
+    } else {
+      // If we can't extract a proper prefix, consider it banned
+      return SMSContactStatusEnum.BANNED_NUMBER;
+    }
+
+    // Validate phone format using libphonenumber-js
     try {
       let parsed = parsePhoneNumberFromString(cleanPhone);
       if (!parsed) {
@@ -68,11 +112,11 @@ export class SmsContactService {
   ): Promise<SingleResponse<SmsContactEntity>> {
     try {
       // Automatically determine status based on phone number validation
-      const status = this.validatePhoneNumber(payload.phone);
+      const status = await this.validatePhoneNumber(payload.phone);
 
       const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
         name: payload.name,
-        phone: this.normalizePhone(payload.phone),
+        phone: payload.phone,
         status: status,
         group_name: payload.group_name,
         group_id: payload.group_id,
@@ -164,8 +208,8 @@ export class SmsContactService {
 
     try {
       if (updateData.phone) {
-        updateData.status = this.validatePhoneNumber(updateData.phone);
-  updateData.phone = this.normalizePhone(updateData.phone);
+        updateData.status = await this.validatePhoneNumber(updateData.phone);
+        updateData.phone = this.normalizePhone(updateData.phone);
       }
 
       await this.smsContactRepo.update(id, updateData);
