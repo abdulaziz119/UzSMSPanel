@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
-import { PaginationParams, ParamIdDto, SingleResponse } from '../utils/dto/dto';
+import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
@@ -16,6 +16,7 @@ import {
   UpdateSmsTemplateDto,
 } from '../utils/dto/sms-template.dto';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
+import { SmsTemplateFrontendFilterDto } from '../frontend/v1/modules/sms-template/dto/sms-template.dto';
 
 @Injectable()
 export class SmsTemplateService {
@@ -32,9 +33,7 @@ export class SmsTemplateService {
       const newSmsTemplate: SmsTemplateEntity = this.smsTemplateRepo.create({
         name: payload.name,
         content: payload.content,
-  sender_id: payload.sender_id || null,
         description: payload.description || null,
-        variables: payload.variables || null,
         user_id: user_id,
         status: TemplateStatusEnum.PENDING_APPROVAL,
         usage_count: 0,
@@ -54,7 +53,8 @@ export class SmsTemplateService {
   }
 
   async findAll(
-    payload: PaginationParams,
+    payload: SmsTemplateFrontendFilterDto,
+    user_id?: number,
   ): Promise<PaginationResponse<SmsTemplateEntity[]>> {
     const { page = 1, limit = 10 } = payload;
     const skip: number = (page - 1) * limit;
@@ -62,9 +62,8 @@ export class SmsTemplateService {
     try {
       const queryBuilder = this.smsTemplateRepo
         .createQueryBuilder('sms_templates')
-        .leftJoinAndSelect('sms_templates.user', 'user')
-        .leftJoinAndSelect('sms_templates.sender', 'sender')
-        .where('sms_templates.id IS NOT NULL');
+        .where('sms_templates.id IS NOT NULL')
+        .andWhere('sms_templates.user_id = :user_id', { user_id });
 
       const [smsTemplateData, total] = await queryBuilder
         .skip(skip)
@@ -84,21 +83,6 @@ export class SmsTemplateService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
-
-  async findOne(
-    payload: ParamIdDto,
-  ): Promise<SingleResponse<SmsTemplateEntity>> {
-    const smsTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne({
-      where: { id: payload.id },
-      relations: ['user', 'sender'],
-    });
-
-    if (!smsTemplate) {
-      throw new NotFoundException('SMS Template not found');
-    }
-
-    return { result: smsTemplate };
   }
 
   async update(

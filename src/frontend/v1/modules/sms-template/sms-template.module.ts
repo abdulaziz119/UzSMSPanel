@@ -7,7 +7,6 @@ import { smsTemplateProviders } from '../../../../providers/sms-template.provide
 @Module({
   imports: [DatabaseModule],
   controllers: [SmsTemplateController],
-  providers: [SmsTemplateService, ...smsTemplateProviders],
-  exports: [SmsTemplateService],
+  providers: [...smsTemplateProviders, SmsTemplateService],
 })
 export class SmsTemplateModule {}
