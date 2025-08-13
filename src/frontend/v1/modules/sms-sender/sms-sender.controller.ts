@@ -17,6 +17,10 @@ import { User } from '../auth/decorators/user.decorator';
 export class SmsSenderController {
   constructor(private readonly smsSenderService: SmsSenderService) {}
 
+  /**
+   * Yangi SMS yuboruvchi nom (sender name) yaratish
+   * Mijoz o'z brend nomini tasdiqlash uchun yuboradi
+   */
   @Post('/create')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -29,6 +33,9 @@ export class SmsSenderController {
     return await this.smsSenderService.create(body, user_id);
   }
 
+  /**
+   * Mavjud sender nomlari ro'yxatini olish (pagination bilan)
+   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -39,6 +46,9 @@ export class SmsSenderController {
     return await this.smsSenderService.findAll(query);
   }
 
+  /**
+   * Sender ma'lumotlarini yangilash (masalan: status, nom va h.k.)
+   */
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)

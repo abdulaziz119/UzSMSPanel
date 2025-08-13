@@ -44,6 +44,9 @@ import { FileCategory } from '../../../../utils/enum/file.enum';
 export class FileController {
   constructor(private readonly fileService: FileService) {}
 
+  /**
+   * Fayl yuklash (rasm va media) — multipart/form-data
+   */
   @Post('/create')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
@@ -95,6 +98,9 @@ export class FileController {
     return await this.fileService.create(body, file);
   }
 
+  /**
+   * Fayllar ro'yxatini olish (pagination bilan)
+   */
   @Post('/findAll')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -106,6 +112,9 @@ export class FileController {
     return await this.fileService.findAll(payload);
   }
 
+  /**
+   * Fayl ma'lumotlarini yangilash
+   */
   @Post('/update')
   @HttpCode(202)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -117,6 +126,9 @@ export class FileController {
     return await this.fileService.update(body);
   }
 
+  /**
+   * Bitta fayl ma'lumotlarini olish (ID orqali)
+   */
   @Post('/findOne')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -126,6 +138,9 @@ export class FileController {
     return await this.fileService.findOne(body);
   }
 
+  /**
+   * Faylni o'chirish (ID orqali)
+   */
   @Post('/remove')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })

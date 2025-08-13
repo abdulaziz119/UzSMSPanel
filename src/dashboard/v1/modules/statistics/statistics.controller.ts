@@ -5,10 +5,8 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { 
-  StatisticsService,
-  DashboardStatsFilterDto,
-} from '../../../../service/statistics.service';
+import { StatisticsService } from '../../../../service/statistics.service';
+import { DashboardStatsFilterDto } from '../../../../utils/dto/statistics.dto';
 
 @ApiBearerAuth()
 @ApiTags('dashboard-statistics')
@@ -16,6 +14,9 @@ import {
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}
 
+  /**
+   * Dashboard uchun umumiy statistika (grafiklar uchun)
+   */
   @Post('/dashboard')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -27,6 +28,9 @@ export class StatisticsController {
     return await this.statisticsService.getDashboardStatistics(filters);
   }
 
+  /**
+   * SMS bo'yicha hisobotlar (statuslar, sonlar)
+   */
   @Post('/sms-reports')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -37,6 +41,9 @@ export class StatisticsController {
     return await this.statisticsService.getSmsReports(filters);
   }
 
+  /**
+   * Daromadlar bo'yicha hisobot (oylik, kunlik, davr bo'yicha)
+   */
   @Post('/revenue-reports')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)

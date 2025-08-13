@@ -23,6 +23,9 @@ import {
 export class SmsCampaignController {
   constructor(private readonly smsCampaignService: SmsCampaignService) {}
 
+  /**
+   * SMS kampaniyalar ro'yxati (admin) — filter + pagination
+   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -33,6 +36,9 @@ export class SmsCampaignController {
     return await this.smsCampaignService.findAllCampaigns(filters);
   }
 
+  /**
+   * Kampaniya tafsilotlari (ID bo'yicha)
+   */
   @Post('/details')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -43,6 +49,9 @@ export class SmsCampaignController {
     return await this.smsCampaignService.getCampaignDetails(param.id);
   }
 
+  /**
+   * Kampaniyani boshlash (admin)
+   */
   @Post('/start')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -54,6 +63,9 @@ export class SmsCampaignController {
     return await this.smsCampaignService.startCampaign(param.id, 1);
   }
 
+  /**
+   * Kampaniyani pauza qilish (admin)
+   */
   @Post('/pause')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -65,6 +77,9 @@ export class SmsCampaignController {
     return await this.smsCampaignService.pauseCampaign(param.id, 1);
   }
 
+  /**
+   * Kampaniyani bekor qilish (admin)
+   */
   @Post('/cancel')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -75,6 +90,9 @@ export class SmsCampaignController {
     return await this.smsCampaignService.cancelCampaign(param.id);
   }
 
+  /**
+   * Kampaniya statistikasi (admin)
+   */
   @Post('/statistics')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -86,6 +104,9 @@ export class SmsCampaignController {
     return await this.smsCampaignService.getCampaignStatistics(body.campaign_id);
   }
 
+  /**
+   * Bir nechta kampaniyaga ommaviy amal bajarish
+   */
   @Post('/bulk-action')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)

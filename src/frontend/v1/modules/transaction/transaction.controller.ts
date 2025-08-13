@@ -22,6 +22,9 @@ import {
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
+  /**
+   * Mijoz balansini olish
+   */
   @Post('/balance')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -33,6 +36,9 @@ export class TransactionController {
     return await this.transactionService.getBalance(user_id);
   }
 
+  /**
+   * Balansni to'ldirish (top-up)
+   */
   @Post('/topup')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -45,6 +51,9 @@ export class TransactionController {
     return await this.transactionService.topUpBalance(body, user_id);
   }
 
+  /**
+   * Tranzaksiyalar tarixi (filter va pagination bilan)
+   */
   @Post('/history')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -56,6 +65,9 @@ export class TransactionController {
     return await this.transactionService.getTransactionHistory(filters, user_id);
   }
 
+  /**
+   * Tranzaksiya statistikasi (oylik, umumiy va h.k.)
+   */
   @Post('/statistics')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)

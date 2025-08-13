@@ -39,6 +39,9 @@ import { PaginationResponse } from '../../../../utils/pagination.response';
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 
+  /**
+   * Jismoniy shaxs kontaktini yaratish (admin)
+   */
   @Post('/create/individual')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -52,6 +55,9 @@ export class ContactController {
     return await this.contactService.createIndividual(body, user_id);
   }
 
+  /**
+   * Kompaniya kontaktini yaratish (admin)
+   */
   @Post('/create/company')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -65,6 +71,9 @@ export class ContactController {
     return await this.contactService.createCompany(body, user_id);
   }
 
+  /**
+   * Barcha kontaktlar ro'yxati (pagination bilan)
+   */
   @Get()
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @ApiOperation({ summary: 'Get all contacts' })
@@ -76,6 +85,9 @@ export class ContactController {
     return await this.contactService.findAll(query);
   }
 
+  /**
+   * Kontakt tafsilotlari (ID bo'yicha)
+   */
   @Get('/:id')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @ApiOperation({ summary: 'Get contact by ID' })
@@ -87,6 +99,9 @@ export class ContactController {
     return await this.contactService.findOne(param);
   }
 
+  /**
+   * Kontaktni o'chirish (ID bo'yicha)
+   */
   @Delete('/:id')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @ApiOperation({ summary: 'Delete contact by ID' })

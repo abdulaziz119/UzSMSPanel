@@ -22,6 +22,9 @@ import {
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
+  /**
+   * Barcha tranzaksiyalar ro'yxati (admin) — filter + pagination
+   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -33,6 +36,9 @@ export class TransactionController {
     return await this.transactionService.getTransactionHistory(filters, null);
   }
 
+  /**
+   * Tranzaksiya tafsilotlari (ID bo'yicha)
+   */
   @Post('/details')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -43,6 +49,9 @@ export class TransactionController {
     return await this.transactionService.getTransactionDetails(param.id);
   }
 
+  /**
+   * Tranzaksiyalar statistikasi (admin)
+   */
   @Post('/statistics')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -53,6 +62,9 @@ export class TransactionController {
     return await this.transactionService.getTransactionStatistics(filters);
   }
 
+  /**
+   * Admin tomonidan balans to'ldirish (ma'lum foydalanuvchiga)
+   */
   @Post('/admin-topup')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -63,6 +75,9 @@ export class TransactionController {
     return await this.transactionService.adminTopUp(body);
   }
 
+  /**
+   * Daromadlar (revenue) bo'yicha hisobot
+   */
   @Post('/revenue-reports')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -73,6 +88,9 @@ export class TransactionController {
     return await this.transactionService.getRevenueReports(filters);
   }
 
+  /**
+   * To'lov usullari bo'yicha statistika (payme, click va h.k.)
+   */
   @Post('/payment-method-stats')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -83,6 +101,9 @@ export class TransactionController {
     return await this.transactionService.getPaymentMethodStatistics(filters);
   }
 
+  /**
+   * Foydalanuvchilar balansining umumiy ko'rinishi (summalar bo'yicha)
+   */
   @Post('/user-balance-summary')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)

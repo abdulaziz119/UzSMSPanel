@@ -15,6 +15,9 @@ import { SenderPriceEntity } from '../../../../entity/sender-price.entity';
 export class SenderPriceController {
   constructor(private readonly service: SenderPriceService) {}
 
+  /**
+   * Sender (sender name) uchun narxlar ro'yxati (pagination bilan)
+   */
   @Post('/findAll')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })

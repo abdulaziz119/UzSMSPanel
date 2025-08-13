@@ -9,30 +9,10 @@ import {
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { SmsPriceEntity } from '../entity/sms-price.entity';
-import { SingleResponse, PaginationParams } from '../utils/dto/dto';
+import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
-
-export interface CreatePriceDto {
-  operator: OperatorEnum;
-  message_type: MessageTypeEnum;
-  price_per_sms: number;
-  description?: string;
-}
-
-export interface UpdatePriceDto {
-  id: number;
-  price_per_sms?: number;
-  description?: string;
-  is_active?: boolean;
-}
-
-export interface PriceFilterDto extends PaginationParams {
-  operator?: OperatorEnum;
-  message_type?: MessageTypeEnum;
-  is_active?: boolean;
-}
 
 @Injectable()
 export class SmsPriceService {
@@ -41,27 +21,36 @@ export class SmsPriceService {
     private readonly priceRepo: Repository<SmsPriceEntity>,
   ) {}
 
-  async findAllPrices(filters: PriceFilterDto): Promise<PaginationResponse<SmsPriceEntity[]>> {
+  async findAllPrices(
+    filters: PriceFilterDto,
+  ): Promise<PaginationResponse<SmsPriceEntity[]>> {
     try {
       const queryBuilder = this.priceRepo.createQueryBuilder('price');
 
       if (filters.operator) {
-        queryBuilder.andWhere('price.operator = :operator', { operator: filters.operator });
+        queryBuilder.andWhere('price.operator = :operator', {
+          operator: filters.operator,
+        });
       }
 
       if (filters.message_type) {
-        queryBuilder.andWhere('price.message_type = :message_type', { message_type: filters.message_type });
+        queryBuilder.andWhere('price.message_type = :message_type', {
+          message_type: filters.message_type,
+        });
       }
 
       if (filters.is_active !== undefined) {
-        queryBuilder.andWhere('price.active = :active', { active: filters.is_active });
+        queryBuilder.andWhere('price.active = :active', {
+          active: filters.is_active,
+        });
       }
 
-      queryBuilder.orderBy('price.operator', 'ASC')
-                  .addOrderBy('price.message_type', 'ASC');
+      queryBuilder
+        .orderBy('price.operator', 'ASC')
+        .addOrderBy('price.message_type', 'ASC');
 
       const total = await queryBuilder.getCount();
-      
+
       if (filters.page && filters.limit) {
         queryBuilder
           .skip((filters.page - 1) * filters.limit)
@@ -84,7 +73,9 @@ export class SmsPriceService {
     }
   }
 
-  async createPrice(data: CreatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
+  async createPrice(
+    data: CreatePriceDto,
+  ): Promise<SingleResponse<SmsPriceEntity>> {
     try {
       // Check if price already exists for this operator and message type
       const existingPrice = await this.priceRepo.findOne({
@@ -95,7 +86,9 @@ export class SmsPriceService {
       });
 
       if (existingPrice) {
-        throw new BadRequestException('Price already exists for this operator and message type');
+        throw new BadRequestException(
+          'Price already exists for this operator and message type',
+        );
       }
 
       const price = this.priceRepo.create(data);
@@ -113,7 +106,9 @@ export class SmsPriceService {
     }
   }
 
-  async updatePrice(data: UpdatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
+  async updatePrice(
+    data: UpdatePriceDto,
+  ): Promise<SingleResponse<SmsPriceEntity>> {
     try {
       const price = await this.priceRepo.findOne({ where: { id: data.id } });
 
@@ -122,15 +117,15 @@ export class SmsPriceService {
       }
 
       const updateData: Partial<SmsPriceEntity> = {};
-      
+
       if (data.price_per_sms !== undefined) {
         updateData.price_per_sms = data.price_per_sms;
       }
-      
+
       if (data.description !== undefined) {
         updateData.description = data.description;
       }
-      
+
       if (data.is_active !== undefined) {
         updateData.active = data.is_active;
       }
@@ -139,7 +134,9 @@ export class SmsPriceService {
 
       await this.priceRepo.update(data.id, updateData);
 
-      const updatedPrice = await this.priceRepo.findOne({ where: { id: data.id } });
+      const updatedPrice = await this.priceRepo.findOne({
+        where: { id: data.id },
+      });
 
       return { result: updatedPrice };
     } catch (error) {
@@ -176,7 +173,7 @@ export class SmsPriceService {
   }
 
   async bulkUpdatePrices(
-    updates: Array<{ id: number; price_per_sms?: number; is_active?: boolean }>
+    updates: Array<{ id: number; price_per_sms?: number; is_active?: boolean }>,
   ): Promise<SingleResponse<{ message: string; updated_count: number }>> {
     try {
       let updated_count = 0;
@@ -218,7 +215,7 @@ export class SmsPriceService {
 
   async getPriceForOperator(
     operator: OperatorEnum,
-    message_type: MessageTypeEnum = MessageTypeEnum.SMS
+    message_type: MessageTypeEnum = MessageTypeEnum.SMS,
   ): Promise<number> {
     try {
       const price = await this.priceRepo.findOne({

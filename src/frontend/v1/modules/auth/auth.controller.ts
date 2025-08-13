@@ -25,6 +25,11 @@ import { User } from './decorators/user.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * Foydalanuvchi tizimga kirishi uchun login API
+   * Telefon raqam orqali OTP kod yuboradi
+   * Phone number va OTP kodni tasdiqlash uchun ishlatiladi
+   */
   @ApiResponse({ type: ErrorResourceDto, status: 401 })
   @Post('/login')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -35,6 +40,11 @@ export class AuthController {
     return await this.authService.login(body);
   }
 
+  /**
+   * OTP kodni qayta yuborish API
+   * Agar avvalgi OTP kod kelmagan yoki vaqti tugagan bo'lsa
+   * yangi OTP kodni qayta yuborish uchun ishlatiladi
+   */
   @ApiResponse({ type: ErrorResourceDto, status: 429 })
   @Post('/resend-otp')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -45,6 +55,11 @@ export class AuthController {
     return await this.authService.resendOtp(body);
   }
 
+  /**
+   * OTP kodni tasdiqlash va autentifikatsiya API
+   * Yuborilgan OTP kodni tekshiradi va to'g'ri bo'lsa
+   * access token va refresh token qaytaradi
+   */
   @ApiResponse({ type: ErrorResourceDto, status: 401 })
   @Post('/sign-verify')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -61,6 +76,11 @@ export class AuthController {
     return result;
   }
 
+  /**
+   * OTP holati haqida ma'lumot olish API
+   * OTP kodning qolgan vaqti va qayta yuborish mumkinligini tekshiradi
+   * Rate limiting uchun ishlatiladi
+   */
   @Post('/otp-status')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(200)
@@ -70,6 +90,11 @@ export class AuthController {
     return await this.authService.getOtpStatus(body.phone);
   }
 
+  /**
+   * Token yangilash API
+   * Access token muddati tugaganda refresh token yordamida
+   * yangi access va refresh tokenlarni olish uchun ishlatiladi
+   */
   @ApiResponse({
     schema: {
       type: 'object',
@@ -93,6 +118,11 @@ export class AuthController {
     return await this.authService.refreshToken(body.refreshToken);
   }
 
+  /**
+   * Tizimdan chiqish API
+   * Foydalanuvchining sessiyasini tugatadi va
+   * tokenlarni bekor qiladi (invalidate)
+   */
   @ApiResponse({
     schema: {
       type: 'object',

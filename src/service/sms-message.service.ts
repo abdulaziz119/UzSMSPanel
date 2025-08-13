@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { SmsMessageEntity } from '../entity/sms-message.entity';
 import { UserEntity } from '../entity/user.entity';
-import { SingleResponse, PaginationParams } from '../utils/dto/dto';
+import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import {
@@ -18,50 +18,13 @@ import {
   MessageDirectionEnum,
 } from '../utils/enum/sms-message.enum';
 import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
-
-export interface SendSingleSmsDto {
-  phone: string;
-  phone_ext?: string;
-  message: string;
-  sender?: string;
-  message_type?: MessageTypeEnum;
-}
-
-export interface SendBulkSmsDto {
-  phones: string[];
-  message: string;
-  sender?: string;
-  message_type?: MessageTypeEnum;
-  scheduled_at?: Date;
-}
-
-export interface SmsHistoryFilterDto extends PaginationParams {
-  date_from?: string;
-  date_to?: string;
-  status?: MessageStatusEnum;
-  phone?: string;
-  sender?: string;
-}
-
-export interface MessageFilterDto extends PaginationParams {
-  date_from?: string;
-  date_to?: string;
-  status?: MessageStatusEnum;
-  phone?: string;
-  sender?: string;
-  user_id?: number;
-  operator?: OperatorEnum;
-  direction?: MessageDirectionEnum;
-  search?: string;
-}
-
-export interface MessageStatsDto {
-  date_from?: string;
-  date_to?: string;
-  user_id?: number;
-  operator?: OperatorEnum;
-  group_by?: 'day' | 'week' | 'month';
-}
+import {
+  MessageFilterDto,
+  MessageStatsDto,
+  SendBulkSmsDto,
+  SendSingleSmsDto,
+  SmsHistoryFilterDto,
+} from '../utils/dto/sms-message.dto';
 
 @Injectable()
 export class SmsMessageService {
@@ -85,7 +48,10 @@ export class SmsMessageService {
 
       // SMS narxini hisoblash
       const partsCount = Math.ceil(payload.message.length / 160);
-      const smsPrice = this.calculateSmsPrice(payload.phone, payload.message_type);
+      const smsPrice = this.calculateSmsPrice(
+        payload.phone,
+        payload.message_type,
+      );
       const totalCost = partsCount * smsPrice;
 
       // Balansni tekshirish
@@ -139,7 +105,13 @@ export class SmsMessageService {
   async sendBulk(
     payload: SendBulkSmsDto,
     user_id: number,
-  ): Promise<SingleResponse<{ batch_id: string; total_cost: number; messages_count: number }>> {
+  ): Promise<
+    SingleResponse<{
+      batch_id: string;
+      total_cost: number;
+      messages_count: number;
+    }>
+  > {
     try {
       // Foydalanuvchini tekshirish
       const user = await this.userRepo.findOne({ where: { id: user_id } });
@@ -169,7 +141,7 @@ export class SmsMessageService {
       for (const phone of payload.phones) {
         const messageId = this.generateMessageId();
         const smsPrice = this.calculateSmsPrice(phone, payload.message_type);
-        
+
         const smsMessage = this.messageRepo.create({
           user_id,
           message_id: messageId,
@@ -278,9 +250,7 @@ export class SmsMessageService {
     }
   }
 
-  async getStatistics(
-    user_id: number,
-  ): Promise<SingleResponse<any>> {
+  async getStatistics(user_id: number): Promise<SingleResponse<any>> {
     try {
       const totalSent = await this.messageRepo.count({
         where: { user_id },
@@ -312,7 +282,8 @@ export class SmsMessageService {
         pending,
         total_cost: parseFloat(result.total_cost) || 0,
         delivery_rate: totalSent > 0 ? (delivered / totalSent) * 100 : 0,
-        success_rate: totalSent > 0 ? ((delivered / totalSent) * 100).toFixed(2) : '0',
+        success_rate:
+          totalSent > 0 ? ((delivered / totalSent) * 100).toFixed(2) : '0',
       };
 
       return { result: statistics };
@@ -357,7 +328,7 @@ export class SmsMessageService {
   ): number {
     // SMS narxini operator va tip bo'yicha hisoblash
     const operator = this.detectOperator(phone);
-    
+
     // Soddalashtirilgan narx tizimi
     const basePrices = {
       [OperatorEnum.BEELINE]: 100,
@@ -373,19 +344,28 @@ export class SmsMessageService {
   private detectOperator(phone: string): OperatorEnum {
     // Telefon raqam bo'yicha operatorni aniqlash
     const phoneNumber = phone.replace(/\D/g, ''); // Faqat raqamlar
-    
+
     if (phoneNumber.startsWith('99890') || phoneNumber.startsWith('99891')) {
       return OperatorEnum.BEELINE;
-    } else if (phoneNumber.startsWith('99893') || phoneNumber.startsWith('99894')) {
+    } else if (
+      phoneNumber.startsWith('99893') ||
+      phoneNumber.startsWith('99894')
+    ) {
       return OperatorEnum.UCELL;
-    } else if (phoneNumber.startsWith('99895') || phoneNumber.startsWith('99896')) {
+    } else if (
+      phoneNumber.startsWith('99895') ||
+      phoneNumber.startsWith('99896')
+    ) {
       return OperatorEnum.UMS;
-    } else if (phoneNumber.startsWith('99897') || phoneNumber.startsWith('99898')) {
+    } else if (
+      phoneNumber.startsWith('99897') ||
+      phoneNumber.startsWith('99898')
+    ) {
       return OperatorEnum.PERFECTUM;
     } else if (phoneNumber.startsWith('99899')) {
       return OperatorEnum.HUMANS;
     }
-    
+
     return OperatorEnum.BEELINE; // Default
   }
 
@@ -398,55 +378,74 @@ export class SmsMessageService {
   }
 
   // Dashboard-specific methods
-  async getMessageHistory(filters: MessageFilterDto): Promise<PaginationResponse<SmsMessageEntity[]>> {
+  async getMessageHistory(
+    filters: MessageFilterDto,
+  ): Promise<PaginationResponse<SmsMessageEntity[]>> {
     try {
-      const queryBuilder = this.messageRepo.createQueryBuilder('message')
+      const queryBuilder = this.messageRepo
+        .createQueryBuilder('message')
         .leftJoinAndSelect('message.user', 'user');
 
       // Apply filters
       if (filters.status) {
-        queryBuilder.andWhere('message.status = :status', { status: filters.status });
+        queryBuilder.andWhere('message.status = :status', {
+          status: filters.status,
+        });
       }
 
       if (filters.phone) {
-        queryBuilder.andWhere('message.phone ILIKE :phone', { phone: `%${filters.phone}%` });
+        queryBuilder.andWhere('message.phone ILIKE :phone', {
+          phone: `%${filters.phone}%`,
+        });
       }
 
       if (filters.sender) {
-        queryBuilder.andWhere('message.sender ILIKE :sender', { sender: `%${filters.sender}%` });
+        queryBuilder.andWhere('message.sender ILIKE :sender', {
+          sender: `%${filters.sender}%`,
+        });
       }
 
       if (filters.user_id) {
-        queryBuilder.andWhere('message.user_id = :user_id', { user_id: filters.user_id });
+        queryBuilder.andWhere('message.user_id = :user_id', {
+          user_id: filters.user_id,
+        });
       }
 
       if (filters.operator) {
-        queryBuilder.andWhere('message.operator = :operator', { operator: filters.operator });
+        queryBuilder.andWhere('message.operator = :operator', {
+          operator: filters.operator,
+        });
       }
 
       if (filters.direction) {
-        queryBuilder.andWhere('message.direction = :direction', { direction: filters.direction });
+        queryBuilder.andWhere('message.direction = :direction', {
+          direction: filters.direction,
+        });
       }
 
       if (filters.date_from) {
-        queryBuilder.andWhere('message.created_at >= :date_from', { date_from: filters.date_from });
+        queryBuilder.andWhere('message.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
       }
 
       if (filters.date_to) {
-        queryBuilder.andWhere('message.created_at <= :date_to', { date_to: filters.date_to });
+        queryBuilder.andWhere('message.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
       }
 
       if (filters.search) {
         queryBuilder.andWhere(
           '(message.message ILIKE :search OR message.phone ILIKE :search)',
-          { search: `%${filters.search}%` }
+          { search: `%${filters.search}%` },
         );
       }
 
       queryBuilder.orderBy('message.created_at', 'DESC');
 
       const total = await queryBuilder.getCount();
-      
+
       if (filters.page && filters.limit) {
         queryBuilder
           .skip((filters.page - 1) * filters.limit)
@@ -469,7 +468,9 @@ export class SmsMessageService {
     }
   }
 
-  async getMessageDetails(id: number): Promise<SingleResponse<SmsMessageEntity>> {
+  async getMessageDetails(
+    id: number,
+  ): Promise<SingleResponse<SmsMessageEntity>> {
     try {
       const message = await this.messageRepo.findOne({
         where: { id },
@@ -492,24 +493,34 @@ export class SmsMessageService {
     }
   }
 
-  async getMessageStatistics(filters: MessageStatsDto): Promise<SingleResponse<any>> {
+  async getMessageStatistics(
+    filters: MessageStatsDto,
+  ): Promise<SingleResponse<any>> {
     try {
       const queryBuilder = this.messageRepo.createQueryBuilder('message');
 
       if (filters.date_from) {
-        queryBuilder.andWhere('message.created_at >= :date_from', { date_from: filters.date_from });
+        queryBuilder.andWhere('message.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
       }
 
       if (filters.date_to) {
-        queryBuilder.andWhere('message.created_at <= :date_to', { date_to: filters.date_to });
+        queryBuilder.andWhere('message.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
       }
 
       if (filters.user_id) {
-        queryBuilder.andWhere('message.user_id = :user_id', { user_id: filters.user_id });
+        queryBuilder.andWhere('message.user_id = :user_id', {
+          user_id: filters.user_id,
+        });
       }
 
       if (filters.operator) {
-        queryBuilder.andWhere('message.operator = :operator', { operator: filters.operator });
+        queryBuilder.andWhere('message.operator = :operator', {
+          operator: filters.operator,
+        });
       }
 
       const statistics = await queryBuilder
@@ -552,7 +563,9 @@ export class SmsMessageService {
     }
   }
 
-  async resendMessage(id: number): Promise<SingleResponse<{ message: string }>> {
+  async resendMessage(
+    id: number,
+  ): Promise<SingleResponse<{ message: string }>> {
     try {
       const message = await this.messageRepo.findOne({ where: { id } });
 
@@ -578,7 +591,10 @@ export class SmsMessageService {
 
       return { result: { message: 'Message resent successfully' } };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new HttpException(
@@ -588,7 +604,9 @@ export class SmsMessageService {
     }
   }
 
-  async bulkResend(message_ids: number[]): Promise<SingleResponse<{ message: string; resent_count: number }>> {
+  async bulkResend(
+    message_ids: number[],
+  ): Promise<SingleResponse<{ message: string; resent_count: number }>> {
     try {
       let resent_count = 0;
 
@@ -616,20 +634,28 @@ export class SmsMessageService {
     }
   }
 
-  async getOperatorStatistics(filters: MessageStatsDto): Promise<SingleResponse<any>> {
+  async getOperatorStatistics(
+    filters: MessageStatsDto,
+  ): Promise<SingleResponse<any>> {
     try {
       const queryBuilder = this.messageRepo.createQueryBuilder('message');
 
       if (filters.date_from) {
-        queryBuilder.andWhere('message.created_at >= :date_from', { date_from: filters.date_from });
+        queryBuilder.andWhere('message.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
       }
 
       if (filters.date_to) {
-        queryBuilder.andWhere('message.created_at <= :date_to', { date_to: filters.date_to });
+        queryBuilder.andWhere('message.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
       }
 
       if (filters.user_id) {
-        queryBuilder.andWhere('message.user_id = :user_id', { user_id: filters.user_id });
+        queryBuilder.andWhere('message.user_id = :user_id', {
+          user_id: filters.user_id,
+        });
       }
 
       const operatorStats = await queryBuilder
@@ -649,11 +675,14 @@ export class SmsMessageService {
         .getRawMany();
 
       // Calculate delivery rates for each operator
-      const result = operatorStats.map(stat => ({
+      const result = operatorStats.map((stat) => ({
         ...stat,
-        delivery_rate: stat.total_messages > 0 
-          ? parseFloat(((stat.delivered_count / stat.total_messages) * 100).toFixed(2))
-          : 0,
+        delivery_rate:
+          stat.total_messages > 0
+            ? parseFloat(
+                ((stat.delivered_count / stat.total_messages) * 100).toFixed(2),
+              )
+            : 0,
       }));
 
       return { result };
@@ -669,24 +698,26 @@ export class SmsMessageService {
     try {
       // Bu yerda real SMS provider API'si chaqiriladi
       // Masalan: Eskiz.uz, Play Mobile, SMS.uz va boshqalar
-      
+
       // Simulyatsiya uchun
       setTimeout(async () => {
         // Tasodifiy muvaffaqiyat/muvaffaqiyatsizlik
         const isSuccess = Math.random() > 0.1; // 90% muvaffaqiyat
-        
+
         if (isSuccess) {
           await this.updateMessageStatus(
             message.message_id,
             MessageStatusEnum.SENT,
           );
-          
+
           // Delivery report simulyatsiyasi
           setTimeout(async () => {
             const isDelivered = Math.random() > 0.05; // 95% yetkazib berish
             await this.updateMessageStatus(
               message.message_id,
-              isDelivered ? MessageStatusEnum.DELIVERED : MessageStatusEnum.FAILED,
+              isDelivered
+                ? MessageStatusEnum.DELIVERED
+                : MessageStatusEnum.FAILED,
               { delivered_at: new Date() },
             );
           }, 2000);

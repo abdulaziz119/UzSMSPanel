@@ -10,42 +10,20 @@ import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { TransactionEntity } from '../entity/transaction.entity';
 import { UserEntity } from '../entity/user.entity';
-import { SingleResponse, PaginationParams } from '../utils/dto/dto';
+import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
-import { TransactionStatusEnum, TransactionTypeEnum, PaymentMethodEnum } from '../utils/enum/transaction.enum';
-
-export interface TopUpBalanceDto {
-  amount: number;
-  payment_method: PaymentMethodEnum;
-  description?: string;
-}
-
-export interface TransactionFilterDto extends PaginationParams {
-  date_from?: string;
-  date_to?: string;
-  type?: TransactionTypeEnum;
-  status?: TransactionStatusEnum;
-  user_id?: number;
-  payment_method?: PaymentMethodEnum;
-  search?: string;
-}
-
-export interface TransactionStatsDto {
-  date_from?: string;
-  date_to?: string;
-  user_id?: number;
-  type?: TransactionTypeEnum;
-  payment_method?: PaymentMethodEnum;
-  group_by?: 'day' | 'week' | 'month';
-}
-
-export interface AdminTopUpDto {
-  user_id: number;
-  amount: number;
-  description?: string;
-  admin_note?: string;
-}
+import {
+  TransactionStatusEnum,
+  TransactionTypeEnum,
+  PaymentMethodEnum,
+} from '../utils/enum/transaction.enum';
+import {
+  AdminTopUpDto,
+  TopUpBalanceDto,
+  TransactionFilterDto,
+  TransactionStatsDto,
+} from '../utils/dto/transaction.dto';
 
 @Injectable()
 export class TransactionService {
@@ -56,7 +34,9 @@ export class TransactionService {
     private readonly userRepo: Repository<UserEntity>,
   ) {}
 
-  async getBalance(user_id: number): Promise<SingleResponse<{ balance: number }>> {
+  async getBalance(
+    user_id: number,
+  ): Promise<SingleResponse<{ balance: number }>> {
     try {
       const user = await this.userRepo.findOne({
         where: { id: user_id },
@@ -152,7 +132,9 @@ export class TransactionService {
 
       // Apply additional filters from dashboard
       if (filters.user_id) {
-        queryBuilder.andWhere('transaction.user_id = :filter_user_id', { filter_user_id: filters.user_id });
+        queryBuilder.andWhere('transaction.user_id = :filter_user_id', {
+          filter_user_id: filters.user_id,
+        });
       }
 
       // Filtrlarni qo'llash
@@ -169,21 +151,27 @@ export class TransactionService {
       }
 
       if (filters.type) {
-        queryBuilder.andWhere('transaction.type = :type', { type: filters.type });
+        queryBuilder.andWhere('transaction.type = :type', {
+          type: filters.type,
+        });
       }
 
       if (filters.status) {
-        queryBuilder.andWhere('transaction.status = :status', { status: filters.status });
+        queryBuilder.andWhere('transaction.status = :status', {
+          status: filters.status,
+        });
       }
 
       if (filters.payment_method) {
-        queryBuilder.andWhere('transaction.payment_method = :payment_method', { payment_method: filters.payment_method });
+        queryBuilder.andWhere('transaction.payment_method = :payment_method', {
+          payment_method: filters.payment_method,
+        });
       }
 
       if (filters.search) {
         queryBuilder.andWhere(
           '(transaction.description ILIKE :search OR transaction.external_transaction_id ILIKE :search)',
-          { search: `%${filters.search}%` }
+          { search: `%${filters.search}%` },
         );
       }
 
@@ -227,7 +215,9 @@ export class TransactionService {
   }
 
   // Dashboard-specific methods
-  async getTransactionDetails(id: number): Promise<SingleResponse<TransactionEntity>> {
+  async getTransactionDetails(
+    id: number,
+  ): Promise<SingleResponse<TransactionEntity>> {
     try {
       const transaction = await this.transactionRepo.findOne({
         where: { id },
@@ -250,28 +240,41 @@ export class TransactionService {
     }
   }
 
-  async getTransactionStatistics(filters: TransactionStatsDto): Promise<SingleResponse<any>> {
+  async getTransactionStatistics(
+    filters: TransactionStatsDto,
+  ): Promise<SingleResponse<any>> {
     try {
-      const queryBuilder = this.transactionRepo.createQueryBuilder('transaction');
+      const queryBuilder =
+        this.transactionRepo.createQueryBuilder('transaction');
 
       if (filters.date_from) {
-        queryBuilder.andWhere('transaction.created_at >= :date_from', { date_from: filters.date_from });
+        queryBuilder.andWhere('transaction.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
       }
 
       if (filters.date_to) {
-        queryBuilder.andWhere('transaction.created_at <= :date_to', { date_to: filters.date_to });
+        queryBuilder.andWhere('transaction.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
       }
 
       if (filters.user_id) {
-        queryBuilder.andWhere('transaction.user_id = :user_id', { user_id: filters.user_id });
+        queryBuilder.andWhere('transaction.user_id = :user_id', {
+          user_id: filters.user_id,
+        });
       }
 
       if (filters.type) {
-        queryBuilder.andWhere('transaction.type = :type', { type: filters.type });
+        queryBuilder.andWhere('transaction.type = :type', {
+          type: filters.type,
+        });
       }
 
       if (filters.payment_method) {
-        queryBuilder.andWhere('transaction.payment_method = :payment_method', { payment_method: filters.payment_method });
+        queryBuilder.andWhere('transaction.payment_method = :payment_method', {
+          payment_method: filters.payment_method,
+        });
       }
 
       const statistics = await queryBuilder
@@ -295,21 +298,33 @@ export class TransactionService {
 
       const result = {
         ...statistics,
-        success_rate: statistics.total_transactions > 0
-          ? parseFloat(((statistics.total_transactions - statistics.failed_amount) / statistics.total_transactions * 100).toFixed(2))
-          : 0,
+        success_rate:
+          statistics.total_transactions > 0
+            ? parseFloat(
+                (
+                  ((statistics.total_transactions - statistics.failed_amount) /
+                    statistics.total_transactions) *
+                  100
+                ).toFixed(2),
+              )
+            : 0,
       };
 
       return { result };
     } catch (error) {
       throw new HttpException(
-        { message: 'Error fetching transaction statistics', error: error.message },
+        {
+          message: 'Error fetching transaction statistics',
+          error: error.message,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  async adminTopUp(data: AdminTopUpDto): Promise<SingleResponse<{ message: string; new_balance: number }>> {
+  async adminTopUp(
+    data: AdminTopUpDto,
+  ): Promise<SingleResponse<{ message: string; new_balance: number }>> {
     try {
       const user = await this.userRepo.findOne({ where: { id: data.user_id } });
 
@@ -352,25 +367,34 @@ export class TransactionService {
     }
   }
 
-  async getRevenueReports(filters: TransactionStatsDto): Promise<SingleResponse<any>> {
+  async getRevenueReports(
+    filters: TransactionStatsDto,
+  ): Promise<SingleResponse<any>> {
     try {
-      const queryBuilder = this.transactionRepo.createQueryBuilder('transaction');
+      const queryBuilder =
+        this.transactionRepo.createQueryBuilder('transaction');
 
       if (filters.date_from) {
-        queryBuilder.andWhere('transaction.created_at >= :date_from', { date_from: filters.date_from });
+        queryBuilder.andWhere('transaction.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
       }
 
       if (filters.date_to) {
-        queryBuilder.andWhere('transaction.created_at <= :date_to', { date_to: filters.date_to });
+        queryBuilder.andWhere('transaction.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
       }
 
-      queryBuilder.andWhere('transaction.status = :completed', { completed: TransactionStatusEnum.COMPLETED });
+      queryBuilder.andWhere('transaction.status = :completed', {
+        completed: TransactionStatusEnum.COMPLETED,
+      });
 
       let groupByField = 'DATE(transaction.created_at)';
       if (filters.group_by === 'week') {
-        groupByField = 'DATE_TRUNC(\'week\', transaction.created_at)';
+        groupByField = "DATE_TRUNC('week', transaction.created_at)";
       } else if (filters.group_by === 'month') {
-        groupByField = 'DATE_TRUNC(\'month\', transaction.created_at)';
+        groupByField = "DATE_TRUNC('month', transaction.created_at)";
       }
 
       const revenueData = await queryBuilder
@@ -389,8 +413,14 @@ export class TransactionService {
         .getRawMany();
 
       // Calculate total revenue
-      const totalRevenue = revenueData.reduce((sum, item) => sum + parseFloat(item.deposits), 0);
-      const totalExpenses = revenueData.reduce((sum, item) => sum + parseFloat(item.expenses), 0);
+      const totalRevenue = revenueData.reduce(
+        (sum, item) => sum + parseFloat(item.deposits),
+        0,
+      );
+      const totalExpenses = revenueData.reduce(
+        (sum, item) => sum + parseFloat(item.expenses),
+        0,
+      );
       const netRevenue = totalRevenue - totalExpenses;
 
       const result = {
@@ -412,19 +442,28 @@ export class TransactionService {
     }
   }
 
-  async getPaymentMethodStatistics(filters: TransactionStatsDto): Promise<SingleResponse<any>> {
+  async getPaymentMethodStatistics(
+    filters: TransactionStatsDto,
+  ): Promise<SingleResponse<any>> {
     try {
-      const queryBuilder = this.transactionRepo.createQueryBuilder('transaction');
+      const queryBuilder =
+        this.transactionRepo.createQueryBuilder('transaction');
 
       if (filters.date_from) {
-        queryBuilder.andWhere('transaction.created_at >= :date_from', { date_from: filters.date_from });
+        queryBuilder.andWhere('transaction.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
       }
 
       if (filters.date_to) {
-        queryBuilder.andWhere('transaction.created_at <= :date_to', { date_to: filters.date_to });
+        queryBuilder.andWhere('transaction.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
       }
 
-      queryBuilder.andWhere('transaction.status = :completed', { completed: TransactionStatusEnum.COMPLETED });
+      queryBuilder.andWhere('transaction.status = :completed', {
+        completed: TransactionStatusEnum.COMPLETED,
+      });
 
       const paymentStats = await queryBuilder
         .select([
@@ -437,20 +476,27 @@ export class TransactionService {
         .orderBy('total_amount', 'DESC')
         .getRawMany();
 
-      const totalAmount = paymentStats.reduce((sum, item) => sum + parseFloat(item.total_amount), 0);
+      const totalAmount = paymentStats.reduce(
+        (sum, item) => sum + parseFloat(item.total_amount),
+        0,
+      );
 
       // Add percentage to each payment method
-      const result = paymentStats.map(stat => ({
+      const result = paymentStats.map((stat) => ({
         ...stat,
-        percentage: totalAmount > 0 
-          ? parseFloat(((stat.total_amount / totalAmount) * 100).toFixed(2))
-          : 0,
+        percentage:
+          totalAmount > 0
+            ? parseFloat(((stat.total_amount / totalAmount) * 100).toFixed(2))
+            : 0,
       }));
 
       return { result };
     } catch (error) {
       throw new HttpException(
-        { message: 'Error fetching payment method statistics', error: error.message },
+        {
+          message: 'Error fetching payment method statistics',
+          error: error.message,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -478,12 +524,12 @@ export class TransactionService {
         .createQueryBuilder('user')
         .select([
           'CASE ' +
-          'WHEN balance = 0 THEN \'0\' ' +
-          'WHEN balance <= 1000 THEN \'1-1000\' ' +
-          'WHEN balance <= 5000 THEN \'1001-5000\' ' +
-          'WHEN balance <= 10000 THEN \'5001-10000\' ' +
-          'WHEN balance <= 50000 THEN \'10001-50000\' ' +
-          'ELSE \'50000+\' END as balance_range',
+            "WHEN balance = 0 THEN '0' " +
+            "WHEN balance <= 1000 THEN '1-1000' " +
+            "WHEN balance <= 5000 THEN '1001-5000' " +
+            "WHEN balance <= 10000 THEN '5001-10000' " +
+            "WHEN balance <= 50000 THEN '10001-50000' " +
+            "ELSE '50000+' END as balance_range",
           'COUNT(*) as user_count',
         ])
         .where('role = :role', { role: 'CLIENT' })
@@ -499,7 +545,10 @@ export class TransactionService {
       return { result };
     } catch (error) {
       throw new HttpException(
-        { message: 'Error fetching user balance summary', error: error.message },
+        {
+          message: 'Error fetching user balance summary',
+          error: error.message,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -512,13 +561,13 @@ export class TransactionService {
   private async processPayment(transaction: TransactionEntity): Promise<void> {
     // Bu yerda real to'lov tizimi bilan integratsiya bo'lishi kerak
     // Masalan: Click, Payme, Uzcard va boshqalar
-    
+
     // Simulyatsiya uchun
     return new Promise((resolve) => {
       setTimeout(() => {
         // 95% muvaffaqiyat
         const isSuccess = Math.random() > 0.05;
-        
+
         if (!isSuccess) {
           // To'lov muvaffaqiyatsiz
           this.transactionRepo.update(transaction.id, {
@@ -526,7 +575,7 @@ export class TransactionService {
             processed_at: new Date(),
           });
         }
-        
+
         resolve();
       }, 2000); // 2 soniya kutish
     });

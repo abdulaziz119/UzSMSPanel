@@ -9,37 +9,14 @@ import {
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { TariffEntity } from '../entity/tariffs.entity';
-import { SingleResponse, PaginationParams, ParamIdDto } from '../utils/dto/dto';
+import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
-
-export interface CreateTariffDto {
-  code: string;
-  name: string;
-  phone_ext: string;
-  price: number;
-  operator: string;
-  public?: boolean;
-}
-
-export interface UpdateTariffDto {
-  id: number;
-  code?: string;
-  name?: string;
-  phone_ext?: string;
-  price?: number;
-  operator?: string;
-  public?: boolean;
-}
-
-export interface TariffFilterDto extends PaginationParams {
-  operator?: string;
-  phone_ext?: string;
-  public?: boolean;
-  price_from?: number;
-  price_to?: number;
-  search?: string;
-}
+import {
+  CreateTariffDto,
+  TariffFilterDto,
+  UpdateTariffDto,
+} from '../utils/dto/tariffs.dto';
 
 @Injectable()
 export class TariffService {
@@ -49,39 +26,50 @@ export class TariffService {
   ) {}
 
   // Frontend methods
-  async getPublicTariffs(filters: TariffFilterDto): Promise<PaginationResponse<TariffEntity[]>> {
+  async getPublicTariffs(
+    filters: TariffFilterDto,
+  ): Promise<PaginationResponse<TariffEntity[]>> {
     try {
-      const queryBuilder = this.tariffRepo.createQueryBuilder('tariff')
+      const queryBuilder = this.tariffRepo
+        .createQueryBuilder('tariff')
         .where('tariff.public = :public', { public: true });
 
       // Apply filters
       if (filters.operator) {
-        queryBuilder.andWhere('tariff.operator = :operator', { operator: filters.operator });
+        queryBuilder.andWhere('tariff.operator = :operator', {
+          operator: filters.operator,
+        });
       }
 
       if (filters.phone_ext) {
-        queryBuilder.andWhere('tariff.phone_ext = :phone_ext', { phone_ext: filters.phone_ext });
+        queryBuilder.andWhere('tariff.phone_ext = :phone_ext', {
+          phone_ext: filters.phone_ext,
+        });
       }
 
       if (filters.price_from) {
-        queryBuilder.andWhere('tariff.price >= :price_from', { price_from: filters.price_from });
+        queryBuilder.andWhere('tariff.price >= :price_from', {
+          price_from: filters.price_from,
+        });
       }
 
       if (filters.price_to) {
-        queryBuilder.andWhere('tariff.price <= :price_to', { price_to: filters.price_to });
+        queryBuilder.andWhere('tariff.price <= :price_to', {
+          price_to: filters.price_to,
+        });
       }
 
       if (filters.search) {
         queryBuilder.andWhere(
           '(tariff.name ILIKE :search OR tariff.operator ILIKE :search)',
-          { search: `%${filters.search}%` }
+          { search: `%${filters.search}%` },
         );
       }
 
       queryBuilder.orderBy('tariff.price', 'ASC');
 
       const total = await queryBuilder.getCount();
-      
+
       if (filters.page && filters.limit) {
         queryBuilder
           .skip((filters.page - 1) * filters.limit)
@@ -104,11 +92,13 @@ export class TariffService {
     }
   }
 
-  async getTariffByPhonePrefix(phone: string): Promise<SingleResponse<TariffEntity>> {
+  async getTariffByPhonePrefix(
+    phone: string,
+  ): Promise<SingleResponse<TariffEntity>> {
     try {
       // Extract operator prefix from phone number
       const phonePrefix = phone.substring(0, 5); // e.g., 99890, 99891, etc.
-      
+
       const tariff = await this.tariffRepo.findOne({
         where: { code: phonePrefix, public: true },
       });
@@ -118,11 +108,11 @@ export class TariffService {
         const defaultTariff = await this.tariffRepo.findOne({
           where: { operator: 'DEFAULT', public: true },
         });
-        
+
         if (!defaultTariff) {
           throw new NotFoundException('No tariff found for this phone number');
         }
-        
+
         return { result: defaultTariff };
       }
 
@@ -146,7 +136,7 @@ export class TariffService {
         .where('tariff.public = :public', { public: true })
         .getRawMany();
 
-      const operatorList = operators.map(item => item.operator);
+      const operatorList = operators.map((item) => item.operator);
 
       return { result: operatorList };
     } catch (error) {
@@ -158,42 +148,56 @@ export class TariffService {
   }
 
   // Dashboard methods
-  async findAllTariffs(filters: TariffFilterDto): Promise<PaginationResponse<TariffEntity[]>> {
+  async findAllTariffs(
+    filters: TariffFilterDto,
+  ): Promise<PaginationResponse<TariffEntity[]>> {
     try {
       const queryBuilder = this.tariffRepo.createQueryBuilder('tariff');
 
       // Apply filters
       if (filters.operator) {
-        queryBuilder.andWhere('tariff.operator = :operator', { operator: filters.operator });
+        queryBuilder.andWhere('tariff.operator = :operator', {
+          operator: filters.operator,
+        });
       }
 
       if (filters.phone_ext) {
-        queryBuilder.andWhere('tariff.phone_ext = :phone_ext', { phone_ext: filters.phone_ext });
+        queryBuilder.andWhere('tariff.phone_ext = :phone_ext', {
+          phone_ext: filters.phone_ext,
+        });
       }
 
       if (filters.public !== undefined) {
-        queryBuilder.andWhere('tariff.public = :public', { public: filters.public });
+        queryBuilder.andWhere('tariff.public = :public', {
+          public: filters.public,
+        });
       }
 
       if (filters.price_from) {
-        queryBuilder.andWhere('tariff.price >= :price_from', { price_from: filters.price_from });
+        queryBuilder.andWhere('tariff.price >= :price_from', {
+          price_from: filters.price_from,
+        });
       }
 
       if (filters.price_to) {
-        queryBuilder.andWhere('tariff.price <= :price_to', { price_to: filters.price_to });
+        queryBuilder.andWhere('tariff.price <= :price_to', {
+          price_to: filters.price_to,
+        });
       }
 
       if (filters.search) {
         queryBuilder.andWhere(
           '(tariff.name ILIKE :search OR tariff.operator ILIKE :search OR tariff.code ILIKE :search)',
-          { search: `%${filters.search}%` }
+          { search: `%${filters.search}%` },
         );
       }
 
-      queryBuilder.orderBy('tariff.operator', 'ASC').addOrderBy('tariff.price', 'ASC');
+      queryBuilder
+        .orderBy('tariff.operator', 'ASC')
+        .addOrderBy('tariff.price', 'ASC');
 
       const total = await queryBuilder.getCount();
-      
+
       if (filters.page && filters.limit) {
         queryBuilder
           .skip((filters.page - 1) * filters.limit)
@@ -216,7 +220,9 @@ export class TariffService {
     }
   }
 
-  async createTariff(data: CreateTariffDto): Promise<SingleResponse<TariffEntity>> {
+  async createTariff(
+    data: CreateTariffDto,
+  ): Promise<SingleResponse<TariffEntity>> {
     try {
       // Check if tariff with same code already exists
       const existingTariff = await this.tariffRepo.findOne({
@@ -250,7 +256,9 @@ export class TariffService {
     }
   }
 
-  async updateTariff(data: UpdateTariffDto): Promise<SingleResponse<TariffEntity>> {
+  async updateTariff(
+    data: UpdateTariffDto,
+  ): Promise<SingleResponse<TariffEntity>> {
     try {
       const tariff = await this.tariffRepo.findOne({ where: { id: data.id } });
 
@@ -279,11 +287,16 @@ export class TariffService {
         updated_at: new Date(),
       });
 
-      const updatedTariff = await this.tariffRepo.findOne({ where: { id: data.id } });
+      const updatedTariff = await this.tariffRepo.findOne({
+        where: { id: data.id },
+      });
 
       return { result: updatedTariff };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new HttpException(
@@ -378,19 +391,25 @@ export class TariffService {
     }
   }
 
-  async bulkUpdatePrices(data: { operator: string; price_adjustment: number; adjustment_type: 'percent' | 'fixed' }): Promise<SingleResponse<{ message: string; affected_count: number }>> {
+  async bulkUpdatePrices(data: {
+    operator: string;
+    price_adjustment: number;
+    adjustment_type: 'percent' | 'fixed';
+  }): Promise<SingleResponse<{ message: string; affected_count: number }>> {
     try {
       const tariffs = await this.tariffRepo.find({
         where: { operator: data.operator },
       });
 
       if (tariffs.length === 0) {
-        throw new NotFoundException(`No tariffs found for operator: ${data.operator}`);
+        throw new NotFoundException(
+          `No tariffs found for operator: ${data.operator}`,
+        );
       }
 
       for (const tariff of tariffs) {
         let newPrice = tariff.price;
-        
+
         if (data.adjustment_type === 'percent') {
           newPrice = tariff.price * (1 + data.price_adjustment / 100);
         } else {

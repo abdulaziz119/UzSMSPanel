@@ -15,6 +15,11 @@ import { User } from '../auth/decorators/user.decorator';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  /**
+   * Foydalanuvchining o'z profil ma'lumotlarini olish API
+   * Joriy foydalanuvchining to'liq ma'lumotlarini qaytaradi
+   * (ism, balans, telefon raqam va boshqa shaxsiy ma'lumotlar)
+   */
   @Post('/me')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })

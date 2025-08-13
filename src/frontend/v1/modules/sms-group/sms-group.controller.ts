@@ -24,6 +24,9 @@ import { PaginationResponse } from '../../../../utils/pagination.response';
 export class SmsGroupController {
   constructor(private readonly smsGroupService: SmsGroupService) {}
 
+  /**
+   * Yangi kontaktlar guruhi yaratish
+   */
   @Post('/create')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -36,6 +39,9 @@ export class SmsGroupController {
     return await this.smsGroupService.create(body, user_id);
   }
 
+  /**
+   * Guruhlar ro'yxatini olish (pagination bilan)
+   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -56,6 +62,9 @@ export class SmsGroupController {
   //   return await this.smsGroupService.findOne(param);
   // }
 
+  /**
+   * Guruh ma'lumotlarini yangilash
+   */
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -67,6 +76,9 @@ export class SmsGroupController {
     return await this.smsGroupService.update(body, user_id);
   }
 
+  /**
+   * Guruhni o'chirish
+   */
   @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)

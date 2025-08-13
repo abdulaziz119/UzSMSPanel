@@ -1,18 +1,16 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse, ParamIdDto } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { 
-  SmsMessageService
-} from '../../../../service/sms-message.service';
+import { SmsMessageService } from '../../../../service/sms-message.service';
 import { SmsMessageEntity } from '../../../../entity/sms-message.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { 
+import {
   MessageFilterDto,
-  MessageStatsDto 
+  MessageStatsDto,
 } from '../../../../utils/dto/sms-message.dto';
 
 @ApiBearerAuth()
@@ -21,6 +19,9 @@ import {
 export class SmsMessageController {
   constructor(private readonly smsMessageService: SmsMessageService) {}
 
+  /**
+   * SMS xabarlar tarixi (filter + pagination)
+   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -31,6 +32,9 @@ export class SmsMessageController {
     return await this.smsMessageService.getMessageHistory(filters);
   }
 
+  /**
+   * Bitta SMS tafsilotlari (ID bo'yicha)
+   */
   @Post('/details')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -41,6 +45,9 @@ export class SmsMessageController {
     return await this.smsMessageService.getMessageDetails(param.id);
   }
 
+  /**
+   * SMS statistikalari (deliveried, failed va h.k.)
+   */
   @Post('/statistics')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -51,6 +58,9 @@ export class SmsMessageController {
     return await this.smsMessageService.getMessageStatistics(filters);
   }
 
+  /**
+   * Bitta SMSni qayta yuborish
+   */
   @Post('/resend')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -61,6 +71,9 @@ export class SmsMessageController {
     return await this.smsMessageService.resendMessage(param.id);
   }
 
+  /**
+   * Bir nechta SMSni qayta yuborish
+   */
   @Post('/bulk-resend')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -71,6 +84,9 @@ export class SmsMessageController {
     return await this.smsMessageService.bulkResend(body.message_ids);
   }
 
+  /**
+   * Operatorlar kesimida statistika
+   */
   @Post('/operator-statistics')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)

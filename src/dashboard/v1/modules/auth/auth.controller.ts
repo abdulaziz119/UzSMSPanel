@@ -20,6 +20,10 @@ import { Auth } from './decorators/auth.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * Admin panel uchun login API
+   * Admin/Super Admin kirishi, JWT token qaytaradi
+   */
   @ApiResponse({ type: ErrorResourceDto, status: 401 })
   @Post('/login')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -30,6 +34,10 @@ export class AuthController {
     return await this.authService.dashboardLogin(body);
   }
 
+  /**
+   * Yangi admin foydalanuvchi yaratish API
+   * Faqat SUPER_ADMIN ruxsati bilan ro'yxatdan o'tkazadi
+   */
   @ApiResponse({ type: ErrorResourceDto, status: 401 })
   @Post('/register')
   @Auth()

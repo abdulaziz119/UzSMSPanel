@@ -25,46 +25,11 @@ import {
   MessageDirectionEnum,
 } from '../utils/enum/sms-message.enum';
 import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
-
-interface CreateCampaignDto {
-  name: string;
-  description?: string;
-  group_id: number;
-  template_id?: number;
-  message: string;
-  sender?: string;
-  message_type?: MessageTypeEnum;
-  type: CampaignTypeEnum;
-  scheduled_at?: Date;
-  recipients?: any;
-  settings?: any;
-}
-
-interface UpdateCampaignDto {
-  id: number;
-  name?: string;
-  description?: string;
-  message?: string;
-  sender?: string;
-  scheduled_at?: Date;
-  settings?: any;
-}
-
-interface CampaignFilterDto extends PaginationParams {
-  status?: CampaignStatusEnum;
-  type?: CampaignTypeEnum;
-  user_id?: number;
-  date_from?: string;
-  date_to?: string;
-  search?: string;
-}
-
-interface CampaignStatsDto {
-  campaign_id?: number;
-  date_from?: string;
-  date_to?: string;
-  group_by?: 'day' | 'week' | 'month';
-}
+import {
+  CampaignFilterDto,
+  CreateCampaignDto,
+  UpdateCampaignDto,
+} from '../utils/dto/sms-campaign.dto';
 
 @Injectable()
 export class SmsCampaignService {
@@ -122,7 +87,11 @@ export class SmsCampaignService {
         type: payload.type,
         scheduled_at: payload.scheduled_at,
         total_recipients: contacts.length,
-        recipients: contacts.map(c => ({ id: c.id, phone: c.phone, name: c.name })),
+        recipients: contacts.map((c) => ({
+          id: c.id,
+          phone: c.phone,
+          name: c.name,
+        })),
         settings: payload.settings,
         status: CampaignStatusEnum.DRAFT,
       });
@@ -215,11 +184,13 @@ export class SmsCampaignService {
 
       // Faqat DRAFT statusdagi kampaniyalarni tahrirlash mumkin
       if (campaign.status !== CampaignStatusEnum.DRAFT) {
-        throw new BadRequestException('Cannot update active or completed campaign');
+        throw new BadRequestException(
+          'Cannot update active or completed campaign',
+        );
       }
 
       await this.campaignRepo.update(updateData.id, updateData);
-      
+
       const updatedCampaign = await this.campaignRepo.findOne({
         where: { id: updateData.id },
         relations: ['group', 'template'],
@@ -309,11 +280,11 @@ export class SmsCampaignService {
         balance: user.balance - totalCost,
       });
 
-      return { 
-        result: { 
-          message: 'Campaign started successfully', 
-          campaign_id 
-        } 
+      return {
+        result: {
+          message: 'Campaign started successfully',
+          campaign_id,
+        },
       };
     } catch (error) {
       throw new HttpException(
@@ -377,21 +348,21 @@ export class SmsCampaignService {
       });
 
       const deliveredCount = await this.messageRepo.count({
-        where: { 
+        where: {
           batch_id: campaign_id.toString(),
           status: MessageStatusEnum.DELIVERED,
         },
       });
 
       const failedCount = await this.messageRepo.count({
-        where: { 
+        where: {
           batch_id: campaign_id.toString(),
           status: MessageStatusEnum.FAILED,
         },
       });
 
       const pendingCount = await this.messageRepo.count({
-        where: { 
+        where: {
           batch_id: campaign_id.toString(),
           status: MessageStatusEnum.PENDING,
         },
@@ -429,15 +400,20 @@ export class SmsCampaignService {
   }
 
   // Dashboard-specific methods
-  async findAllCampaigns(filters: CampaignFilterDto): Promise<PaginationResponse<SmsCampaignEntity[]>> {
+  async findAllCampaigns(
+    filters: CampaignFilterDto,
+  ): Promise<PaginationResponse<SmsCampaignEntity[]>> {
     try {
-      const queryBuilder = this.campaignRepo.createQueryBuilder('campaign')
+      const queryBuilder = this.campaignRepo
+        .createQueryBuilder('campaign')
         .leftJoinAndSelect('campaign.group', 'group')
         .leftJoinAndSelect('campaign.user', 'user');
 
       // Apply filters
       if (filters.status) {
-        queryBuilder.andWhere('campaign.status = :status', { status: filters.status });
+        queryBuilder.andWhere('campaign.status = :status', {
+          status: filters.status,
+        });
       }
 
       if (filters.type) {
@@ -445,28 +421,34 @@ export class SmsCampaignService {
       }
 
       if (filters.user_id) {
-        queryBuilder.andWhere('campaign.user_id = :user_id', { user_id: filters.user_id });
+        queryBuilder.andWhere('campaign.user_id = :user_id', {
+          user_id: filters.user_id,
+        });
       }
 
       if (filters.date_from) {
-        queryBuilder.andWhere('campaign.created_at >= :date_from', { date_from: filters.date_from });
+        queryBuilder.andWhere('campaign.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
       }
 
       if (filters.date_to) {
-        queryBuilder.andWhere('campaign.created_at <= :date_to', { date_to: filters.date_to });
+        queryBuilder.andWhere('campaign.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
       }
 
       if (filters.search) {
         queryBuilder.andWhere(
           '(campaign.name ILIKE :search OR campaign.description ILIKE :search)',
-          { search: `%${filters.search}%` }
+          { search: `%${filters.search}%` },
         );
       }
 
       queryBuilder.orderBy('campaign.created_at', 'DESC');
 
       const total = await queryBuilder.getCount();
-      
+
       if (filters.page && filters.limit) {
         queryBuilder
           .skip((filters.page - 1) * filters.limit)
@@ -489,7 +471,9 @@ export class SmsCampaignService {
     }
   }
 
-  async getCampaignDetails(id: number): Promise<SingleResponse<SmsCampaignEntity>> {
+  async getCampaignDetails(
+    id: number,
+  ): Promise<SingleResponse<SmsCampaignEntity>> {
     try {
       const campaign = await this.campaignRepo.findOne({
         where: { id },
@@ -535,7 +519,9 @@ export class SmsCampaignService {
     }
   }
 
-  async cancelCampaign(id: number): Promise<SingleResponse<{ message: string }>> {
+  async cancelCampaign(
+    id: number,
+  ): Promise<SingleResponse<{ message: string }>> {
     try {
       const campaign = await this.campaignRepo.findOne({ where: { id } });
 
@@ -556,12 +542,15 @@ export class SmsCampaignService {
       // Cancel pending messages
       await this.messageRepo.update(
         { batch_id: campaign.id.toString(), status: MessageStatusEnum.PENDING },
-        { status: MessageStatusEnum.FAILED }
+        { status: MessageStatusEnum.FAILED },
       );
 
       return { result: { message: 'Campaign cancelled successfully' } };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new HttpException(
@@ -573,7 +562,7 @@ export class SmsCampaignService {
 
   async bulkAction(
     campaign_ids: number[],
-    action: 'start' | 'pause' | 'cancel'
+    action: 'start' | 'pause' | 'cancel',
   ): Promise<SingleResponse<{ message: string; affected_count: number }>> {
     try {
       let affected_count = 0;
@@ -624,7 +613,7 @@ export class SmsCampaignService {
 
       for (const contact of contacts) {
         const messageId = `${campaign.id}_${contact.id}_${Date.now()}`;
-        
+
         const smsMessage = this.messageRepo.create({
           user_id,
           message_id: messageId,

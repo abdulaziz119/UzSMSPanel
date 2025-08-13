@@ -1,9 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { UserEntity } from '../entity/user.entity';
@@ -13,14 +8,12 @@ import { SmsCampaignEntity } from '../entity/sms-campaign.entity';
 import { SingleResponse } from '../utils/dto/dto';
 import { UserRoleEnum } from '../utils/enum/user.enum';
 import { MessageStatusEnum } from '../utils/enum/sms-message.enum';
-import { TransactionStatusEnum, TransactionTypeEnum } from '../utils/enum/transaction.enum';
+import {
+  TransactionStatusEnum,
+  TransactionTypeEnum,
+} from '../utils/enum/transaction.enum';
 import { CampaignStatusEnum } from '../utils/enum/sms-campaign.enum';
-
-export interface DashboardStatsFilterDto {
-  date_from?: string;
-  date_to?: string;
-  period?: 'today' | 'week' | 'month' | 'year';
-}
+import { DashboardStatsFilterDto } from '../utils/dto/statistics.dto';
 
 @Injectable()
 export class StatisticsService {
@@ -70,8 +63,12 @@ export class StatisticsService {
       const totalRevenue = await this.transactionRepo
         .createQueryBuilder('transaction')
         .select('SUM(transaction.amount)', 'total')
-        .where('transaction.type = :type', { type: TransactionTypeEnum.SMS_PAYMENT })
-        .andWhere('transaction.status = :status', { status: TransactionStatusEnum.COMPLETED })
+        .where('transaction.type = :type', {
+          type: TransactionTypeEnum.SMS_PAYMENT,
+        })
+        .andWhere('transaction.status = :status', {
+          status: TransactionStatusEnum.COMPLETED,
+        })
         .getRawOne();
 
       // Bugungi statistikalar
@@ -95,8 +92,12 @@ export class StatisticsService {
       const todayRevenue = await this.transactionRepo
         .createQueryBuilder('transaction')
         .select('SUM(ABS(transaction.amount))', 'total')
-        .where('transaction.type = :type', { type: TransactionTypeEnum.SMS_PAYMENT })
-        .andWhere('transaction.status = :status', { status: TransactionStatusEnum.COMPLETED })
+        .where('transaction.type = :type', {
+          type: TransactionTypeEnum.SMS_PAYMENT,
+        })
+        .andWhere('transaction.status = :status', {
+          status: TransactionStatusEnum.COMPLETED,
+        })
         .andWhere('transaction.created_at >= :today', { today })
         .andWhere('transaction.created_at < :tomorrow', { tomorrow })
         .getRawOne();
@@ -119,7 +120,8 @@ export class StatisticsService {
           delivered: deliveredSmsCount,
           failed: failedSmsCount,
           sent_today: todaySms,
-          delivery_rate: totalSmsCount > 0 ? (deliveredSmsCount / totalSmsCount) * 100 : 0,
+          delivery_rate:
+            totalSmsCount > 0 ? (deliveredSmsCount / totalSmsCount) * 100 : 0,
         },
         campaigns: {
           total: totalCampaigns,
@@ -136,7 +138,10 @@ export class StatisticsService {
       return { result: statistics };
     } catch (error) {
       throw new HttpException(
-        { message: 'Error fetching dashboard statistics', error: error.message },
+        {
+          message: 'Error fetching dashboard statistics',
+          error: error.message,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -150,7 +155,8 @@ export class StatisticsService {
       const params: any = {};
 
       if (filters?.date_from && filters?.date_to) {
-        dateCondition = 'AND message.created_at BETWEEN :date_from AND :date_to';
+        dateCondition =
+          'AND message.created_at BETWEEN :date_from AND :date_to';
         params.date_from = filters.date_from;
         params.date_to = filters.date_to;
       } else if (filters?.period) {
@@ -170,10 +176,10 @@ export class StatisticsService {
           'SUM(message.cost) as total_cost',
         ])
         .where(`1=1 ${dateCondition}`)
-        .setParameters({ 
-          delivered: MessageStatusEnum.DELIVERED, 
+        .setParameters({
+          delivered: MessageStatusEnum.DELIVERED,
           failed: MessageStatusEnum.FAILED,
-          ...params 
+          ...params,
         })
         .groupBy('message.operator')
         .getRawMany();
@@ -188,9 +194,9 @@ export class StatisticsService {
           'SUM(message.cost) as total_cost',
         ])
         .where('message.created_at >= :last30Days')
-        .setParameters({ 
+        .setParameters({
           delivered: MessageStatusEnum.DELIVERED,
-          last30Days: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          last30Days: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         })
         .groupBy('DATE(message.created_at)')
         .orderBy('date', 'DESC')
@@ -219,7 +225,8 @@ export class StatisticsService {
       const params: any = {};
 
       if (filters?.date_from && filters?.date_to) {
-        dateCondition = 'AND transaction.created_at BETWEEN :date_from AND :date_to';
+        dateCondition =
+          'AND transaction.created_at BETWEEN :date_from AND :date_to';
         params.date_from = filters.date_from;
         params.date_to = filters.date_to;
       }
@@ -307,8 +314,12 @@ export class StatisticsService {
     const weeklyRevenue = await this.transactionRepo
       .createQueryBuilder('transaction')
       .select('SUM(ABS(transaction.amount))', 'total')
-      .where('transaction.type = :type', { type: TransactionTypeEnum.SMS_PAYMENT })
-      .andWhere('transaction.status = :status', { status: TransactionStatusEnum.COMPLETED })
+      .where('transaction.type = :type', {
+        type: TransactionTypeEnum.SMS_PAYMENT,
+      })
+      .andWhere('transaction.status = :status', {
+        status: TransactionStatusEnum.COMPLETED,
+      })
       .andWhere('transaction.created_at >= :fromDate', { fromDate })
       .getRawOne();
 
@@ -326,7 +337,11 @@ export class StatisticsService {
 
     switch (period) {
       case 'today':
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const today = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+        );
         condition = 'AND message.created_at >= :today';
         param = { today };
         break;

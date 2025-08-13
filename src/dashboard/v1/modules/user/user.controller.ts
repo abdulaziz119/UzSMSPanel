@@ -22,6 +22,9 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  /**
+   * Foydalanuvchilar ro'yxati (adminlar uchun, filter + pagination)
+   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -32,6 +35,9 @@ export class UserController {
     return await this.userService.findAllUsers(filters);
   }
 
+  /**
+   * Foydalanuvchi tafsilotlari (ID bo'yicha)
+   */
   @Post('/details')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -42,6 +48,9 @@ export class UserController {
     return await this.userService.getUserDetails(param.id);
   }
 
+  /**
+   * Foydalanuvchini bloklash
+   */
   @Post('/block')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -52,6 +61,9 @@ export class UserController {
     return await this.userService.blockUser(body);
   }
 
+  /**
+   * Foydalanuvchini blokdan chiqarish
+   */
   @Post('/unblock')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -62,6 +74,9 @@ export class UserController {
     return await this.userService.unblockUser(body);
   }
 
+  /**
+   * Foydalanuvchi balansini yangilash (admin tomondan)
+   */
   @Post('/update-balance')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -72,6 +87,9 @@ export class UserController {
     return await this.userService.updateUserBalance(body);
   }
 
+  /**
+   * Umumiy foydalanuvchi statistikasi (admin paneli uchun)
+   */
   @Post('/statistics')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
