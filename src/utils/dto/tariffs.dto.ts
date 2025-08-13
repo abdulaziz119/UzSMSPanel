@@ -1,24 +1,41 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+} from 'class-validator';
 import { PaginationParams } from './dto';
 
 export class CreateTariffDto {
-  @ApiProperty({ example: '99890', description: 'Operator kod (prefix) yoki umumiy kod' })
+  @ApiProperty({
+    example: '9989',
+    description: 'Operator kod (prefix) yoki umumiy kod',
+  })
   @IsString()
   @IsOptional()
   code?: string;
 
-  @ApiProperty({ example: 'Beeline 90', description: 'Tarif nomi', required: false })
+  @ApiProperty({
+    example: 'Beeline 90',
+    description: 'Tarif nomi',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiProperty({ example: '99890', description: 'Telefon prefiksi (phone_ext)', required: false })
+  @ApiProperty({
+    example: '99890',
+    description: 'Telefon prefiksi (phone_ext)',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   phone_ext?: string;
 
-  @ApiProperty({ example: 100.5, description: "SMS narxi" })
+  @ApiProperty({ example: 100.5, description: 'SMS narxi' })
   @IsNumber()
   @IsNotEmpty()
   price: number;
@@ -28,7 +45,11 @@ export class CreateTariffDto {
   @IsNotEmpty()
   operator: string;
 
-  @ApiProperty({ example: true, description: 'Ommaviy (public) holati', required: false })
+  @ApiProperty({
+    example: true,
+    description: 'Ommaviy (public) holati',
+    required: false,
+  })
   @IsOptional()
   @IsBoolean()
   public?: boolean;
@@ -50,12 +71,20 @@ export class UpdateTariffDto {
   @IsString()
   code?: string;
 
-  @ApiProperty({ example: 'Beeline 90', description: 'Tarif nomi', required: false })
+  @ApiProperty({
+    example: 'Beeline 90',
+    description: 'Tarif nomi',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiProperty({ example: '99890', description: 'Telefon prefiksi', required: false })
+  @ApiProperty({
+    example: '99890',
+    description: 'Telefon prefiksi',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   phone_ext?: string;
@@ -65,7 +94,11 @@ export class UpdateTariffDto {
   @IsNumber()
   price?: number;
 
-  @ApiProperty({ example: 'BEELINE', description: 'Operator nomi', required: false })
+  @ApiProperty({
+    example: 'BEELINE',
+    description: 'Operator nomi',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   operator?: string;
@@ -87,7 +120,11 @@ export class TariffFilterDto extends PaginationParams {
   @IsString()
   operator?: string;
 
-  @ApiProperty({ example: '99890', description: 'Telefon prefiksi', required: false })
+  @ApiProperty({
+    example: '99890',
+    description: 'Telefon prefiksi',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   phone_ext?: string;
@@ -107,12 +144,20 @@ export class TariffFilterDto extends PaginationParams {
   @IsNumber()
   price_to?: number;
 
-  @ApiProperty({ example: 'beeline', description: 'Qidiruv matni', required: false })
+  @ApiProperty({
+    example: 'beeline',
+    description: 'Qidiruv matni',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiProperty({ example: 1, description: 'Davlat ID boyicha filter', required: false })
+  @ApiProperty({
+    example: 1,
+    description: 'Davlat ID boyicha filter',
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
   country_id?: number;
