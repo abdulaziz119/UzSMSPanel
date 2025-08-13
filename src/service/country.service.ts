@@ -28,8 +28,8 @@ export class CountryService {
     payload: CreateCountryDto,
   ): Promise<SingleResponse<CountryEntity>> {
     try {
-      const country = this.countryRepo.create(payload);
-      const savedCountry = await this.countryRepo.save(country);
+      const country: CountryEntity = this.countryRepo.create(payload);
+      const savedCountry: CountryEntity = await this.countryRepo.save(country);
 
       return {
         result: savedCountry,
@@ -57,13 +57,15 @@ export class CountryService {
       if (search) {
         queryBuilder.andWhere(
           '(countries.name ILIKE :search OR countries.code ILIKE :search OR countries.iso_code ILIKE :search)',
-          { search: `%${search}%` }
+          { search: `%${search}%` },
         );
       }
 
       // Add is_active filter
       if (is_active !== undefined) {
-        queryBuilder.andWhere('countries.is_active = :is_active', { is_active });
+        queryBuilder.andWhere('countries.is_active = :is_active', {
+          is_active,
+        });
       }
 
       const [countryData, total] = await queryBuilder
