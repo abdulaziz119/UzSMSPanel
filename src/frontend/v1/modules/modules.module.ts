@@ -9,6 +9,10 @@ import { SmsContactModule } from './sms-contact/sms-contact.module';
 import { SmsTemplateModule } from './sms-template/sms-template.module';
 import { SmsSenderModule } from './sms-sender/sms-sender.module';
 import { SenderPriceModule } from './sender-price/sender-price.module';
+import { SmsCampaignModule } from './sms-campaign/sms-campaign.module';
+import { SmsMessageModule } from './sms-message/sms-message.module';
+import { TransactionModule } from './transaction/transaction.module';
+import { TariffsFrontendModule } from './tariffs/tariffs.module';
 
 @Module({
   imports: [
@@ -20,8 +24,12 @@ import { SenderPriceModule } from './sender-price/sender-price.module';
     SmsGroupModule,
     SmsContactModule,
     SmsTemplateModule,
-  SmsSenderModule,
-  SenderPriceModule,
+    SmsSenderModule,
+    SenderPriceModule,
+    SmsCampaignModule,
+    SmsMessageModule,
+    TransactionModule,
+    TariffsFrontendModule,
   ],
 })
 export class ModulesFrontendModule {}

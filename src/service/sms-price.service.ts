@@ -1,0 +1,237 @@
+import {
+  Inject,
+  Injectable,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { MODELS } from '../constants/constants';
+import { SmsPriceEntity } from '../entity/sms-price.entity';
+import { SingleResponse, PaginationParams } from '../utils/dto/dto';
+import { PaginationResponse } from '../utils/pagination.response';
+import { getPaginationResponse } from '../utils/pagination.builder';
+import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
+
+export interface CreatePriceDto {
+  operator: OperatorEnum;
+  message_type: MessageTypeEnum;
+  price_per_sms: number;
+  description?: string;
+}
+
+export interface UpdatePriceDto {
+  id: number;
+  price_per_sms?: number;
+  description?: string;
+  is_active?: boolean;
+}
+
+export interface PriceFilterDto extends PaginationParams {
+  operator?: OperatorEnum;
+  message_type?: MessageTypeEnum;
+  is_active?: boolean;
+}
+
+@Injectable()
+export class SmsPriceService {
+  constructor(
+    @Inject(MODELS.SMS_PRICE)
+    private readonly priceRepo: Repository<SmsPriceEntity>,
+  ) {}
+
+  async findAllPrices(filters: PriceFilterDto): Promise<PaginationResponse<SmsPriceEntity[]>> {
+    try {
+      const queryBuilder = this.priceRepo.createQueryBuilder('price');
+
+      if (filters.operator) {
+        queryBuilder.andWhere('price.operator = :operator', { operator: filters.operator });
+      }
+
+      if (filters.message_type) {
+        queryBuilder.andWhere('price.message_type = :message_type', { message_type: filters.message_type });
+      }
+
+      if (filters.is_active !== undefined) {
+        queryBuilder.andWhere('price.active = :active', { active: filters.is_active });
+      }
+
+      queryBuilder.orderBy('price.operator', 'ASC')
+                  .addOrderBy('price.message_type', 'ASC');
+
+      const total = await queryBuilder.getCount();
+      
+      if (filters.page && filters.limit) {
+        queryBuilder
+          .skip((filters.page - 1) * filters.limit)
+          .take(filters.limit);
+      }
+
+      const prices = await queryBuilder.getMany();
+
+      return getPaginationResponse(
+        prices,
+        total,
+        filters.page || 1,
+        filters.limit || 10,
+      );
+    } catch (error) {
+      throw new HttpException(
+        { message: 'Error fetching prices', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async createPrice(data: CreatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
+    try {
+      // Check if price already exists for this operator and message type
+      const existingPrice = await this.priceRepo.findOne({
+        where: {
+          operator: data.operator,
+          message_type: data.message_type,
+        },
+      });
+
+      if (existingPrice) {
+        throw new BadRequestException('Price already exists for this operator and message type');
+      }
+
+      const price = this.priceRepo.create(data);
+      const savedPrice = await this.priceRepo.save(price);
+
+      return { result: savedPrice };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new HttpException(
+        { message: 'Error creating price', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updatePrice(data: UpdatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
+    try {
+      const price = await this.priceRepo.findOne({ where: { id: data.id } });
+
+      if (!price) {
+        throw new NotFoundException('Price not found');
+      }
+
+      const updateData: Partial<SmsPriceEntity> = {};
+      
+      if (data.price_per_sms !== undefined) {
+        updateData.price_per_sms = data.price_per_sms;
+      }
+      
+      if (data.description !== undefined) {
+        updateData.description = data.description;
+      }
+      
+      if (data.is_active !== undefined) {
+        updateData.active = data.is_active;
+      }
+
+      updateData.updated_at = new Date();
+
+      await this.priceRepo.update(data.id, updateData);
+
+      const updatedPrice = await this.priceRepo.findOne({ where: { id: data.id } });
+
+      return { result: updatedPrice };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new HttpException(
+        { message: 'Error updating price', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async deletePrice(id: number): Promise<SingleResponse<{ message: string }>> {
+    try {
+      const price = await this.priceRepo.findOne({ where: { id } });
+
+      if (!price) {
+        throw new NotFoundException('Price not found');
+      }
+
+      await this.priceRepo.delete(id);
+
+      return { result: { message: 'Price deleted successfully' } };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new HttpException(
+        { message: 'Error deleting price', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async bulkUpdatePrices(
+    updates: Array<{ id: number; price_per_sms?: number; is_active?: boolean }>
+  ): Promise<SingleResponse<{ message: string; updated_count: number }>> {
+    try {
+      let updated_count = 0;
+
+      for (const update of updates) {
+        try {
+          const updateData: Partial<SmsPriceEntity> = {
+            updated_at: new Date(),
+          };
+
+          if (update.price_per_sms !== undefined) {
+            updateData.price_per_sms = update.price_per_sms;
+          }
+
+          if (update.is_active !== undefined) {
+            updateData.active = update.is_active;
+          }
+
+          await this.priceRepo.update(update.id, updateData);
+          updated_count++;
+        } catch (error) {
+          console.error(`Failed to update price ${update.id}:`, error.message);
+        }
+      }
+
+      return {
+        result: {
+          message: 'Bulk update completed',
+          updated_count,
+        },
+      };
+    } catch (error) {
+      throw new HttpException(
+        { message: 'Error performing bulk update', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getPriceForOperator(
+    operator: OperatorEnum,
+    message_type: MessageTypeEnum = MessageTypeEnum.SMS
+  ): Promise<number> {
+    try {
+      const price = await this.priceRepo.findOne({
+        where: {
+          operator,
+          message_type,
+          active: true,
+        },
+      });
+
+      return price ? price.price_per_sms : 100; // Default price
+    } catch (error) {
+      return 100; // Default price on error
+    }
+  }
+}

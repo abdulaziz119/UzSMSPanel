@@ -7,7 +7,6 @@ import { SenderPriceController } from './sender-price.controller';
 @Module({
   imports: [DatabaseModule],
   controllers: [SenderPriceController],
-  providers: [SenderPriceService, ...senderPriceProviders],
-  exports: [SenderPriceService],
+  providers: [...senderPriceProviders, SenderPriceService],
 })
 export class SenderPriceModule {}
