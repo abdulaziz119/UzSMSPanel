@@ -12,7 +12,7 @@ import { UserEntity } from '../entity/user.entity';
 import { SingleResponse, PaginationParams } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
-import { UserRoleEnum } from '../utils/enum/user.enum';
+import { UserRoleEnum, BalanceOperationEnum } from '../utils/enum/user.enum';
 
 export interface UserFilterDto extends PaginationParams {
   role?: UserRoleEnum;
@@ -23,7 +23,7 @@ export interface UserFilterDto extends PaginationParams {
 export interface UpdateUserBalanceDto {
   user_id: number;
   amount: number;
-  operation: 'add' | 'subtract' | 'set';
+  operation: BalanceOperationEnum;
   description?: string;
 }
 
@@ -194,16 +194,16 @@ export class UserService {
       let newBalance: number;
 
       switch (payload.operation) {
-        case 'add':
+        case BalanceOperationEnum.ADD:
           newBalance = user.balance + payload.amount;
           break;
-        case 'subtract':
+        case BalanceOperationEnum.SUBTRACT:
           newBalance = user.balance - payload.amount;
           if (newBalance < 0) {
             throw new BadRequestException('Insufficient balance');
           }
           break;
-        case 'set':
+        case BalanceOperationEnum.SET:
           newBalance = payload.amount;
           break;
         default:

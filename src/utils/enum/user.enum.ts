@@ -10,3 +10,9 @@ export enum UserRoleEnum {
   CLIENT = 'client',
   OPERATOR = 'operator',
 }
+
+export enum BalanceOperationEnum {
+  ADD = 'add',
+  SUBTRACT = 'subtract',
+  SET = 'set',
+}

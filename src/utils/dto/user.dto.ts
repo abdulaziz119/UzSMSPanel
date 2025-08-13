@@ -8,7 +8,7 @@ import {
   IsNotEmpty,
   IsBoolean,
 } from 'class-validator';
-import { UserRoleEnum, language } from '../enum/user.enum';
+import { UserRoleEnum, language, BalanceOperationEnum } from '../enum/user.enum';
 import { PaginationParams } from './dto';
 
 export interface LocationInterface {
@@ -193,13 +193,13 @@ export class UpdateUserBalanceDto {
   amount: number;
 
   @ApiProperty({
-    example: 'ADD',
-    description: 'Operation type: ADD or SUBTRACT',
-    enum: ['ADD', 'SUBTRACT'],
+    example: 'add',
+    description: 'Operation type: add, subtract, or set',
+    enum: BalanceOperationEnum,
   })
   @IsNotEmpty()
-  @IsString()
-  operation: string;
+  @IsEnum(BalanceOperationEnum)
+  operation: BalanceOperationEnum;
 
   @ApiProperty({
     example: 'Admin balance adjustment',
