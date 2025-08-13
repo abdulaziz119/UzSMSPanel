@@ -36,12 +36,7 @@ export class SmsCampaignController {
     @Body() body: CreateCampaignDto,
     @User('id') user_id: number,
   ): Promise<SingleResponse<SmsCampaignEntity>> {
-    // Convert string date to Date object for service
-    const convertedBody = {
-      ...body,
-      scheduled_at: body.scheduled_at ? new Date(body.scheduled_at) : undefined,
-    };
-    return await this.smsCampaignService.create(convertedBody, user_id);
+    return await this.smsCampaignService.create(body, user_id);
   }
 
   /**
@@ -58,12 +53,7 @@ export class SmsCampaignController {
     @Body() body: UpdateCampaignDto,
     @User('id') user_id: number,
   ): Promise<SingleResponse<SmsCampaignEntity>> {
-    // Convert string date to Date object for service
-    const convertedBody = {
-      ...body,
-      scheduled_at: body.scheduled_at ? new Date(body.scheduled_at) : undefined,
-    };
-    return await this.smsCampaignService.update(convertedBody, user_id);
+    return await this.smsCampaignService.update(body, user_id);
   }
 
   /**

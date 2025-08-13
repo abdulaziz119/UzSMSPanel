@@ -7,7 +7,6 @@ import {
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
-import { SmsSenderEntity } from './sms-sender.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_templates' })
 @Index(['user_id', 'status'])
@@ -26,13 +25,6 @@ export class SmsTemplateEntity extends BaseEntity {
   @Column({ type: 'text', nullable: false })
   content: string;
 
-  @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
-  sender_id: number | null;
-
-  @ManyToOne(() => SmsSenderEntity, (entity) => entity, cascadeUpdateRelationOptions)
-  @JoinColumn({ name: 'sender_id' })
-  sender: SmsSenderEntity;
-
   @Column({
     type: 'enum',
     enum: TemplateStatusEnum,
@@ -42,9 +34,6 @@ export class SmsTemplateEntity extends BaseEntity {
 
   @Column({ type: 'text', nullable: true })
   description: string | null;
-
-  @Column({ type: 'json', nullable: true })
-  variables: any;
 
   @Column({ type: 'integer', default: 0 })
   usage_count: number;

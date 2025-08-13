@@ -30,6 +30,16 @@ export class DashboardStatsFilterDto {
   @IsOptional()
   @IsString()
   group_by?: 'day' | 'week' | 'month';
+
+  @ApiProperty({ 
+    example: 'week',
+    enum: ['day', 'week', 'month', 'year'],
+    description: 'Davr bo\'yicha tezkor filter',
+    required: false
+  })
+  @IsOptional()
+  @IsString()
+  period?: 'day' | 'week' | 'month' | 'year';
 }
 
 export class SmsReportsFilterDto {

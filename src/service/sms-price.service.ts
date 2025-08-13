@@ -13,6 +13,11 @@ import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
+import {
+  PriceFilterDto,
+  CreatePriceDto,
+  UpdatePriceDto,
+} from '../utils/dto/sms-price.dto';
 
 @Injectable()
 export class SmsPriceService {

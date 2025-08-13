@@ -1,254 +1,104 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean } from 'class-validator';
 import { PaginationParams } from './dto';
 
 export class CreateTariffDto {
-  @ApiProperty({ 
-    example: "Standart tarif",
-    description: "Tarif nomi"
-  })
+  @ApiProperty({ example: '99890', description: 'Operator kod (prefix) yoki umumiy kod' })
   @IsString()
-  @IsNotEmpty()
-  name: string;
-
-  @ApiProperty({ 
-    example: "Standart mijozlar uchun tarif",
-    description: "Tarif tavsifi",
-    required: false
-  })
   @IsOptional()
-  @IsString()
-  description?: string;
+  code?: string;
 
-  @ApiProperty({ 
-    example: 100,
-    description: "SMS narxi (so'm)"
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  sms_price: number;
-
-  @ApiProperty({ 
-    example: 500,
-    description: "MMS narxi (so'm)",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  mms_price?: number;
-
-  @ApiProperty({ 
-    example: 1000,
-    description: "Voice SMS narxi (so'm)",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  voice_price?: number;
-
-  @ApiProperty({ 
-    example: 10,
-    description: "Chegirma foizi",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  discount_percent?: number;
-
-  @ApiProperty({ 
-    example: 1000,
-    description: "Minimal balans",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  min_balance?: number;
-
-  @ApiProperty({ 
-    example: 100000,
-    description: "Maksimal balans",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  max_balance?: number;
-
-  @ApiProperty({ 
-    example: true,
-    description: "Faol holati",
-    required: false
-  })
-  @IsOptional()
-  @IsBoolean()
-  is_active?: boolean;
-
-  @ApiProperty({ 
-    description: "Qo'shimcha sozlamalar",
-    required: false
-  })
-  @IsOptional()
-  settings?: any;
-}
-
-export class UpdateTariffDto {
-  @ApiProperty({ 
-    example: 1,
-    description: "Tarif ID"
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  id: number;
-
-  @ApiProperty({ 
-    example: "Yangilangan tarif",
-    description: "Tarif nomi",
-    required: false
-  })
+  @ApiProperty({ example: 'Beeline 90', description: 'Tarif nomi', required: false })
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiProperty({ 
-    example: "Yangilangan tavsif",
-    description: "Tarif tavsifi",
-    required: false
-  })
+  @ApiProperty({ example: '99890', description: 'Telefon prefiksi (phone_ext)', required: false })
   @IsOptional()
   @IsString()
-  description?: string;
+  phone_ext?: string;
 
-  @ApiProperty({ 
-    example: 120,
-    description: "SMS narxi (so'm)",
-    required: false
-  })
-  @IsOptional()
+  @ApiProperty({ example: 100.5, description: "SMS narxi" })
   @IsNumber()
-  sms_price?: number;
+  @IsNotEmpty()
+  price: number;
 
-  @ApiProperty({ 
-    example: 600,
-    description: "MMS narxi (so'm)",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  mms_price?: number;
+  @ApiProperty({ example: 'BEELINE', description: 'Operator nomi' })
+  @IsString()
+  @IsNotEmpty()
+  operator: string;
 
-  @ApiProperty({ 
-    example: 1200,
-    description: "Voice SMS narxi (so'm)",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  voice_price?: number;
-
-  @ApiProperty({ 
-    example: 15,
-    description: "Chegirma foizi",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  discount_percent?: number;
-
-  @ApiProperty({ 
-    example: 2000,
-    description: "Minimal balans",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  min_balance?: number;
-
-  @ApiProperty({ 
-    example: 200000,
-    description: "Maksimal balans",
-    required: false
-  })
-  @IsOptional()
-  @IsNumber()
-  max_balance?: number;
-
-  @ApiProperty({ 
-    example: false,
-    description: "Faol holati",
-    required: false
-  })
+  @ApiProperty({ example: true, description: 'Ommaviy (public) holati', required: false })
   @IsOptional()
   @IsBoolean()
-  is_active?: boolean;
+  public?: boolean;
+}
 
-  @ApiProperty({ 
-    description: "Qo'shimcha sozlamalar",
-    required: false
-  })
+export class UpdateTariffDto {
+  @ApiProperty({ example: 1, description: 'Tarif ID' })
+  @IsNumber()
+  @IsNotEmpty()
+  id: number;
+
+  @ApiProperty({ example: '99890', description: 'Kod', required: false })
   @IsOptional()
-  settings?: any;
+  @IsString()
+  code?: string;
+
+  @ApiProperty({ example: 'Beeline 90', description: 'Tarif nomi', required: false })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiProperty({ example: '99890', description: 'Telefon prefiksi', required: false })
+  @IsOptional()
+  @IsString()
+  phone_ext?: string;
+
+  @ApiProperty({ example: 120, description: 'SMS narxi', required: false })
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+
+  @ApiProperty({ example: 'BEELINE', description: 'Operator nomi', required: false })
+  @IsOptional()
+  @IsString()
+  operator?: string;
+
+  @ApiProperty({ example: true, description: 'Public holati', required: false })
+  @IsOptional()
+  @IsBoolean()
+  public?: boolean;
 }
 
 export class TariffFilterDto extends PaginationParams {
-  @ApiProperty({ 
-    example: true,
-    description: "Faol holatdagilarni ko'rsatish",
-    required: false
-  })
+  @ApiProperty({ example: 'BEELINE', description: 'Operator', required: false })
+  @IsOptional()
+  @IsString()
+  operator?: string;
+
+  @ApiProperty({ example: '99890', description: 'Telefon prefiksi', required: false })
+  @IsOptional()
+  @IsString()
+  phone_ext?: string;
+
+  @ApiProperty({ example: true, description: 'Public holati', required: false })
   @IsOptional()
   @IsBoolean()
-  is_active?: boolean;
+  public?: boolean;
 
-  @ApiProperty({ 
-    example: 100,
-    description: "Minimal SMS narxi",
-    required: false
-  })
+  @ApiProperty({ example: 100, description: 'Minimal narx', required: false })
   @IsOptional()
   @IsNumber()
-  min_sms_price?: number;
+  price_from?: number;
 
-  @ApiProperty({ 
-    example: 200,
-    description: "Maksimal SMS narxi",
-    required: false
-  })
+  @ApiProperty({ example: 200, description: 'Maksimal narx', required: false })
   @IsOptional()
   @IsNumber()
-  max_sms_price?: number;
+  price_to?: number;
 
-  @ApiProperty({ 
-    example: "standart",
-    description: "Qidiruv matni",
-    required: false
-  })
+  @ApiProperty({ example: 'beeline', description: 'Qidiruv matni', required: false })
   @IsOptional()
   @IsString()
   search?: string;
-}
-
-export class AssignTariffDto {
-  @ApiProperty({ 
-    example: 1,
-    description: "Foydalanuvchi ID"
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  user_id: number;
-
-  @ApiProperty({ 
-    example: 2,
-    description: "Tarif ID"
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  tariff_id: number;
-
-  @ApiProperty({ 
-    example: "VIP mijoz uchun",
-    description: "Tayinlash sababi",
-    required: false
-  })
-  @IsOptional()
-  @IsString()
-  reason?: string;
 }
