@@ -14,9 +14,10 @@ import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import {
   CreateSmsTemplateDto,
   UpdateSmsTemplateDto,
-  SmsTemplateFrontendFilterDto,
 } from '../utils/dto/sms-template.dto';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
+import { SmsTemplateFrontendFilterDto } from '../frontend/v1/modules/sms-template/dto/sms-template.dto';
+import { SmsTemplateDashboardFilterDto } from '../dashboard/v1/modules/sms-template/dto/sms-template.dto';
 
 @Injectable()
 export class SmsTemplateService {
@@ -33,7 +34,6 @@ export class SmsTemplateService {
       const newSmsTemplate: SmsTemplateEntity = this.smsTemplateRepo.create({
         name: payload.name,
         content: payload.content,
-        description: payload.description,
         user_id: user_id,
         status: TemplateStatusEnum.PENDING_APPROVAL,
         usage_count: 0,
@@ -53,7 +53,7 @@ export class SmsTemplateService {
   }
 
   async findAll(
-    payload: SmsTemplateFrontendFilterDto,
+    payload: SmsTemplateFrontendFilterDto | SmsTemplateDashboardFilterDto,
     user_id?: number,
   ): Promise<PaginationResponse<SmsTemplateEntity[]>> {
     const { page = 1, limit = 10, search, status } = payload;
@@ -113,7 +113,6 @@ export class SmsTemplateService {
       const updatedSmsTemplate: SmsTemplateEntity =
         await this.smsTemplateRepo.findOne({
           where: { id: updateData.id },
-          relations: ['user', 'sender'],
         });
       return { result: updatedSmsTemplate };
     } catch (error) {

@@ -6,11 +6,9 @@ import {
   IsString,
   Length,
   IsEnum,
-  IsArray,
   IsNumber,
 } from 'class-validator';
 import { TemplateStatusEnum } from '../enum/sms-template.enum';
-import { PaginationParams } from './dto';
 
 export class CreateSmsTemplateDto {
   @ApiProperty({ example: 'Welcome Template', description: 'Template name' })
@@ -26,14 +24,6 @@ export class CreateSmsTemplateDto {
   @IsString()
   @IsNotEmpty()
   content: string;
-
-  @ApiPropertyOptional({
-    example: 'Welcome message template for new users',
-    description: 'Template description',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
 }
 
 export class UpdateSmsTemplateDto {
@@ -41,23 +31,6 @@ export class UpdateSmsTemplateDto {
   @IsDefined()
   @IsNumber()
   id: number;
-
-  @ApiPropertyOptional({
-    example: 'Updated Template Name',
-    description: 'Template name',
-  })
-  @IsString()
-  @IsOptional()
-  @Length(1, 200)
-  name?: string;
-
-  @ApiPropertyOptional({
-    example: 'Updated content {name}!',
-    description: 'Template content',
-  })
-  @IsString()
-  @IsOptional()
-  content?: string;
 
   @ApiPropertyOptional({
     enum: TemplateStatusEnum,
@@ -73,24 +46,5 @@ export class UpdateSmsTemplateDto {
   })
   @IsString()
   @IsOptional()
-  description?: string;
-}
-
-export class SmsTemplateFrontendFilterDto extends PaginationParams {
-  @ApiPropertyOptional({
-    example: 'Welcome',
-    description: 'Shablon nomida qidiruv',
-  })
-  @IsString()
-  @IsOptional()
-  search?: string;
-
-  @ApiPropertyOptional({
-    enum: TemplateStatusEnum,
-    description: 'Shablon holati boyicha filter',
-    example: TemplateStatusEnum.ACTIVE,
-  })
-  @IsEnum(TemplateStatusEnum)
-  @IsOptional()
-  status?: TemplateStatusEnum;
+  rejection_reason?: string;
 }

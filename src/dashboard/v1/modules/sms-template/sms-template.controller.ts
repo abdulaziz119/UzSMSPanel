@@ -5,14 +5,11 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import {
-  PaginationParams,
-  ParamIdDto,
-  SingleResponse,
-} from '../../../../utils/dto/dto';
+import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
 import { SmsTemplateEntity } from '../../../../entity/sms-template.entity';
 import { SmsTemplateService } from '../../../../service/sms-template.service';
 import { UpdateSmsTemplateDto } from '../../../../utils/dto/sms-template.dto';
+import { SmsTemplateDashboardFilterDto } from './dto/sms-template.dto';
 
 @ApiBearerAuth()
 @ApiTags('dashboard-sms-template')
@@ -20,22 +17,16 @@ import { UpdateSmsTemplateDto } from '../../../../utils/dto/sms-template.dto';
 export class SmsTemplateDashboardController {
   constructor(private readonly smsTemplateService: SmsTemplateService) {}
 
-  /**
-   * Shablonlar ro'yxati (pagination)
-   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
   async findAll(
-    @Body() query: PaginationParams,
+    @Body() query: SmsTemplateDashboardFilterDto,
   ): Promise<PaginationResponse<SmsTemplateEntity[]>> {
     return await this.smsTemplateService.findAll(query);
   }
 
-  /**
-   * Shablonni yangilash
-   */
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -46,9 +37,6 @@ export class SmsTemplateDashboardController {
     return await this.smsTemplateService.update(body, body.user_id);
   }
 
-  /**
-   * Shablonni o'chirish
-   */
   @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)

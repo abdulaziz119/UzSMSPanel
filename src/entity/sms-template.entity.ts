@@ -32,9 +32,6 @@ export class SmsTemplateEntity extends BaseEntity {
   })
   status: TemplateStatusEnum;
 
-  @Column({ type: 'text', nullable: true })
-  description: string | null;
-
   @Column({ type: 'integer', default: 0 })
   usage_count: number;
 

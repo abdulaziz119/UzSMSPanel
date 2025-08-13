@@ -8,15 +8,12 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { SmsTemplateEntity } from '../../../../entity/sms-template.entity';
 import { User } from '../auth/decorators/user.decorator';
 import { SmsTemplateService } from '../../../../service/sms-template.service';
-import {
-  CreateSmsTemplateDto,
-  UpdateSmsTemplateDto,
-  SmsTemplateFrontendFilterDto,
-} from '../../../../utils/dto/sms-template.dto';
+import { CreateSmsTemplateDto } from '../../../../utils/dto/sms-template.dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
+import { SmsTemplateFrontendFilterDto } from './dto/sms-template.dto';
 
 @ApiBearerAuth()
-@ApiTags('frontend-sms-template')
+@ApiTags('sms-template')
 @Controller({ path: '/frontend/sms-template', version: '1' })
 export class SmsTemplateController {
   constructor(private readonly smsTemplateService: SmsTemplateService) {}
