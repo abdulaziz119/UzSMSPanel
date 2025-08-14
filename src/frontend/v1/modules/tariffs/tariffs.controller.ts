@@ -8,10 +8,7 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { TariffService } from '../../../../service/tariffs.service';
 import { TariffEntity } from '../../../../entity/tariffs.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import {
-  TariffFilterDto,
-  CalculateTariffPriceDto,
-} from '../../../../utils/dto/tariffs.dto';
+import { TariffFilterDto } from '../../../../utils/dto/tariffs.dto';
 
 @ApiBearerAuth()
 @ApiTags('tariffs')
