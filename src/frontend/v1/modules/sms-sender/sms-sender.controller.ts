@@ -5,22 +5,18 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SmsSenderService } from '../../../../service/sms-sender.service';
-import { CreateSmsSenderDto, UpdateSmsSenderDto } from '../../../../utils/dto/sms-sender.dto';
+import { CreateSmsSenderDto } from '../../../../utils/dto/sms-sender.dto';
 import { SingleResponse, PaginationParams } from '../../../../utils/dto/dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
 import { SmsSenderEntity } from '../../../../entity/sms-sender.entity';
 import { User } from '../auth/decorators/user.decorator';
 
 @ApiBearerAuth()
-@ApiTags('frontend-sms-sender')
+@ApiTags('sms-sender')
 @Controller({ path: '/frontend/sms-sender', version: '1' })
 export class SmsSenderController {
   constructor(private readonly smsSenderService: SmsSenderService) {}
 
-  /**
-   * Yangi SMS yuboruvchi nom (sender name) yaratish
-   * Mijoz o'z brend nomini tasdiqlash uchun yuboradi
-   */
   @Post('/create')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -33,9 +29,6 @@ export class SmsSenderController {
     return await this.smsSenderService.create(body, user_id);
   }
 
-  /**
-   * Mavjud sender nomlari ro'yxatini olish (pagination bilan)
-   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -44,18 +37,5 @@ export class SmsSenderController {
     @Body() query: PaginationParams,
   ): Promise<PaginationResponse<SmsSenderEntity[]>> {
     return await this.smsSenderService.findAll(query);
-  }
-
-  /**
-   * Sender ma'lumotlarini yangilash (masalan: status, nom va h.k.)
-   */
-  @Post('/update')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
-  async update(
-    @Body() body: UpdateSmsSenderDto,
-  ): Promise<SingleResponse<SmsSenderEntity>> {
-    return await this.smsSenderService.update(body);
   }
 }
