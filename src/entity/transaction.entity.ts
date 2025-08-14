@@ -1,9 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import {
-  BaseEntity,
-  BigintTransformer,
-  cascadeUpdateRelationOptions,
-} from './base.entity';
+import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import {
@@ -17,10 +13,10 @@ import {
 @Index(['created_at', 'status'])
 @Index(['transaction_id'])
 export class TransactionEntity extends BaseEntity {
-  @Column({ type: 'bigint', transformer: new BigintTransformer() })
+  @Column({ type: 'integer' })
   user_id: number;
 
-  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
+  @ManyToOne(() => UserEntity, (user) => user.transactions, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 

@@ -5,7 +5,7 @@ import { BaseEntity } from './base.entity';
 @Entity({ schema: DB_SCHEMA, name: 'otps' })
 @Unique(['phone'])
 export class OtpEntity extends BaseEntity {
-  @Column({ unique: true })
+  @Column()
   phone: string;
 
   @Column({ length: 6, nullable: false })

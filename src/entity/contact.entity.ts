@@ -1,9 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import {
-  BaseEntity,
-  BigintTransformer,
-  cascadeUpdateRelationOptions,
-} from './base.entity';
+import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { language } from '../utils/enum/user.enum';
@@ -13,11 +9,12 @@ import { FileEntity } from './file.entity';
 @Entity({ schema: DB_SCHEMA, name: 'contacts' })
 @Index(['user_id', 'status'])
 @Index(['phone', 'phone_ext'])
+@Index(['user_id', 'phone'], { unique: true })
 export class ContactEntity extends BaseEntity {
-  @Column({ type: 'bigint', transformer: new BigintTransformer() })
+  @Column({ type: 'integer' })
   user_id: number;
 
-  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
+  @ManyToOne(() => UserEntity, (user) => user.contacts, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -73,7 +70,7 @@ export class ContactEntity extends BaseEntity {
   @JoinColumn({ name: 'passport_file_id' })
   passport_file: FileEntity;
 
-  @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
+  @Column({ type: 'integer', nullable: true })
   passport_file_id: number | null;
 
   @Column({ type: 'text', nullable: true })
@@ -83,7 +80,7 @@ export class ContactEntity extends BaseEntity {
   @JoinColumn({ name: 'address_file_id' })
   address_file: FileEntity;
 
-  @Column({ type: 'bigint', transformer: new BigintTransformer(), nullable: true })
+  @Column({ type: 'integer', nullable: true })
   address_file_id: number | null;
 
   @Column({ type: 'varchar', nullable: true })

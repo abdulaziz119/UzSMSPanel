@@ -29,7 +29,7 @@ export class SmsPriceEntity extends BaseEntity {
   wholesale_price: number;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
-  currency: string;
+  currency: string | null;
 
   @Column({ type: 'integer', default: 160 })
   max_characters: number;

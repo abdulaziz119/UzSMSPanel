@@ -1,9 +1,5 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
-import {
-  BaseEntity,
-  BigintTransformer,
-  cascadeUpdateRelationOptions,
-} from './base.entity';
+import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { SmsContactEntity } from './sms-contact.entity';
@@ -16,7 +12,7 @@ export class SmsGroupEntity extends BaseEntity {
   @Column({ type: 'integer', nullable: true, default: 0 })
   contact_count: number | null;
 
-  @Column({ type: 'bigint', transformer: new BigintTransformer() })
+  @Column({ type: 'integer' })
   user_id: number;
 
   @ManyToOne(

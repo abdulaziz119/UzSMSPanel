@@ -1,9 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import {
-  BaseEntity,
-  BigintTransformer,
-  cascadeUpdateRelationOptions,
-} from './base.entity';
+import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
@@ -12,10 +8,10 @@ import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 @Index(['user_id', 'status'])
 @Index(['name'])
 export class SmsTemplateEntity extends BaseEntity {
-  @Column({ type: 'bigint', transformer: new BigintTransformer() })
+  @Column({ type: 'integer' })
   user_id: number;
 
-  @ManyToOne(() => UserEntity, (entity) => entity, cascadeUpdateRelationOptions)
+  @ManyToOne(() => UserEntity, (user) => user.smsTemplates, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
