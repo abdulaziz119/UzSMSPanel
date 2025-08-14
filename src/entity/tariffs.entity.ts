@@ -19,6 +19,9 @@ export class TariffEntity extends BaseEntity {
   @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
   price: number; // SMS narxi (4 ta decimal uchun)
 
+  @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
+  cost_price: number;
+
   @Column({ type: 'boolean', default: true })
   public: boolean; // Ommaviy foydalanish uchun ruxsat
 

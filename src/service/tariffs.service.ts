@@ -194,11 +194,21 @@ export class TariffService {
         throw new BadRequestException('Tariff with this code already exists');
       }
 
+      // Agar margin_percent berilsa, yakuniy price = cost_price * (1 + margin/100)
+      const computedPrice =
+        data.margin_percent !== undefined && data.margin_percent !== null
+          ? Math.max(
+              0,
+              Number(data.cost_price) * (1 + Number(data.margin_percent) / 100),
+            )
+          : data.price;
+
       const tariff: TariffEntity = this.tariffRepo.create({
         code: data.code,
         name: data.name,
         phone_ext: data.phone_ext,
-        price: data.price,
+        price: computedPrice,
+        cost_price: data.cost_price,
         operator: data.operator,
         public: data.public ?? true,
         country_id: data.country_id,
@@ -236,11 +246,23 @@ export class TariffService {
         }
       }
 
+      // Agar margin_percent berilsa, mavjud yoki kelgan cost_price asosida price qayta hisoblanadi
+      let nextPrice = data.price;
+      let nextCost = data.cost_price;
+      if (data.margin_percent !== undefined) {
+        const baseCost = nextCost !== undefined ? nextCost : tariff.cost_price;
+        nextPrice = Math.max(
+          0,
+          Number(baseCost) * (1 + Number(data.margin_percent) / 100),
+        );
+      }
+
       await this.tariffRepo.update(data.id, {
         ...(data.code && { code: data.code }),
         ...(data.name && { name: data.name }),
         ...(data.phone_ext && { phone_ext: data.phone_ext }),
-        ...(data.price !== undefined && { price: data.price }),
+        ...(nextCost !== undefined && { cost_price: nextCost }),
+        ...(nextPrice !== undefined && { price: nextPrice }),
         ...(data.operator && { operator: data.operator }),
         ...(data.public !== undefined && { public: data.public }),
         updated_at: new Date(),
@@ -340,16 +362,18 @@ export class TariffService {
       }
 
       for (const tariff of tariffs) {
-        let newPrice = tariff.price;
+        // Hisob-kitob bazaviy tan narx (cost_price) asosida bo'ladi
+        const baseCost = (tariff as any).cost_price ?? tariff.price ?? 0;
+        let newPrice = baseCost;
 
         if (data.adjustment_type === 'percent') {
-          newPrice = tariff.price * (1 + data.price_adjustment / 100);
+          newPrice = baseCost * (1 + data.price_adjustment / 100);
         } else {
-          newPrice = tariff.price + data.price_adjustment;
+          newPrice = baseCost + data.price_adjustment;
         }
 
-        // Ensure price doesn't go below 0
-        newPrice = Math.max(0, newPrice);
+        // 4 ta kasr belgigacha yaxlitlash (DECIMAL(15,4) bilan mos)
+        newPrice = Math.round(Math.max(0, newPrice) * 10000) / 10000;
 
         await this.tariffRepo.update(tariff.id, {
           price: newPrice,

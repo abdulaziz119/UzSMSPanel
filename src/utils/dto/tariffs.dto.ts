@@ -5,8 +5,12 @@ import {
   IsOptional,
   IsNumber,
   IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsIn,
 } from 'class-validator';
 import { PaginationParams } from './dto';
+import { Type } from 'class-transformer';
 
 export class CreateTariffDto {
   @ApiProperty({
@@ -39,6 +43,24 @@ export class CreateTariffDto {
   @IsNumber()
   @IsNotEmpty()
   price: number;
+
+  @ApiProperty({
+    example: 80.25,
+    description: 'Provider tan narhi (cost_price)',
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  cost_price: number;
+
+  @ApiProperty({
+    example: 25,
+    description:
+      'Margin % (ixtiyoriy). Berilsa, price = cost_price * (1 + margin/100)',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  margin_percent?: number;
 
   @ApiProperty({ example: 'BEELINE', description: 'Operator nomi' })
   @IsString()
@@ -93,6 +115,24 @@ export class UpdateTariffDto {
   @IsOptional()
   @IsNumber()
   price?: number;
+
+  @ApiProperty({
+    example: 90,
+    description: 'Provider tan narhi',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  cost_price?: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Margin % (price ni qayta hisoblash uchun)',
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  margin_percent?: number;
 
   @ApiProperty({
     example: 'BEELINE',
@@ -167,9 +207,33 @@ export class CalculateTariffPriceDto {
   @ApiProperty({
     example: '+998901234567',
     description:
-      "Telefon raqami (xalqaro yoki milliy formatda). Masalan: +99890..., 99890..., 90999....",
+      'Telefon raqami (xalqaro yoki milliy formatda). Masalan: +99890..., 99890..., 90999....',
   })
   @IsString()
   @IsNotEmpty()
   phone: string;
+}
+
+export class BulkUpdateTariffPricesDto {
+  @ApiProperty({ example: 1, description: 'Tarif ID' })
+  @IsNumber()
+  @IsNotEmpty()
+  id: number;
+  @ApiProperty({ example: 'BEELINE', description: 'Operator nomi' })
+  @IsString()
+  @IsNotEmpty()
+  operator: string;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Ozgartirish qiymati (foiz yoki fixed)',
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  price_adjustment: number;
+
+  @ApiProperty({ example: 'percent', enum: ['percent', 'fixed'] })
+  @IsString()
+  @IsIn(['percent', 'fixed'])
+  adjustment_type: 'percent' | 'fixed';
 }

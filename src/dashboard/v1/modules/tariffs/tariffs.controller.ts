@@ -1,5 +1,10 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiBadRequestResponse,
+  ApiBody,
+} from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse, ParamIdDto } from '../../../../utils/dto/dto';
@@ -12,6 +17,7 @@ import {
   CreateTariffDto,
   TariffFilterDto,
   UpdateTariffDto,
+  BulkUpdateTariffPricesDto,
 } from '../../../../utils/dto/tariffs.dto';
 
 @ApiBearerAuth()
@@ -60,9 +66,6 @@ export class TariffsController {
     return await this.tariffService.delete(param.id);
   }
 
-  /**
-   * Tariflar statistikasi
-   */
   @Post('/statistics')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -71,72 +74,14 @@ export class TariffsController {
     return await this.tariffService.getTariffStatistics();
   }
 
-  /**
-   * Operator bo'yicha narxlarni ommaviy yangilash (foiz yoki fixed)
-   */
   @Post('/bulk-update-prices')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
+  @ApiBody({ type: BulkUpdateTariffPricesDto })
   async bulkUpdatePrices(
-    @Body()
-    body: {
-      operator: string;
-      price_adjustment: number;
-      adjustment_type: 'percent' | 'fixed';
-    },
+    @Body() body: BulkUpdateTariffPricesDto,
   ): Promise<SingleResponse<{ message: string; affected_count: number }>> {
     return await this.tariffService.bulkUpdatePrices(body);
-  }
-
-  /**
-   * Tarifni public/private qilishni almashtirish
-   */
-  @Post('/toggle-public')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async togglePublic(
-    @Body() body: { id: number; public: boolean },
-  ): Promise<SingleResponse<TariffEntity>> {
-    return await this.tariffService.update({
-      id: body.id,
-      public: body.public,
-    } as any);
-  }
-
-  /**
-   * Tariflarni ommaviy import qilish
-   */
-  @Post('/import')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async importTariffs(@Body() body: { tariffs: CreateTariffDto[] }): Promise<
-    SingleResponse<{
-      message: string;
-      imported_count: number;
-      failed_count: number;
-    }>
-  > {
-    let importedCount = 0;
-    let failedCount = 0;
-
-    for (const tariffData of body.tariffs) {
-      try {
-        await this.tariffService.create(tariffData);
-        importedCount++;
-      } catch (error) {
-        failedCount++;
-      }
-    }
-
-    return {
-      result: {
-        message: `Import completed. ${importedCount} imported, ${failedCount} failed`,
-        imported_count: importedCount,
-        failed_count: failedCount,
-      },
-    };
   }
 }
