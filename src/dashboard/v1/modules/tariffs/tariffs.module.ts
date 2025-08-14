@@ -3,10 +3,11 @@ import { TariffsController } from './tariffs.controller';
 import { TariffService } from '../../../../service/tariffs.service';
 import { DatabaseModule } from '../../../../database/database.module';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
+import { smsPriceProviders } from '../../../../providers/sms-price.providers';
 
 @Module({
   imports: [DatabaseModule],
   controllers: [TariffsController],
-  providers: [...tariffsProviders, TariffService],
+  providers: [...tariffsProviders, ...smsPriceProviders, TariffService],
 })
 export class TariffsDashboardModule {}

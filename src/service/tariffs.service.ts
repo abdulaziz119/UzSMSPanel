@@ -18,12 +18,15 @@ import {
   TariffFilterDto,
   UpdateTariffDto,
 } from '../utils/dto/tariffs.dto';
+import { SmsPriceEntity } from '../entity/sms-price.entity';
 
 @Injectable()
 export class TariffService {
   constructor(
     @Inject(MODELS.TARIFFS)
     private readonly tariffRepo: Repository<TariffEntity>,
+    @Inject(MODELS.SMS_PRICE)
+    private readonly priceRepo: Repository<SmsPriceEntity>,
   ) {}
 
   async getPublicTariffs(
@@ -45,6 +48,10 @@ export class TariffService {
           'tariff.created_at',
           'tariff.updated_at',
         ]);
+  import { SmsPriceService } from './sms-price.service';
+  import { CountryService } from './country.service';
+  import { CreatePriceDto } from '../utils/dto/sms-price.dto';
+  import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
 
       // Apply filters
       if (filters.operator) {
@@ -308,6 +315,35 @@ export class TariffService {
       return { result: { message: 'Tariff deleted successfully' } };
     } catch (error) {
       throw new HttpException(
+
+      // Pre-check: shu operator bo'yicha ilgari tarif bor-yo'qligini tekshiramiz
+      const preCount = await this.tariffRepo.count({ where: { operator: data.operator } });
+
+      // Agar bu operator uchun birinchi tarif bo'lsa, SmsPrice yozuvini avtomatik yarating
+      if (preCount === 0) {
+        try {
+          const normalizedOp = (savedTariff.operator || '').toString().toLowerCase();
+          const enumValues = Object.values(OperatorEnum);
+          if (enumValues.includes(normalizedOp as OperatorEnum)) {
+            // country ma'lumotlari
+            const countryResp = await this.countryService.findOne({ id: savedTariff.country_id } as any);
+            const country = (countryResp as any)?.result;
+            if (country) {
+              const payload: CreatePriceDto = {
+                country_code: country.iso_code || country.code,
+                country_name: country.name,
+                operator: normalizedOp as OperatorEnum,
+                message_type: MessageTypeEnum.SMS,
+                price_per_sms: Number((savedTariff as any).cost_price ?? savedTariff.price ?? 0),
+                description: `Auto-created for operator ${savedTariff.operator}`,
+              };
+              await this.smsPriceService.create(payload);
+            }
+          }
+        } catch (e) {
+          // SmsPrice auto-create xatosi asosiy create’ni to'xtatmaydi
+        }
+      }
         { message: 'Error deleting tariff', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
