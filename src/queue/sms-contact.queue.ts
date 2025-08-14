@@ -17,7 +17,7 @@ export class SmsContactQueue {
 
   constructor(private readonly smsContactService: SmsContactService) {
     this.logger.log(
-      `🚀 SMS Contact Queue processor initialized for queue: ${SMS_CONTACT_QUEUE}`,
+      `SMS Contact Queue processor initialized for queue: ${SMS_CONTACT_QUEUE}`,
     );
   }
 
@@ -39,13 +39,7 @@ export class SmsContactQueue {
             })()
           : Buffer.alloc(0);
 
-    this.logger.log(`📥 Excel import job started - Job ID: ${job.id}`);
-    this.logger.log(
-      `📊 Job data retrieved from Redis - Buffer size: ${buffer?.length ?? 0} bytes, Group ID: ${defaults?.default_group_id}`,
-    );
-    this.logger.log(
-      `⏰ Job timestamp: ${new Date(job.timestamp).toISOString()}`,
-    );
+    this.logger.log(`Excel import job started - Job ID: ${job.id}`);
 
     try {
       this.logger.log(`🔄 Starting Excel import process...`);
@@ -60,10 +54,8 @@ export class SmsContactQueue {
       await job.progress(100);
 
       this.logger.log(
-        `✅ Excel import completed successfully - Job ID: ${job.id}`,
+        `Excel import completed successfully - Job ID: ${job.id}`,
       );
-      this.logger.log(`📈 Import result: ${JSON.stringify(result)}`);
-      this.logger.log(`💾 Job result will be stored in Redis for retrieval`);
 
       return result;
     } catch (error) {

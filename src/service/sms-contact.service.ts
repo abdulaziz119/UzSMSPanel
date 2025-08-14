@@ -74,7 +74,6 @@ export class SmsContactService {
     }
   }
 
-  /** Normalize phone to E.164 if valid, otherwise return original */
   private normalizePhone(phone: string): string {
     try {
       let parsed = parsePhoneNumberFromString(phone);
@@ -205,10 +204,6 @@ export class SmsContactService {
     return { result: true };
   }
 
-  /**
-   * Import contacts from Excel/CSV buffer.
-   * Expected columns: name, phone, group_id (optional), group_name (optional)
-   */
   async importContactsFromExcel(
     buffer: Buffer,
     defaults?: { default_group_id: number },
@@ -232,18 +227,6 @@ export class SmsContactService {
 
       const sheet = workbook.Sheets[sheetName];
       const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-      const groupId = Number(defaults?.default_group_id || 0);
-      if (!groupId) {
-        return {
-          result: {
-            total: 0,
-            inserted: 0,
-            failed: 0,
-            errors: [{ row: 0, error: 'default_group_id is required in body' }],
-          },
-        };
-      }
 
       let inserted: number = 0;
       const errors: Array<{ row: number; error: string }> = [];
@@ -275,7 +258,7 @@ export class SmsContactService {
             await this.create({
               name,
               phone: cleanPhone,
-              group_id: groupId,
+              group_id: Number(defaults?.default_group_id || 0),
             });
 
             return { success: true };
@@ -324,9 +307,6 @@ export class SmsContactService {
     }
   }
 
-  /**
-   * Generate Excel template as Buffer for contacts import
-   */
   generateContactsTemplate(): Buffer {
     const headers = ['name', 'phone'];
     const data = [
