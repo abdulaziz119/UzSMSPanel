@@ -54,7 +54,7 @@ export class SmsPriceService {
         .orderBy('price.operator', 'ASC')
         .addOrderBy('price.message_type', 'ASC');
 
-      const total = await queryBuilder.getCount();
+      const total: number = await queryBuilder.getCount();
 
       if (filters.page && filters.limit) {
         queryBuilder
@@ -62,7 +62,7 @@ export class SmsPriceService {
           .take(filters.limit);
       }
 
-      const prices = await queryBuilder.getMany();
+      const prices: SmsPriceEntity[] = await queryBuilder.getMany();
 
       return getPaginationResponse(
         prices,
@@ -80,7 +80,6 @@ export class SmsPriceService {
 
   async create(data: CreatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
     try {
-      // Check if price already exists for this operator and message type
       const existingPrice: SmsPriceEntity = await this.priceRepo.findOne({
         where: {
           operator: data.operator,
@@ -93,7 +92,7 @@ export class SmsPriceService {
           'Price already exists for this operator and message type',
         );
       }
-      const price = this.priceRepo.create({
+      const price: SmsPriceEntity = this.priceRepo.create({
         country_code: data.country_code,
         country_name: data.country_name,
         operator: data.operator,
@@ -102,13 +101,10 @@ export class SmsPriceService {
         price_per_sms: data.price_per_sms,
         description: data.description ?? null,
       } as Partial<SmsPriceEntity>);
-      const savedPrice = await this.priceRepo.save(price);
+      const savedPrice: SmsPriceEntity = await this.priceRepo.save(price);
 
       return { result: savedPrice };
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error creating price', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -118,7 +114,9 @@ export class SmsPriceService {
 
   async update(data: UpdatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
     try {
-      const price = await this.priceRepo.findOne({ where: { id: data.id } });
+      const price: SmsPriceEntity = await this.priceRepo.findOne({
+        where: { id: data.id },
+      });
 
       if (!price) {
         throw new NotFoundException('Price not found');
@@ -142,15 +140,12 @@ export class SmsPriceService {
 
       await this.priceRepo.update(data.id, updateData);
 
-      const updatedPrice = await this.priceRepo.findOne({
+      const updatedPrice: SmsPriceEntity = await this.priceRepo.findOne({
         where: { id: data.id },
       });
 
       return { result: updatedPrice };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error updating price', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -160,7 +155,9 @@ export class SmsPriceService {
 
   async delete(id: number): Promise<SingleResponse<{ message: string }>> {
     try {
-      const price = await this.priceRepo.findOne({ where: { id } });
+      const price: SmsPriceEntity = await this.priceRepo.findOne({
+        where: { id },
+      });
 
       if (!price) {
         throw new NotFoundException('Price not found');
@@ -170,9 +167,6 @@ export class SmsPriceService {
 
       return { result: { message: 'Price deleted successfully' } };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error deleting price', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -184,7 +178,7 @@ export class SmsPriceService {
     updates: Array<{ id: number; price_per_sms?: number; is_active?: boolean }>,
   ): Promise<SingleResponse<{ message: string; updated_count: number }>> {
     try {
-      let updated_count = 0;
+      let updated_count: number = 0;
 
       for (const update of updates) {
         try {
