@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-  Get,
-  Query,
-  Headers,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -29,7 +21,7 @@ import {
 } from '../../../../utils/dto/sms-message.dto';
 
 @ApiBearerAuth()
-@ApiTags('frontend-sms-message')
+@ApiTags('sms-message')
 @Controller({ path: '/frontend/sms-message', version: '1' })
 export class SmsMessageController {
   constructor(private readonly messageService: SmsMessageService) {}
@@ -60,8 +52,8 @@ export class SmsMessageController {
   @Auth(false)
   @ApiResponse({ status: 201, description: 'Bulk messages sent successfully' })
   async sendBulk(@Body() body: SendBulkSmsDto, @User('id') user_id: number) {
-  // scheduled_at DTOda string bo'lishi kerak; hech qanday konvert kerak emas
-  return await this.messageService.sendBulk(body, user_id);
+    // scheduled_at DTOda string bo'lishi kerak; hech qanday konvert kerak emas
+    return await this.messageService.sendBulk(body, user_id);
   }
 
   /**
