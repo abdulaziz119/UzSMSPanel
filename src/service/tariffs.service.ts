@@ -25,14 +25,25 @@ export class TariffService {
     private readonly tariffRepo: Repository<TariffEntity>,
   ) {}
 
-  // Frontend methods
   async getPublicTariffs(
     filters: TariffFilterDto,
   ): Promise<PaginationResponse<TariffEntity[]>> {
     try {
       const queryBuilder = this.tariffRepo
         .createQueryBuilder('tariff')
-        .where('tariff.public = :public', { public: true });
+        .where('tariff.public = :public', { public: true })
+        .select([
+          'tariff.id',
+          'tariff.code',
+          'tariff.name',
+          'tariff.phone_ext',
+          'tariff.price',
+          'tariff.public',
+          'tariff.operator',
+          'tariff.country_id',
+          'tariff.created_at',
+          'tariff.updated_at',
+        ]);
 
       // Apply filters
       if (filters.operator) {
