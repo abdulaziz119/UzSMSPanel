@@ -17,3 +17,5 @@ export const MODELS = {
   COUNTRY: 'COUNTRY',
   FILE: 'FILE',
 };
+
+export const SMS_CONTACT_QUEUE = 'smsContactNtfQueueGF';

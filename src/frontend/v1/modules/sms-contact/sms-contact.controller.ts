@@ -33,12 +33,18 @@ import {
 import { PaginationResponse } from '../../../../utils/pagination.response';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
 
 @ApiBearerAuth()
 @ApiTags('sms-contact')
 @Controller({ path: '/frontend/sms-contact', version: '1' })
 export class SmsContactController {
-  constructor(private readonly smsContactService: SmsContactService) {}
+  constructor(
+    private readonly smsContactService: SmsContactService,
+    @InjectQueue(SMS_CONTACT_QUEUE) private readonly smsContactQueue: Queue,
+  ) {}
 
   @Post('/create')
   @HttpCode(201)
@@ -111,18 +117,18 @@ export class SmsContactController {
     )
     file: Express.Multer.File,
     @Body() body: { default_group_id: number },
-  ): Promise<{
-    result: {
-      total: number;
-      inserted: number;
-      failed: number;
-      errors: Array<{ row: number; error: string }>;
+  ): Promise<{ result: { jobId: string; message: string } }> {
+    const job = await this.smsContactQueue.add('import-excel', {
+      buffer: file.buffer,
+      defaults: body,
+    });
+
+    return {
+      result: {
+        jobId: job.id.toString(),
+        message: 'Import job has been queued successfully',
+      },
     };
-  }> {
-    return await this.smsContactService.importContactsFromExcel(
-      file.buffer,
-      body,
-    );
   }
 
   @Post('/download-template')
