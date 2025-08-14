@@ -6,7 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { parsePhoneNumberFromString, PhoneNumber } from 'libphonenumber-js';
 import { MODELS } from '../constants/constants';
 import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
@@ -32,7 +32,7 @@ export class SmsContactService {
   private async validatePhoneNumber(
     phone: string,
   ): Promise<SMSContactStatusEnum> {
-    const cleanPhone = (phone || '').toString().trim();
+    const cleanPhone: string = (phone || '').toString().trim();
 
     // 1) Validate phone format using libphonenumber-js
     try {
@@ -45,14 +45,14 @@ export class SmsContactService {
 
       // 2) If valid, check tariffs table by operator code
       // Try 2 and 3-digit codes from national number (covers common UZ cases)
-      const national = (parsed.nationalNumber || '').toString();
-      const candidates = [
+      const national: string = (parsed.nationalNumber || '').toString();
+      const candidates: string[] = [
         national.substring(0, 3),
         national.substring(0, 2),
       ].filter(Boolean);
 
       try {
-        const tariff = await this.tariffRepo.findOne({
+        const tariff: TariffEntity = await this.tariffRepo.findOne({
           where: candidates.map((code) => ({ code })),
         });
 
@@ -86,7 +86,8 @@ export class SmsContactService {
     payload: CreateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {
     try {
-      const status = await this.validatePhoneNumber(payload.phone);
+      const normalizedPhone: string = this.normalizePhone(payload.phone);
+      const status = await this.validatePhoneNumber(normalizedPhone);
 
       const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
         name: payload.name,
@@ -111,7 +112,7 @@ export class SmsContactService {
     payload: SmsContactFindAllDto,
   ): Promise<PaginationResponse<SmsContactEntity[]>> {
     const { page = 1, limit = 10, phone, status, name } = payload;
-    const skip = (page - 1) * limit;
+    const skip: number = (page - 1) * limit;
 
     try {
       const queryBuilder = this.smsContactRepo
@@ -158,7 +159,7 @@ export class SmsContactService {
   ): Promise<SingleResponse<SmsContactEntity>> {
     const { id, ...updateData } = payload as any;
 
-    const smsContact = await this.smsContactRepo.findOne({
+    const smsContact: SmsContactEntity = await this.smsContactRepo.findOne({
       where: { id: id },
     });
 
@@ -168,14 +169,16 @@ export class SmsContactService {
 
     try {
       if (updateData.phone) {
-        updateData.status = await this.validatePhoneNumber(updateData.phone);
-        updateData.phone = this.normalizePhone(updateData.phone);
+        const normalized: string = this.normalizePhone(updateData.phone);
+        updateData.status = await this.validatePhoneNumber(normalized);
+        updateData.phone = normalized;
       }
 
       await this.smsContactRepo.update(id, updateData);
-      const updatedSmsContact = await this.smsContactRepo.findOne({
-        where: { id: id },
-      });
+      const updatedSmsContact: SmsContactEntity =
+        await this.smsContactRepo.findOne({
+          where: { id: id },
+        });
       return { result: updatedSmsContact };
     } catch (error) {
       throw new HttpException(
