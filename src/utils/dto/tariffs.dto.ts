@@ -162,3 +162,14 @@ export class TariffFilterDto extends PaginationParams {
   @IsNumber()
   country_id?: number;
 }
+
+export class CalculateTariffPriceDto {
+  @ApiProperty({
+    example: '+998901234567',
+    description:
+      "Telefon raqami (xalqaro yoki milliy formatda). Masalan: +99890..., 99890..., 90999....",
+  })
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+}

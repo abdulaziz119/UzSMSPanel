@@ -92,40 +92,6 @@ export class TariffService {
     }
   }
 
-  async getTariffByPhonePrefix(
-    phone: string,
-  ): Promise<SingleResponse<TariffEntity>> {
-    try {
-      const phonePrefix: string = phone.substring(0, 5); // e.g., 99890, 99891, etc.
-
-      const tariff: TariffEntity = await this.tariffRepo.findOne({
-        where: { code: phonePrefix, public: true },
-      });
-
-      if (!tariff) {
-        const defaultTariff = await this.tariffRepo.findOne({
-          where: { operator: 'DEFAULT', public: true },
-        });
-
-        if (!defaultTariff) {
-          throw new NotFoundException('No tariff found for this phone number');
-        }
-
-        return { result: defaultTariff };
-      }
-
-      return { result: tariff };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new HttpException(
-        { message: 'Error fetching tariff for phone', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   async getOperatorList(): Promise<SingleResponse<string[]>> {
     try {
       const operators = await this.tariffRepo
@@ -146,7 +112,7 @@ export class TariffService {
   }
 
   // Dashboard methods
-  async findAllTariffs(
+  async findAll(
     filters: TariffFilterDto,
   ): Promise<PaginationResponse<TariffEntity[]>> {
     try {
@@ -220,8 +186,7 @@ export class TariffService {
 
   async create(data: CreateTariffDto): Promise<SingleResponse<TariffEntity>> {
     try {
-      // Check if tariff with same code already exists
-      const existingTariff = await this.tariffRepo.findOne({
+      const existingTariff: TariffEntity = await this.tariffRepo.findOne({
         where: { code: data.code },
       });
 
@@ -229,7 +194,7 @@ export class TariffService {
         throw new BadRequestException('Tariff with this code already exists');
       }
 
-      const tariff = this.tariffRepo.create({
+      const tariff: TariffEntity = this.tariffRepo.create({
         code: data.code,
         name: data.name,
         phone_ext: data.phone_ext,
@@ -239,7 +204,7 @@ export class TariffService {
         country_id: data.country_id,
       });
 
-      const savedTariff = await this.tariffRepo.save(tariff);
+      const savedTariff: TariffEntity = await this.tariffRepo.save(tariff);
 
       return { result: savedTariff };
     } catch (error) {
@@ -252,7 +217,9 @@ export class TariffService {
 
   async update(data: UpdateTariffDto): Promise<SingleResponse<TariffEntity>> {
     try {
-      const tariff = await this.tariffRepo.findOne({ where: { id: data.id } });
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
+        where: { id: data.id },
+      });
 
       if (!tariff) {
         throw new NotFoundException('Tariff not found');
@@ -260,7 +227,7 @@ export class TariffService {
 
       // Check if code is being changed and if it already exists
       if (data.code && data.code !== tariff.code) {
-        const existingTariff = await this.tariffRepo.findOne({
+        const existingTariff: TariffEntity = await this.tariffRepo.findOne({
           where: { code: data.code },
         });
 
@@ -279,7 +246,7 @@ export class TariffService {
         updated_at: new Date(),
       });
 
-      const updatedTariff = await this.tariffRepo.findOne({
+      const updatedTariff: TariffEntity = await this.tariffRepo.findOne({
         where: { id: data.id },
       });
 
@@ -292,9 +259,11 @@ export class TariffService {
     }
   }
 
-  async deleteTariff(id: number): Promise<SingleResponse<{ message: string }>> {
+  async delete(id: number): Promise<SingleResponse<{ message: string }>> {
     try {
-      const tariff = await this.tariffRepo.findOne({ where: { id } });
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
+        where: { id },
+      });
 
       if (!tariff) {
         throw new NotFoundException('Tariff not found');
@@ -306,23 +275,6 @@ export class TariffService {
     } catch (error) {
       throw new HttpException(
         { message: 'Error deleting tariff', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  async getTariffDetails(id: number): Promise<SingleResponse<TariffEntity>> {
-    try {
-      const tariff = await this.tariffRepo.findOne({ where: { id } });
-
-      if (!tariff) {
-        throw new NotFoundException('Tariff not found');
-      }
-
-      return { result: tariff };
-    } catch (error) {
-      throw new HttpException(
-        { message: 'Error fetching tariff details', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

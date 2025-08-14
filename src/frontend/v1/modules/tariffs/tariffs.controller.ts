@@ -8,7 +8,10 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { TariffService } from '../../../../service/tariffs.service';
 import { TariffEntity } from '../../../../entity/tariffs.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { TariffFilterDto } from '../../../../utils/dto/tariffs.dto';
+import {
+  TariffFilterDto,
+  CalculateTariffPriceDto,
+} from '../../../../utils/dto/tariffs.dto';
 
 @ApiBearerAuth()
 @ApiTags('tariffs')
@@ -27,122 +30,9 @@ export class TariffsController {
     return await this.tariffService.getPublicTariffs(filters);
   }
 
-  /**
-   * Bitta telefon raqam uchun taxminiy SMS narxini hisoblash
-   */
-  @Post('/calculate-price')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(true)
-  async calculatePrice(
-    @Body() body: { phone: string },
-  ): Promise<SingleResponse<{ tariff: TariffEntity; estimated_cost: number }>> {
-    const tariffResult = await this.tariffService.getTariffByPhonePrefix(
-      body.phone,
-    );
-
-    // Estimate cost for 1 SMS
-    const estimatedCost = tariffResult.result.price;
-
-    return {
-      result: {
-        tariff: tariffResult.result,
-        estimated_cost: estimatedCost,
-      },
-    };
-  }
-
-  /**
-   * Telefon raqamdan operatorni aniqlash va narxni ko'rsatish
-   */
-  @Post('/check-operator')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  async checkOperator(
-    @Body() body: { phone: string },
-  ): Promise<
-    SingleResponse<{ operator: string; price: number; phone_ext: string }>
-  > {
-    const tariffResult = await this.tariffService.getTariffByPhonePrefix(
-      body.phone,
-    );
-
-    return {
-      result: {
-        operator: tariffResult.result.operator,
-        price: tariffResult.result.price,
-        phone_ext: tariffResult.result.phone_ext,
-      },
-    };
-  }
-
-  /**
-   * Operatorlar ro'yxatini olish
-   */
   @Get('/operators')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   async getOperatorList(): Promise<SingleResponse<string[]>> {
     return await this.tariffService.getOperatorList();
-  }
-
-  /**
-   * Bir nechta telefon raqamlar uchun umumiy narxni hisoblash (bulk)
-   */
-  @Post('/bulk-calculate')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth()
-  async bulkCalculatePrice(
-    @Body() body: { phones: string[]; message_length?: number },
-  ): Promise<
-    SingleResponse<{
-      total_cost: number;
-      breakdown: Array<{
-        phone: string;
-        operator: string;
-        price_per_sms: number;
-        sms_count: number;
-        total_price: number;
-      }>;
-    }>
-  > {
-    const messageLength = body.message_length || 160;
-    const smsCount = Math.ceil(messageLength / 160);
-
-    const breakdown = [];
-    let totalCost = 0;
-
-    for (const phone of body.phones) {
-      try {
-        const tariffResult =
-          await this.tariffService.getTariffByPhonePrefix(phone);
-        const phoneTotal = tariffResult.result.price * smsCount;
-
-        breakdown.push({
-          phone,
-          operator: tariffResult.result.operator,
-          price_per_sms: tariffResult.result.price,
-          sms_count: smsCount,
-          total_price: phoneTotal,
-        });
-
-        totalCost += phoneTotal;
-      } catch (error) {
-        // Skip phones that don't have tariffs
-        breakdown.push({
-          phone,
-          operator: 'Unknown',
-          price_per_sms: 0,
-          sms_count: 0,
-          total_price: 0,
-        });
-      }
-    }
-
-    return {
-      result: {
-        total_cost: totalCost,
-        breakdown,
-      },
-    };
   }
 }

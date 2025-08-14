@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
@@ -20,22 +20,16 @@ import {
 export class TariffsController {
   constructor(private readonly tariffService: TariffService) {}
 
-  /**
-   * Tariflar ro'yxati (filter + pagination)
-   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async findAllTariffs(
+  async findAll(
     @Body() filters: TariffFilterDto,
   ): Promise<PaginationResponse<TariffEntity[]>> {
-    return await this.tariffService.findAllTariffs(filters);
+    return await this.tariffService.findAll(filters);
   }
 
-  /**
-   * Yangi tarif yaratish
-   */
   @Post('/create')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -46,9 +40,6 @@ export class TariffsController {
     return await this.tariffService.create(body);
   }
 
-  /**
-   * Tarifni yangilash
-   */
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -59,30 +50,14 @@ export class TariffsController {
     return await this.tariffService.update(body);
   }
 
-  /**
-   * Tarifni o'chirish (ID bo'yicha)
-   */
   @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async deleteTariff(
+  async delete(
     @Body() param: ParamIdDto,
   ): Promise<SingleResponse<{ message: string }>> {
-    return await this.tariffService.deleteTariff(param.id);
-  }
-
-  /**
-   * Bitta tarif tafsilotlari (ID bo'yicha)
-   */
-  @Post('/details')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async getTariffDetails(
-    @Body() param: ParamIdDto,
-  ): Promise<SingleResponse<TariffEntity>> {
-    return await this.tariffService.getTariffDetails(param.id);
+    return await this.tariffService.delete(param.id);
   }
 
   /**
