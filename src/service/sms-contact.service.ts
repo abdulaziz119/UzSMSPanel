@@ -29,67 +29,42 @@ export class SmsContactService {
     private readonly tariffRepo: Repository<TariffEntity>,
   ) {}
 
-  /**
-   * Normalize and validate phone globally via libphonenumber-js and map to status
-   */
   private async validatePhoneNumber(
     phone: string,
   ): Promise<SMSContactStatusEnum> {
     const cleanPhone = (phone || '').toString().trim();
 
-    // First check basic banned patterns
-    const bannedPatterns = [/666/, /999/, /000{3,}/];
-    if (bannedPatterns.some((p) => p.test(cleanPhone))) {
-      return SMSContactStatusEnum.BANNED_NUMBER;
-    }
-
-    // Check against tariffs table for banned numbers
-    // Extract phone prefix (first 3-8 digits after country code)
-    let phonePrefix = '';
-    if (cleanPhone.startsWith('+998')) {
-      phonePrefix = cleanPhone.substring(4, 8); // Remove +998 and take next 4 digits
-    } else if (cleanPhone.startsWith('998')) {
-      phonePrefix = cleanPhone.substring(3, 7); // Remove 998 and take next 4 digits
-    } else if (cleanPhone.length >= 9) {
-      phonePrefix = cleanPhone.substring(0, 4); // Take first 4 digits
-    }
-
-    if (phonePrefix.length >= 3) {
-      try {
-        // Check if this phone prefix exists in tariffs
-        const tariff = await this.tariffRepo.findOne({
-          where: [
-            { phone_ext: phonePrefix },
-            { code: phonePrefix.substring(0, 4) },
-            { phone_ext: phonePrefix.substring(0, 3) },
-          ],
-        });
-
-        // If no tariff found OR tariff is not public, it's banned
-        if (!tariff || !tariff.public) {
-          return SMSContactStatusEnum.BANNED_NUMBER;
-        }
-      } catch (error) {
-        // If tariff check fails, consider it banned for safety
-        console.warn('Tariff check failed:', error.message);
-        return SMSContactStatusEnum.BANNED_NUMBER;
-      }
-    } else {
-      // If we can't extract a proper prefix, consider it banned
-      return SMSContactStatusEnum.BANNED_NUMBER;
-    }
-
-    // Validate phone format using libphonenumber-js
+    // 1) Validate phone format using libphonenumber-js
     try {
       let parsed = parsePhoneNumberFromString(cleanPhone);
-      if (!parsed) {
-        parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
+      if (!parsed) parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
+
+      if (!parsed || !parsed.isValid()) {
+        return SMSContactStatusEnum.INVALID_FORMAT;
       }
 
-      if (parsed && parsed.isValid()) {
+      // 2) If valid, check tariffs table by operator code
+      // Try 2 and 3-digit codes from national number (covers common UZ cases)
+      const national = (parsed.nationalNumber || '').toString();
+      const candidates = [
+        national.substring(0, 3),
+        national.substring(0, 2),
+      ].filter(Boolean);
+
+      try {
+        const tariff = await this.tariffRepo.findOne({
+          where: candidates.map((code) => ({ code })),
+        });
+
+        if (!tariff) {
+          return SMSContactStatusEnum.BANNED_NUMBER;
+        }
+
         return SMSContactStatusEnum.ACTIVE;
+      } catch (error) {
+        console.warn('Tariff check failed:', error);
+        return SMSContactStatusEnum.BANNED_NUMBER;
       }
-      return SMSContactStatusEnum.INVALID_FORMAT;
     } catch {
       return SMSContactStatusEnum.INVALID_FORMAT;
     }
@@ -111,7 +86,6 @@ export class SmsContactService {
     payload: CreateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {
     try {
-      // Automatically determine status based on phone number validation
       const status = await this.validatePhoneNumber(payload.phone);
 
       const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
