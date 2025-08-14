@@ -245,39 +245,6 @@ export class SmsContactService {
         };
       }
 
-      // Validate group exists and get its name
-      let groupName: string | undefined = undefined;
-      try {
-        const row = await this.smsContactRepo.manager
-          .createQueryBuilder()
-          .select('g.title', 'title')
-          .from('sms_groups', 'g')
-          .where('g.id = :id', { id: groupId })
-          .andWhere('g.deleted_at IS NULL')
-          .getRawOne<{ title: string }>();
-
-        if (!row) {
-          return {
-            result: {
-              total: 0,
-              inserted: 0,
-              failed: 0,
-              errors: [{ row: 0, error: `Group with id ${groupId} not found` }],
-            },
-          };
-        }
-        groupName = row.title;
-      } catch (e) {
-        return {
-          result: {
-            total: 0,
-            inserted: 0,
-            failed: 0,
-            errors: [{ row: 0, error: 'Failed to validate group existence' }],
-          },
-        };
-      }
-
       let inserted: number = 0;
       const errors: Array<{ row: number; error: string }> = [];
 
