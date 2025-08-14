@@ -19,6 +19,7 @@ import {
   SmsContactFindAllDto,
 } from '../utils/dto/sms-contact.dto';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
+import { SmsGroupEntity } from '../entity/sms-group.entity';
 const XLSX = require('xlsx');
 
 @Injectable()
@@ -28,6 +29,8 @@ export class SmsContactService {
     private readonly smsContactRepo: Repository<SmsContactEntity>,
     @Inject(MODELS.TARIFFS)
     private readonly tariffRepo: Repository<TariffEntity>,
+    @Inject(MODELS.SMS_GROUP)
+    private readonly smsGroupRepo: Repository<SmsGroupEntity>,
   ) {}
 
   private async validatePhoneNumber(
@@ -54,7 +57,7 @@ export class SmsContactService {
 
       try {
         const tariff: TariffEntity = await this.tariffRepo.findOne({
-          where: candidates.map((phone_ext) => ({ phone_ext })),
+          where: candidates.map((code) => ({ code })),
         });
 
         if (!tariff) {
@@ -87,17 +90,12 @@ export class SmsContactService {
     payload: CreateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {
     try {
-      let resolvedGroupName: string;
-      try {
-        const row = await this.smsContactRepo.manager
-          .createQueryBuilder()
-          .select('g.title', 'title')
-          .from('sms_groups', 'g')
-          .where('g.id = :id', { id: payload.group_id })
-          .andWhere('g.deleted_at IS NULL')
-          .getRawOne<{ title: string }>();
-        resolvedGroupName = row?.title || undefined;
-      } catch {}
+      const smsGroupData: SmsGroupEntity = await this.smsGroupRepo.findOne({
+        where: { id: payload.group_id },
+      });
+      if (!smsGroupData) {
+        throw new NotFoundException('SMS Group not found');
+      }
 
       const normalizedPhone: string = this.normalizePhone(payload.phone);
       const status = await this.validatePhoneNumber(normalizedPhone);
@@ -106,7 +104,7 @@ export class SmsContactService {
         name: payload.name,
         phone: (normalizedPhone || payload.phone || '').replace(/^\+/, ''),
         status: status,
-        group_name: resolvedGroupName,
+        group_name: smsGroupData.title,
         group_id: payload.group_id,
       });
 
@@ -280,14 +278,14 @@ export class SmsContactService {
         };
       }
 
-      let inserted = 0;
+      let inserted: number = 0;
       const errors: Array<{ row: number; error: string }> = [];
 
       // Process in batches
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      for (let i: number = 0; i < rows.length; i += BATCH_SIZE) {
         const batch = rows.slice(i, i + BATCH_SIZE);
         const batchPromises = batch.map(async (r, batchIndex) => {
-          const globalIndex = i + batchIndex;
+          const globalIndex: number = i + batchIndex;
           const name = (r.name || r.Name || r.Nomi || '').toString().trim();
           const phone = (r.phone || r.Phone || r.Telefon || '')
             .toString()
@@ -307,14 +305,12 @@ export class SmsContactService {
             // Normalize phone and validate status
             const cleanPhone = (phone || '').replace(/^\+/, '');
 
-            const newContact = this.smsContactRepo.create({
+            await this.create({
               name,
               phone: cleanPhone,
               group_id: groupId,
-              group_name: groupName,
             });
 
-            await this.smsContactRepo.save(newContact);
             return { success: true };
           } catch (e: any) {
             return {
@@ -365,19 +361,15 @@ export class SmsContactService {
    * Generate Excel template as Buffer for contacts import
    */
   generateContactsTemplate(): Buffer {
-    const headers = ['name', 'phone', 'group_id', 'group_name'];
+    const headers = ['name', 'phone'];
     const data = [
       {
         name: 'Ali Valiyev',
         phone: '+998901234567',
-        group_id: 1,
-        group_name: 'Default Group',
       },
       {
         name: 'Laylo Karimova',
         phone: '998935554433',
-        group_id: 1,
-        group_name: 'Default Group',
       },
     ];
     const worksheet = XLSX.utils.json_to_sheet(data, { header: headers });
