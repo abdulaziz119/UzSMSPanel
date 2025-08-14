@@ -11,7 +11,7 @@ import { PaginationResponse } from '../../../../utils/pagination.response';
 import { TariffFilterDto } from '../../../../utils/dto/tariffs.dto';
 
 @ApiBearerAuth()
-@ApiTags('frontend-tariffs')
+@ApiTags('tariffs')
 @Controller({ path: '/frontend/tariffs', version: '1' })
 export class TariffsController {
   constructor(private readonly tariffService: TariffService) {}
