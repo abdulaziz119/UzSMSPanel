@@ -109,6 +109,14 @@ export class SmsContactService {
 
       const savedSmsContact: SmsContactEntity =
         await this.smsContactRepo.save(newSmsContact);
+
+      await this.smsGroupRepo
+        .createQueryBuilder()
+        .update(SmsGroupEntity)
+        .set({ contact_count: () => 'COALESCE(contact_count, 0) + 1' })
+        .where('id = :id', { id: payload.group_id })
+        .execute();
+
       return { result: savedSmsContact };
     } catch (error) {
       throw new HttpException(
