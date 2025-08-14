@@ -19,7 +19,7 @@ export class SmsPriceFrontendController {
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
-  @Auth()
+  @Auth(true)
   async findAll(
     @Body() filters: PriceFilterDto,
   ): Promise<PaginationResponse<SmsPriceEntity[]>> {
