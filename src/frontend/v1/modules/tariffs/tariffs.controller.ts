@@ -16,13 +16,11 @@ import { TariffFilterDto } from '../../../../utils/dto/tariffs.dto';
 export class TariffsController {
   constructor(private readonly tariffService: TariffService) {}
 
-  /**
-   * Ommaga ochiq tariflarni ko'rish API
-   * Barcha foydalanuvchilar ko'rishi mumkin bo'lgan tariflar ro'yxati
-   * Registratsiyasiz ham ko'rish mumkin
-   */
   @Post('/public')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @HttpCode(201)
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
   async getPublicTariffs(
     @Body() filters: TariffFilterDto,
   ): Promise<PaginationResponse<TariffEntity[]>> {
@@ -35,7 +33,7 @@ export class TariffsController {
   @Post('/calculate-price')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
-  @Auth()
+  @Auth(true)
   async calculatePrice(
     @Body() body: { phone: string },
   ): Promise<SingleResponse<{ tariff: TariffEntity; estimated_cost: number }>> {

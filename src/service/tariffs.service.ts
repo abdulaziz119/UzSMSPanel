@@ -96,15 +96,13 @@ export class TariffService {
     phone: string,
   ): Promise<SingleResponse<TariffEntity>> {
     try {
-      // Extract operator prefix from phone number
-      const phonePrefix = phone.substring(0, 5); // e.g., 99890, 99891, etc.
+      const phonePrefix: string = phone.substring(0, 5); // e.g., 99890, 99891, etc.
 
-      const tariff = await this.tariffRepo.findOne({
+      const tariff: TariffEntity = await this.tariffRepo.findOne({
         where: { code: phonePrefix, public: true },
       });
 
       if (!tariff) {
-        // Return default tariff if specific not found
         const defaultTariff = await this.tariffRepo.findOne({
           where: { operator: 'DEFAULT', public: true },
         });

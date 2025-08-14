@@ -27,11 +27,11 @@ import { SmsPriceFrontendModule } from './sms-price/sms-price.module';
     SmsTemplateModule,
     SmsSenderModule,
     SenderPriceModule,
-    SmsCampaignModule,
-    SmsMessageModule,
+    // SmsCampaignModule,
+    // SmsMessageModule,
     TransactionModule,
     TariffsFrontendModule,
-  SmsPriceFrontendModule,
+    SmsPriceFrontendModule,
   ],
 })
 export class ModulesFrontendModule {}
