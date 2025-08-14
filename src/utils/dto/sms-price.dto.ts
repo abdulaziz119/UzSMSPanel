@@ -6,6 +6,7 @@ import {
 	IsNotEmpty,
 	IsNumber,
 	IsOptional,
+	IsString,
 	ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -30,6 +31,16 @@ export class PriceFilterDto extends PaginationParams {
 }
 
 export class CreatePriceDto {
+	@ApiProperty({ description: 'Davlat kodi (masalan: UZ yoki +998)', example: 'UZ' })
+	@IsString()
+	@IsNotEmpty()
+	country_code: string;
+
+	@ApiProperty({ description: 'Davlat nomi', example: 'Uzbekistan' })
+	@IsString()
+	@IsNotEmpty()
+	country_name: string;
+
 	@ApiProperty({ enum: OperatorEnum, description: 'Operator', example: OperatorEnum.BEELINE })
 	@IsEnum(OperatorEnum)
 	@IsNotEmpty()

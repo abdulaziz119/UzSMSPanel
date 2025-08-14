@@ -21,9 +21,6 @@ import {
 export class SmsPriceController {
   constructor(private readonly smsPriceService: SmsPriceService) {}
 
-  /**
-   * SMS narxlar ro'yxati (filter + pagination)
-   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
@@ -34,9 +31,6 @@ export class SmsPriceController {
     return await this.smsPriceService.findAll(filters);
   }
 
-  /**
-   * Yangi SMS narx yozuvi yaratish
-   */
   @Post('/create')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.SUPER_ADMIN)
@@ -47,9 +41,6 @@ export class SmsPriceController {
     return await this.smsPriceService.create(body);
   }
 
-  /**
-   * SMS narx yozuvini yangilash
-   */
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.SUPER_ADMIN)
@@ -60,9 +51,6 @@ export class SmsPriceController {
     return await this.smsPriceService.update(body);
   }
 
-  /**
-   * SMS narx yozuvini o'chirish (ID bo'yicha)
-   */
   @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.SUPER_ADMIN)
@@ -73,9 +61,6 @@ export class SmsPriceController {
     return await this.smsPriceService.delete(param.id);
   }
 
-  /**
-   * Narxlarni ommaviy yangilash
-   */
   @Post('/bulk-update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.SUPER_ADMIN)

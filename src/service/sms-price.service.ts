@@ -93,8 +93,15 @@ export class SmsPriceService {
           'Price already exists for this operator and message type',
         );
       }
-
-      const price = this.priceRepo.create(data);
+      const price = this.priceRepo.create({
+        country_code: data.country_code,
+        country_name: data.country_name,
+        operator: data.operator,
+        operator_name: data.operator.toString(),
+        message_type: data.message_type,
+        price_per_sms: data.price_per_sms,
+        description: data.description ?? null,
+      } as Partial<SmsPriceEntity>);
       const savedPrice = await this.priceRepo.save(price);
 
       return { result: savedPrice };
