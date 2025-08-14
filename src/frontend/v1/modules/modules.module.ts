@@ -13,7 +13,6 @@ import { SmsCampaignModule } from './sms-campaign/sms-campaign.module';
 import { SmsMessageModule } from './sms-message/sms-message.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { TariffsFrontendModule } from './tariffs/tariffs.module';
-import { SmsPriceFrontendModule } from './sms-price/sms-price.module';
 
 @Module({
   imports: [
@@ -31,7 +30,6 @@ import { SmsPriceFrontendModule } from './sms-price/sms-price.module';
     // SmsMessageModule,
     TransactionModule,
     TariffsFrontendModule,
-    SmsPriceFrontendModule,
   ],
 })
 export class ModulesFrontendModule {}
