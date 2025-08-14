@@ -38,7 +38,6 @@ export class SmsContactService {
   ): Promise<SMSContactStatusEnum> {
     const cleanPhone: string = (phone || '').toString().trim();
 
-    // 1) Validate phone format using libphonenumber-js
     try {
       let parsed = parsePhoneNumberFromString(cleanPhone);
       if (!parsed) parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
@@ -47,8 +46,6 @@ export class SmsContactService {
         return SMSContactStatusEnum.INVALID_FORMAT;
       }
 
-      // 2) If valid, check tariffs table by operator code
-      // Try 2 and 3-digit codes from national number (covers common UZ cases)
       const national: string = (parsed.nationalNumber || '').toString();
       const candidates: string[] = [
         national.substring(0, 3),
