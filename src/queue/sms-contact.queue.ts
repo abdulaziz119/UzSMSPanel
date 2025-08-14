@@ -23,11 +23,25 @@ export class SmsContactQueue {
 
   @Process('import-excel')
   async handleImportExcel(job: Job<ImportExcelJobData>) {
-    const { buffer, defaults } = job.data;
+    const { buffer: rawBuffer, defaults } = job.data as any;
+
+    const buffer: Buffer = Buffer.isBuffer(rawBuffer)
+      ? (rawBuffer as Buffer)
+      : rawBuffer?.type === 'Buffer' && Array.isArray(rawBuffer?.data)
+        ? Buffer.from(rawBuffer.data)
+        : typeof rawBuffer === 'string'
+          ? (() => {
+              try {
+                return Buffer.from(rawBuffer, 'base64');
+              } catch {
+                return Buffer.alloc(0);
+              }
+            })()
+          : Buffer.alloc(0);
 
     this.logger.log(`📥 Excel import job started - Job ID: ${job.id}`);
     this.logger.log(
-      `📊 Job data retrieved from Redis - Buffer size: ${buffer.length} bytes, Group ID: ${defaults.default_group_id}`,
+      `📊 Job data retrieved from Redis - Buffer size: ${buffer?.length ?? 0} bytes, Group ID: ${defaults?.default_group_id}`,
     );
     this.logger.log(
       `⏰ Job timestamp: ${new Date(job.timestamp).toISOString()}`,
@@ -54,7 +68,7 @@ export class SmsContactQueue {
       return result;
     } catch (error) {
       this.logger.error(
-        `❌ Excel import failed - Job ID: ${job.id}, Error: ${error.message}`,
+        `❌ Excel import failed - Job ID: ${job.id}, Error: ${error?.message ?? error}`,
       );
       throw error;
     }

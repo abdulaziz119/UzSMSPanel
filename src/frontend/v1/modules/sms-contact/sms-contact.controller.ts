@@ -9,6 +9,7 @@ import {
   FileTypeValidator,
   MaxFileSizeValidator,
   Res,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -41,6 +42,8 @@ import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
 @ApiTags('sms-contact')
 @Controller({ path: '/frontend/sms-contact', version: '1' })
 export class SmsContactController {
+  private readonly logger = new Logger(SmsContactController.name);
+
   constructor(
     private readonly smsContactService: SmsContactService,
     @InjectQueue(SMS_CONTACT_QUEUE) private readonly smsContactQueue: Queue,
@@ -118,10 +121,22 @@ export class SmsContactController {
     file: Express.Multer.File,
     @Body() body: { default_group_id: number },
   ): Promise<{ result: { jobId: string; message: string } }> {
-    const job = await this.smsContactQueue.add('import-excel', {
-      buffer: file.buffer,
-      defaults: body,
-    });
+    // Log file details and encode buffer as base64 to avoid serialization issues in Redis
+    this.logger.log(
+      `📤 Queueing Excel import - filename: ${file?.originalname}, size: ${file?.size} bytes, mimetype: ${file?.mimetype}, group: ${body?.default_group_id}`,
+    );
+
+    const payload = {
+      buffer: file?.buffer ? file.buffer.toString('base64') : '',
+      defaults: { default_group_id: Number(body?.default_group_id) },
+      meta: {
+        originalname: file?.originalname,
+        mimetype: file?.mimetype,
+        size: file?.size ?? 0,
+      },
+    };
+
+    const job = await this.smsContactQueue.add('import-excel', payload);
 
     return {
       result: {
