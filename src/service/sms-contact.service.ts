@@ -153,20 +153,6 @@ export class SmsContactService {
     }
   }
 
-  async findOne(
-    payload: ParamIdDto,
-  ): Promise<SingleResponse<SmsContactEntity>> {
-    const smsContact: SmsContactEntity = await this.smsContactRepo.findOne({
-      where: { id: payload.id },
-    });
-
-    if (!smsContact) {
-      throw new NotFoundException('SMS Contact not found');
-    }
-
-    return { result: smsContact };
-  }
-
   async update(
     payload: UpdateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {

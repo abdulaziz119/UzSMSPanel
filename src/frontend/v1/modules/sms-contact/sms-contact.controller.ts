@@ -20,9 +20,6 @@ import { PaginationResponse } from '../../../../utils/pagination.response';
 export class SmsContactController {
   constructor(private readonly smsContactService: SmsContactService) {}
 
-  /**
-   * Yangi SMS kontakt (telefon raqam) qo'shish
-   */
   @Post('/create')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -34,9 +31,6 @@ export class SmsContactController {
     return await this.smsContactService.create(body);
   }
 
-  /**
-   * Kontaktlar ro'yxatini olish (filter va pagination bilan)
-   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -47,19 +41,6 @@ export class SmsContactController {
     return await this.smsContactService.findAll(query);
   }
 
-  // @Post('/findOne')
-  // @ApiBadRequestResponse({ type: ErrorResourceDto })
-  // @Roles(UserRoleEnum.CLIENT)
-  // @Auth(false)
-  // async findOne(
-  //   @Body() param: ParamIdDto,
-  // ): Promise<SingleResponse<SmsContactEntity>> {
-  //   return await this.smsContactService.findOne(param);
-  // }
-
-  /**
-   * Kontakt ma'lumotlarini yangilash
-   */
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -70,9 +51,6 @@ export class SmsContactController {
     return await this.smsContactService.update(body);
   }
 
-  /**
-   * Kontaktni o'chirish
-   */
   @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
