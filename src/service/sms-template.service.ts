@@ -67,7 +67,7 @@ export class SmsTemplateService {
 
       if (search) {
         queryBuilder.andWhere(
-          '(sms_templates.title ILIKE :search OR sms_templates.content ILIKE :search)',
+          '(sms_templates.name ILIKE :search OR sms_templates.content ILIKE :search)',
           { search: `%${search}%` },
         );
       }

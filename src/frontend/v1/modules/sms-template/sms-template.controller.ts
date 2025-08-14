@@ -40,23 +40,4 @@ export class SmsTemplateController {
   ): Promise<PaginationResponse<SmsTemplateEntity[]>> {
     return await this.smsTemplateService.findAll(query, user_id);
   }
-
-  // @Post('/update')
-  // @ApiBadRequestResponse({ type: ErrorResourceDto })
-  // @Roles(UserRoleEnum.CLIENT)
-  // @Auth(false)
-  // async update(
-  //   @Body() body: UpdateSmsTemplateDto,
-  //   @User('id') user_id: number,
-  // ): Promise<SingleResponse<SmsTemplateEntity>> {
-  //   return await this.smsTemplateService.update(body, user_id);
-  // }
-  //
-  // @Post('/delete')
-  // @ApiBadRequestResponse({ type: ErrorResourceDto })
-  // @Roles(UserRoleEnum.CLIENT)
-  // @Auth(false)
-  // async delete(@Body() param: ParamIdDto): Promise<{ result: true }> {
-  //   return await this.smsTemplateService.delete(param);
-  // }
 }

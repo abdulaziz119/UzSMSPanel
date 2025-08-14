@@ -19,14 +19,11 @@ import {
 import { PaginationResponse } from '../../../../utils/pagination.response';
 
 @ApiBearerAuth()
-@ApiTags('frontend-sms-group')
+@ApiTags('sms-group')
 @Controller({ path: '/frontend/sms-group', version: '1' })
 export class SmsGroupController {
   constructor(private readonly smsGroupService: SmsGroupService) {}
 
-  /**
-   * Yangi kontaktlar guruhi yaratish
-   */
   @Post('/create')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -39,9 +36,6 @@ export class SmsGroupController {
     return await this.smsGroupService.create(body, user_id);
   }
 
-  /**
-   * Guruhlar ro'yxatini olish (pagination bilan)
-   */
   @Post('/findAll')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -52,19 +46,6 @@ export class SmsGroupController {
     return await this.smsGroupService.findAll(query);
   }
 
-  // @Post('/findOne')
-  // @ApiBadRequestResponse({ type: ErrorResourceDto })
-  // @Roles(UserRoleEnum.CLIENT)
-  // @Auth(false)
-  // async findOne(
-  //   @Body() param: ParamIdDto,
-  // ): Promise<SingleResponse<SmsGroupEntity>> {
-  //   return await this.smsGroupService.findOne(param);
-  // }
-
-  /**
-   * Guruh ma'lumotlarini yangilash
-   */
   @Post('/update')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
@@ -76,9 +57,6 @@ export class SmsGroupController {
     return await this.smsGroupService.update(body, user_id);
   }
 
-  /**
-   * Guruhni o'chirish
-   */
   @Post('/delete')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)

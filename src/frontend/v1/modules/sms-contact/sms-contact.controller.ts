@@ -15,7 +15,7 @@ import {
 import { PaginationResponse } from '../../../../utils/pagination.response';
 
 @ApiBearerAuth()
-@ApiTags('frontend-sms-contact')
+@ApiTags('sms-contact')
 @Controller({ path: '/frontend/sms-contact', version: '1' })
 export class SmsContactController {
   constructor(private readonly smsContactService: SmsContactService) {}
