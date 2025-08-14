@@ -8,6 +8,10 @@ const DB_DB = process.env.DB_DATABASE || '';
 const DB_PASS = process.env.DB_PASSWORD || '';
 const DB_SCHEMA = process.env.DB_SCHEMA || '';
 
+const REDIS_HOST = process.env.REDIS_HOST || '';
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || '';
+
 const MEDIA_DIRECTORY = process.env.MEDIA_DIRECTORY || '';
 const SERVER_BASE_URL = process.env.SERVER_BASE_URL || '';
 
@@ -22,6 +26,9 @@ if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
 }
 
 export {
+  REDIS_HOST,
+  REDIS_PORT,
+  REDIS_PASSWORD,
   MEDIA_DIRECTORY,
   SERVER_BASE_URL,
   DASHBOARD_PORT,
