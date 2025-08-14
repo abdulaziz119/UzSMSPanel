@@ -1,10 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import {
+	IsArray,
+	IsBoolean,
+	IsEnum,
+	IsNotEmpty,
+	IsNumber,
+	IsOptional,
+	ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaginationParams } from './dto';
 import { MessageTypeEnum, OperatorEnum } from '../enum/sms-price.enum';
 
 export class PriceFilterDto extends PaginationParams {
-	@ApiPropertyOptional({ enum: OperatorEnum, description: 'Operator', example: 'BEELINE' })
+	@ApiPropertyOptional({ enum: OperatorEnum, description: 'Operator', example: OperatorEnum.BEELINE })
 	@IsOptional()
 	@IsEnum(OperatorEnum)
 	operator?: OperatorEnum;
@@ -21,7 +30,7 @@ export class PriceFilterDto extends PaginationParams {
 }
 
 export class CreatePriceDto {
-	@ApiProperty({ enum: OperatorEnum, description: 'Operator', example: 'BEELINE' })
+	@ApiProperty({ enum: OperatorEnum, description: 'Operator', example: OperatorEnum.BEELINE })
 	@IsEnum(OperatorEnum)
 	@IsNotEmpty()
 	operator: OperatorEnum;
@@ -60,4 +69,29 @@ export class UpdatePriceDto {
 	@IsOptional()
 	@IsBoolean()
 	is_active?: boolean;
+}
+
+export class BulkUpdatePriceItemDto {
+	@ApiProperty({ description: 'Yozuv ID', example: 1 })
+	@IsNumber()
+	@IsNotEmpty()
+	id: number;
+
+	@ApiPropertyOptional({ description: 'SMS narxi', example: 120 })
+	@IsOptional()
+	@IsNumber()
+	price_per_sms?: number;
+
+	@ApiPropertyOptional({ description: 'Faol holati', example: true })
+	@IsOptional()
+	@IsBoolean()
+	is_active?: boolean;
+}
+
+export class BulkUpdatePricesDto {
+	@ApiProperty({ type: [BulkUpdatePriceItemDto] })
+	@IsArray()
+	@ValidateNested({ each: true })
+	@Type(() => BulkUpdatePriceItemDto)
+	updates: BulkUpdatePriceItemDto[];
 }

@@ -26,7 +26,7 @@ export class SmsPriceService {
     private readonly priceRepo: Repository<SmsPriceEntity>,
   ) {}
 
-  async findAllPrices(
+  async findAll(
     filters: PriceFilterDto,
   ): Promise<PaginationResponse<SmsPriceEntity[]>> {
     try {
@@ -78,12 +78,10 @@ export class SmsPriceService {
     }
   }
 
-  async createPrice(
-    data: CreatePriceDto,
-  ): Promise<SingleResponse<SmsPriceEntity>> {
+  async create(data: CreatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
     try {
       // Check if price already exists for this operator and message type
-      const existingPrice = await this.priceRepo.findOne({
+      const existingPrice: SmsPriceEntity = await this.priceRepo.findOne({
         where: {
           operator: data.operator,
           message_type: data.message_type,
@@ -111,9 +109,7 @@ export class SmsPriceService {
     }
   }
 
-  async updatePrice(
-    data: UpdatePriceDto,
-  ): Promise<SingleResponse<SmsPriceEntity>> {
+  async update(data: UpdatePriceDto): Promise<SingleResponse<SmsPriceEntity>> {
     try {
       const price = await this.priceRepo.findOne({ where: { id: data.id } });
 
@@ -155,7 +151,7 @@ export class SmsPriceService {
     }
   }
 
-  async deletePrice(id: number): Promise<SingleResponse<{ message: string }>> {
+  async delete(id: number): Promise<SingleResponse<{ message: string }>> {
     try {
       const price = await this.priceRepo.findOne({ where: { id } });
 

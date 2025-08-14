@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
@@ -8,10 +8,15 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { SmsPriceService } from '../../../../service/sms-price.service';
 import { SmsPriceEntity } from '../../../../entity/sms-price.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { MessageTypeEnum, OperatorEnum } from '../../../../utils/enum/sms-price.enum';
+import {
+  PriceFilterDto,
+  CreatePriceDto,
+  UpdatePriceDto,
+  BulkUpdatePricesDto,
+} from '../../../../utils/dto/sms-price.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-sms-price')
+@ApiTags('sms-price')
 @Controller({ path: '/dashboard/sms-price', version: '1' })
 export class SmsPriceController {
   constructor(private readonly smsPriceService: SmsPriceService) {}
@@ -23,10 +28,10 @@ export class SmsPriceController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async findAllPrices(
-    @Body() filters: any,
+  async findAll(
+    @Body() filters: PriceFilterDto,
   ): Promise<PaginationResponse<SmsPriceEntity[]>> {
-    return await this.smsPriceService.findAllPrices(filters);
+    return await this.smsPriceService.findAll(filters);
   }
 
   /**
@@ -36,15 +41,10 @@ export class SmsPriceController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async createPrice(
-    @Body() body: {
-      operator: OperatorEnum;
-      message_type: MessageTypeEnum;
-      price_per_sms: number;
-      description?: string;
-    },
+  async create(
+    @Body() body: CreatePriceDto,
   ): Promise<SingleResponse<SmsPriceEntity>> {
-    return await this.smsPriceService.createPrice(body);
+    return await this.smsPriceService.create(body);
   }
 
   /**
@@ -54,15 +54,10 @@ export class SmsPriceController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async updatePrice(
-    @Body() body: {
-      id: number;
-      price_per_sms?: number;
-      description?: string;
-      is_active?: boolean;
-    },
+  async update(
+    @Body() body: UpdatePriceDto,
   ): Promise<SingleResponse<SmsPriceEntity>> {
-    return await this.smsPriceService.updatePrice(body);
+    return await this.smsPriceService.update(body);
   }
 
   /**
@@ -72,10 +67,10 @@ export class SmsPriceController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.SUPER_ADMIN)
   @Auth()
-  async deletePrice(
+  async delete(
     @Body() param: ParamIdDto,
   ): Promise<SingleResponse<{ message: string }>> {
-    return await this.smsPriceService.deletePrice(param.id);
+    return await this.smsPriceService.delete(param.id);
   }
 
   /**
@@ -86,13 +81,7 @@ export class SmsPriceController {
   @Roles(UserRoleEnum.SUPER_ADMIN)
   @Auth()
   async bulkUpdatePrices(
-    @Body() body: {
-      updates: Array<{
-        id: number;
-        price_per_sms?: number;
-        is_active?: boolean;
-      }>;
-    },
+    @Body() body: BulkUpdatePricesDto,
   ): Promise<SingleResponse<{ message: string; updated_count: number }>> {
     return await this.smsPriceService.bulkUpdatePrices(body.updates);
   }
