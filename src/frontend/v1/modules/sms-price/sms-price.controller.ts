@@ -23,6 +23,6 @@ export class SmsPriceFrontendController {
   async findAll(
     @Body() filters: PriceFilterDto,
   ): Promise<PaginationResponse<SmsPriceEntity[]>> {
-    return await this.smsPriceService.findAll(filters);
+    return await this.smsPriceService.findAll(filters, false);
   }
 }

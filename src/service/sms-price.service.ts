@@ -28,9 +28,16 @@ export class SmsPriceService {
 
   async findAll(
     filters: PriceFilterDto,
+    isDashboard = false,
   ): Promise<PaginationResponse<SmsPriceEntity[]>> {
     try {
       const queryBuilder = this.priceRepo.createQueryBuilder('price');
+
+      if (isDashboard === false) {
+        queryBuilder.andWhere('price.active = :active', {
+          active: true,
+        });
+      }
 
       if (filters.operator) {
         queryBuilder.andWhere('price.operator = :operator', {
