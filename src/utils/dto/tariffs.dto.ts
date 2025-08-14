@@ -208,10 +208,10 @@ export class BulkUpdateTariffPricesDto {
   @IsNumber()
   @IsNotEmpty()
   id: number;
-  @ApiProperty({ example: 'BEELINE', description: 'Operator nomi' })
-  @IsString()
-  @IsNotEmpty()
-  operator: string;
+  // @ApiProperty({ example: 'BEELINE', description: 'Operator nomi' })
+  // @IsString()
+  // @IsNotEmpty()
+  // operator: string;
 
   @ApiProperty({
     example: 10,

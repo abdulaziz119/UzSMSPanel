@@ -13,6 +13,7 @@ import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import {
+  BulkUpdateTariffPricesDto,
   CreateTariffDto,
   TariffFilterDto,
   UpdateTariffDto,
@@ -356,20 +357,16 @@ export class TariffService {
     }
   }
 
-  async bulkUpdatePrices(data: {
-    operator: string;
-    price_adjustment: number;
-    adjustment_type: 'percent' | 'fixed';
-  }): Promise<SingleResponse<{ message: string; affected_count: number }>> {
+  async bulkUpdatePrices(
+    data: BulkUpdateTariffPricesDto,
+  ): Promise<SingleResponse<{ message: string; affected_count: number }>> {
     try {
       const tariffs = await this.tariffRepo.find({
-        where: { operator: data.operator },
+        where: { id: data.id },
       });
 
       if (tariffs.length === 0) {
-        throw new NotFoundException(
-          `No tariffs found for operator: ${data.operator}`,
-        );
+        throw new NotFoundException('Tariffs not found for bulk update');
       }
 
       for (const tariff of tariffs) {
@@ -394,7 +391,7 @@ export class TariffService {
 
       return {
         result: {
-          message: `Bulk price update completed for ${data.operator}`,
+          message: `Bulk price update completed for ${data.id}`,
           affected_count: tariffs.length,
         },
       };
