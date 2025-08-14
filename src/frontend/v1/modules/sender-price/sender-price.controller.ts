@@ -10,7 +10,7 @@ import { PaginationResponse } from '../../../../utils/pagination.response';
 import { SenderPriceEntity } from '../../../../entity/sender-price.entity';
 
 @ApiBearerAuth()
-@ApiTags('frontend-sender-price')
+@ApiTags('sender-price')
 @Controller({ path: '/frontend/sender-price', version: '1' })
 export class SenderPriceController {
   constructor(private readonly service: SenderPriceService) {}
