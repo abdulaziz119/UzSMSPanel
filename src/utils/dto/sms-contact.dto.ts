@@ -27,11 +27,6 @@ export class CreateSmsContactDto {
   @Length(1, 20)
   phone: string;
 
-  @ApiPropertyOptional({ example: 'Family Group', description: 'Group name' })
-  @IsString()
-  @IsOptional()
-  group_name?: string;
-
   @ApiProperty({ example: 1, description: 'SMS group ID' })
   @IsNumber()
   @IsNotEmpty()

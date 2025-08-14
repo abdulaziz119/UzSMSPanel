@@ -10,7 +10,7 @@ import { PaginationParams } from './dto';
 
 export class CreateTariffDto {
   @ApiProperty({
-    example: '9989',
+    example: '90',
     description: 'Operator kod (prefix) yoki umumiy kod',
   })
   @IsString()

@@ -19,6 +19,7 @@ import {
   SmsContactFindAllDto,
 } from '../utils/dto/sms-contact.dto';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
+const XLSX = require('xlsx');
 
 @Injectable()
 export class SmsContactService {
@@ -53,7 +54,7 @@ export class SmsContactService {
 
       try {
         const tariff: TariffEntity = await this.tariffRepo.findOne({
-          where: candidates.map((code) => ({ code })),
+          where: candidates.map((phone_ext) => ({ phone_ext })),
         });
 
         if (!tariff) {
@@ -86,14 +87,26 @@ export class SmsContactService {
     payload: CreateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {
     try {
+      let resolvedGroupName: string;
+      try {
+        const row = await this.smsContactRepo.manager
+          .createQueryBuilder()
+          .select('g.title', 'title')
+          .from('sms_groups', 'g')
+          .where('g.id = :id', { id: payload.group_id })
+          .andWhere('g.deleted_at IS NULL')
+          .getRawOne<{ title: string }>();
+        resolvedGroupName = row?.title || undefined;
+      } catch {}
+
       const normalizedPhone: string = this.normalizePhone(payload.phone);
       const status = await this.validatePhoneNumber(normalizedPhone);
 
       const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
         name: payload.name,
-        phone: payload.phone,
+        phone: (normalizedPhone || payload.phone || '').replace(/^\+/, ''),
         status: status,
-        group_name: payload.group_name,
+        group_name: resolvedGroupName,
         group_id: payload.group_id,
       });
 
@@ -192,5 +205,188 @@ export class SmsContactService {
     const { id } = payload;
     await this.smsContactRepo.softDelete(id);
     return { result: true };
+  }
+
+  /**
+   * Import contacts from Excel/CSV buffer.
+   * Expected columns: name, phone, group_id (optional), group_name (optional)
+   */
+  async importContactsFromExcel(
+    buffer: Buffer,
+    defaults?: { default_group_id: number },
+  ): Promise<{
+    result: {
+      total: number;
+      inserted: number;
+      failed: number;
+      errors: Array<{ row: number; error: string }>;
+    };
+  }> {
+    const BATCH_SIZE = 100; // Process in batches for better performance
+
+    try {
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+
+      if (!sheetName) {
+        return { result: { total: 0, inserted: 0, failed: 0, errors: [] } };
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      const groupId = Number(defaults?.default_group_id || 0);
+      if (!groupId) {
+        return {
+          result: {
+            total: 0,
+            inserted: 0,
+            failed: 0,
+            errors: [{ row: 0, error: 'default_group_id is required in body' }],
+          },
+        };
+      }
+
+      // Validate group exists and get its name
+      let groupName: string | undefined = undefined;
+      try {
+        const row = await this.smsContactRepo.manager
+          .createQueryBuilder()
+          .select('g.title', 'title')
+          .from('sms_groups', 'g')
+          .where('g.id = :id', { id: groupId })
+          .andWhere('g.deleted_at IS NULL')
+          .getRawOne<{ title: string }>();
+
+        if (!row) {
+          return {
+            result: {
+              total: 0,
+              inserted: 0,
+              failed: 0,
+              errors: [{ row: 0, error: `Group with id ${groupId} not found` }],
+            },
+          };
+        }
+        groupName = row.title;
+      } catch (e) {
+        return {
+          result: {
+            total: 0,
+            inserted: 0,
+            failed: 0,
+            errors: [{ row: 0, error: 'Failed to validate group existence' }],
+          },
+        };
+      }
+
+      let inserted = 0;
+      const errors: Array<{ row: number; error: string }> = [];
+
+      // Process in batches
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = rows.slice(i, i + BATCH_SIZE);
+        const batchPromises = batch.map(async (r, batchIndex) => {
+          const globalIndex = i + batchIndex;
+          const name = (r.name || r.Name || r.Nomi || '').toString().trim();
+          const phone = (r.phone || r.Phone || r.Telefon || '')
+            .toString()
+            .trim();
+
+          if (!name || !phone) {
+            return {
+              success: false,
+              error: {
+                row: globalIndex + 2,
+                error: 'Missing required fields (name/phone)',
+              },
+            };
+          }
+
+          try {
+            // Normalize phone and validate status
+            const cleanPhone = (phone || '').replace(/^\+/, '');
+
+            const newContact = this.smsContactRepo.create({
+              name,
+              phone: cleanPhone,
+              group_id: groupId,
+              group_name: groupName,
+            });
+
+            await this.smsContactRepo.save(newContact);
+            return { success: true };
+          } catch (e: any) {
+            return {
+              success: false,
+              error: {
+                row: globalIndex + 2,
+                error: e?.message || 'Failed to insert',
+              },
+            };
+          }
+        });
+
+        const batchResults = await Promise.allSettled(batchPromises);
+
+        batchResults.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            if (result.value.success) {
+              inserted++;
+            } else {
+              errors.push(result.value.error);
+            }
+          } else {
+            errors.push({
+              row: i + 2,
+              error: 'Batch processing failed: ' + result.reason,
+            });
+          }
+        });
+      }
+
+      return {
+        result: {
+          total: rows.length,
+          inserted,
+          failed: rows.length - inserted,
+          errors,
+        },
+      };
+    } catch (error) {
+      throw new HttpException(
+        { message: 'Import failed', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Generate Excel template as Buffer for contacts import
+   */
+  generateContactsTemplate(): Buffer {
+    const headers = ['name', 'phone', 'group_id', 'group_name'];
+    const data = [
+      {
+        name: 'Ali Valiyev',
+        phone: '+998901234567',
+        group_id: 1,
+        group_name: 'Default Group',
+      },
+      {
+        name: 'Laylo Karimova',
+        phone: '998935554433',
+        group_id: 1,
+        group_name: 'Default Group',
+      },
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(data, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'contacts');
+    const buffer: Buffer = XLSX.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx',
+    }) as unknown as Buffer;
+    return buffer;
   }
 }
