@@ -52,7 +52,8 @@ export class SmsPriceService {
 
       queryBuilder
         .orderBy('price.operator', 'ASC')
-        .addOrderBy('price.message_type', 'ASC');
+        .addOrderBy('price.message_type', 'ASC')
+        .where('price.active = true');
 
       const total: number = await queryBuilder.getCount();
 
