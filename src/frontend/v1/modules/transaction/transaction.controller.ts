@@ -6,18 +6,16 @@ import { SingleResponse } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { User } from '../auth/decorators/user.decorator';
-import { 
-  TransactionService
-} from '../../../../service/transaction.service';
+import { TransactionService } from '../../../../service/transaction.service';
 import { TransactionEntity } from '../../../../entity/transaction.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { 
-  TopUpBalanceDto, 
-  TransactionFilterDto 
+import {
+  TopUpBalanceDto,
+  TransactionFilterDto,
 } from '../../../../utils/dto/transaction.dto';
 
 @ApiBearerAuth()
-@ApiTags('frontend-transaction')
+@ApiTags('transaction')
 @Controller({ path: '/frontend/transaction', version: '1' })
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
@@ -62,7 +60,10 @@ export class TransactionController {
     @Body() filters: TransactionFilterDto,
     @User('id') user_id: number,
   ): Promise<PaginationResponse<TransactionEntity[]>> {
-    return await this.transactionService.getTransactionHistory(filters, user_id);
+    return await this.transactionService.getTransactionHistory(
+      filters,
+      user_id,
+    );
   }
 
   /**
