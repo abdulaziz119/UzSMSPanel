@@ -27,14 +27,13 @@ import { ContactEntity } from '../../../../entity/contact.entity';
 import { User } from '../auth/decorators/user.decorator';
 import { ContactService } from '../../../../service/contact.service';
 import {
-  CreateContactDto,
   CreateIndividualContactDto,
   CreateCompanyContactDto,
 } from '../../../../utils/dto/contact.dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-contact')
+@ApiTags('contact')
 @Controller({ path: '/dashboard/contact', version: '1' })
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}

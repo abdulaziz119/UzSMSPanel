@@ -5,19 +5,17 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse, ParamIdDto } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { 
-  UserService
-} from '../../../../service/user.service';
+import { UserService } from '../../../../service/user.service';
 import { UserEntity } from '../../../../entity/user.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { 
+import {
   UserFilterDto,
   UpdateUserBalanceDto,
-  BlockUserDto 
+  BlockUserDto,
 } from '../../../../utils/dto/user.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-user')
+@ApiTags('user')
 @Controller({ path: '/dashboard/user', version: '1' })
 export class UserController {
   constructor(private readonly userService: UserService) {}

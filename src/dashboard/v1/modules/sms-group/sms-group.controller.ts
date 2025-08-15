@@ -11,7 +11,7 @@ import { PaginationResponse } from '../../../../utils/pagination.response';
 import { GroupFilterDto } from '../../../../utils/dto/sms-group.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-sms-group')
+@ApiTags('sms-group')
 @Controller({ path: '/dashboard/sms-group', version: '1' })
 export class SmsGroupController {
   constructor(private readonly smsGroupService: SmsGroupService) {}

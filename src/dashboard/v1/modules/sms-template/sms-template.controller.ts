@@ -12,7 +12,7 @@ import { UpdateSmsTemplateDto } from '../../../../utils/dto/sms-template.dto';
 import { SmsTemplateDashboardFilterDto } from './dto/sms-template.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-sms-template')
+@ApiTags('sms-template')
 @Controller({ path: '/dashboard/sms-template', version: '1' })
 export class SmsTemplateDashboardController {
   constructor(private readonly smsTemplateService: SmsTemplateService) {}

@@ -5,19 +5,17 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse, ParamIdDto } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { 
-  TransactionService
-} from '../../../../service/transaction.service';
+import { TransactionService } from '../../../../service/transaction.service';
 import { TransactionEntity } from '../../../../entity/transaction.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { 
+import {
   TransactionFilterDto,
   TransactionStatsDto,
-  AdminTopUpDto 
+  AdminTopUpDto,
 } from '../../../../utils/dto/transaction.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-transaction')
+@ApiTags('transaction')
 @Controller({ path: '/dashboard/transaction', version: '1' })
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}

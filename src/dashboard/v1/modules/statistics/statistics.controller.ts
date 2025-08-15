@@ -9,7 +9,7 @@ import { StatisticsService } from '../../../../service/statistics.service';
 import { DashboardStatsFilterDto } from '../../../../utils/dto/statistics.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-statistics')
+@ApiTags('statistics')
 @Controller({ path: '/dashboard/statistics', version: '1' })
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}

@@ -15,7 +15,7 @@ import {
 import { PaginationResponse } from '../../../../utils/pagination.response';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-country')
+@ApiTags('country')
 @Controller({ path: '/dashboard/country', version: '1' })
 export class CountryController {
   constructor(private readonly countryService: CountryService) {}

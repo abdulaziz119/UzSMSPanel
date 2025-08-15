@@ -14,7 +14,7 @@ import {
 } from '../../../../utils/dto/sms-message.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-sms-message')
+@ApiTags('sms-message')
 @Controller({ path: '/dashboard/sms-message', version: '1' })
 export class SmsMessageController {
   constructor(private readonly smsMessageService: SmsMessageService) {}

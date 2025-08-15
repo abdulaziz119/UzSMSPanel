@@ -5,20 +5,18 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse, ParamIdDto } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { 
-  SmsCampaignService
-} from '../../../../service/sms-campaign.service';
+import { SmsCampaignService } from '../../../../service/sms-campaign.service';
 import { SmsCampaignEntity } from '../../../../entity/sms-campaign.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { 
+import {
   CampaignFilterDto,
   CreateCampaignDto,
   UpdateCampaignDto,
-  CampaignStatsDto 
+  CampaignStatsDto,
 } from '../../../../utils/dto/sms-campaign.dto';
 
 @ApiBearerAuth()
-@ApiTags('dashboard-sms-campaign')
+@ApiTags('sms-campaign')
 @Controller({ path: '/dashboard/sms-campaign', version: '1' })
 export class SmsCampaignController {
   constructor(private readonly smsCampaignService: SmsCampaignService) {}
@@ -101,7 +99,9 @@ export class SmsCampaignController {
     @Body() body: { campaign_id: number },
   ): Promise<SingleResponse<any>> {
     // For admin statistics, don't filter by user_id
-    return await this.smsCampaignService.getCampaignStatistics(body.campaign_id);
+    return await this.smsCampaignService.getCampaignStatistics(
+      body.campaign_id,
+    );
   }
 
   /**
@@ -112,8 +112,15 @@ export class SmsCampaignController {
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
   async bulkAction(
-    @Body() body: { campaign_ids: number[]; action: 'start' | 'pause' | 'cancel' },
+    @Body()
+    body: {
+      campaign_ids: number[];
+      action: 'start' | 'pause' | 'cancel';
+    },
   ): Promise<SingleResponse<{ message: string; affected_count: number }>> {
-    return await this.smsCampaignService.bulkAction(body.campaign_ids, body.action);
+    return await this.smsCampaignService.bulkAction(
+      body.campaign_ids,
+      body.action,
+    );
   }
 }
