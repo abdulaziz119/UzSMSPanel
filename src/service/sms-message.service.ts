@@ -97,6 +97,14 @@ export class SmsMessageService {
       });
       const savedSmsMessage: SmsMessageEntity =
         await this.messageRepo.save(res);
+
+      await this.smsTemplateRepo.update(
+        { id: getTemplate.id },
+        {
+          usage_count: () => 'usage_count + 1',
+          last_used_at: savedSmsMessage.created_at,
+        },
+      );
       return { result: savedSmsMessage };
     } catch (error) {
       throw error;

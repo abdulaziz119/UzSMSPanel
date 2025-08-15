@@ -35,7 +35,7 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'text', nullable: false })
   message: string;
 
-  @Column({ type: 'integer' })
+  @Column({ type: 'integer', nullable: true })
   sms_template_id: number | null;
 
   @ManyToOne(() => SmsTemplateEntity, undefined, cascadeUpdateRelationOptions)

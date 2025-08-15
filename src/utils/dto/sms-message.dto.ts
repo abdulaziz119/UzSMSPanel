@@ -8,10 +8,7 @@ import {
   IsArray,
   IsPhoneNumber,
 } from 'class-validator';
-import {
-  MessageStatusEnum,
-  MessageDirectionEnum,
-} from '../enum/sms-message.enum';
+import { MessageStatusEnum } from '../enum/sms-message.enum';
 import { MessageTypeEnum } from '../enum/sms-price.enum';
 import { PaginationParams } from './dto';
 
@@ -217,16 +214,6 @@ export class MessageFilterDto extends PaginationParams {
   })
   @IsOptional()
   operator?: string;
-
-  @ApiProperty({
-    example: 'OUTBOUND',
-    enum: MessageDirectionEnum,
-    description: "SMS yo'nalishi",
-    required: false,
-  })
-  @IsOptional()
-  @IsEnum(MessageDirectionEnum)
-  direction?: MessageDirectionEnum;
 
   @ApiProperty({
     example: 'test xabar',

@@ -20,10 +20,7 @@ import {
   CampaignStatusEnum,
   CampaignTypeEnum,
 } from '../utils/enum/sms-campaign.enum';
-import {
-  MessageStatusEnum,
-  MessageDirectionEnum,
-} from '../utils/enum/sms-message.enum';
+import { MessageStatusEnum } from '../utils/enum/sms-message.enum';
 import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 import {
   CampaignFilterDto,
