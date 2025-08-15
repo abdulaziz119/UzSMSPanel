@@ -347,30 +347,51 @@ export class TariffService {
 
   async getTariffStatistics(): Promise<SingleResponse<any>> {
     try {
+      // Summary statistics including provider (sms_prices) awareness.
+      // Join tariffs -> country -> sms_prices (message_type = SMS) by operator (normalized to lower)
       const statistics = await this.tariffRepo
         .createQueryBuilder('tariff')
+        .leftJoin('tariff.country', 'country')
+        .leftJoin(
+          'sms_prices',
+          'sms',
+          "sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg",
+          { msg: MessageTypeEnum.SMS },
+        )
         .select([
           'COUNT(*) as total_tariffs',
-          'COUNT(CASE WHEN public = true THEN 1 END) as public_tariffs',
-          'COUNT(CASE WHEN public = false THEN 1 END) as private_tariffs',
-          'COUNT(DISTINCT operator) as total_operators',
-          'AVG(price) as average_price',
-          'MIN(price) as min_price',
-          'MAX(price) as max_price',
+          "COUNT(CASE WHEN tariff.public = true THEN 1 END) as public_tariffs",
+          "COUNT(CASE WHEN tariff.public = false THEN 1 END) as private_tariffs",
+          'COUNT(DISTINCT tariff.operator) as total_operators',
+          'AVG(tariff.price) as average_price',
+          'MIN(tariff.price) as min_price',
+          'MAX(tariff.price) as max_price',
+          'AVG(sms.price_per_sms) as average_provider_price',
+          // average margin percent = AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 )
+          "AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as average_margin_percent",
         ])
         .getRawOne();
 
-      // Get operator distribution
+      // Operator distribution with provider-aware columns
       const operatorStats = await this.tariffRepo
         .createQueryBuilder('tariff')
+        .leftJoin('tariff.country', 'country')
+        .leftJoin(
+          'sms_prices',
+          'sms',
+          "sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg",
+          { msg: MessageTypeEnum.SMS },
+        )
         .select([
-          'operator',
+          'tariff.operator as operator',
           'COUNT(*) as tariff_count',
-          'AVG(price) as avg_price',
-          'MIN(price) as min_price',
-          'MAX(price) as max_price',
+          'AVG(tariff.price) as avg_price',
+          'MIN(tariff.price) as min_price',
+          'MAX(tariff.price) as max_price',
+          'AVG(sms.price_per_sms) as avg_provider_price',
+          "AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as avg_margin_percent",
         ])
-        .groupBy('operator')
+        .groupBy('tariff.operator')
         .orderBy('tariff_count', 'DESC')
         .getRawMany();
 

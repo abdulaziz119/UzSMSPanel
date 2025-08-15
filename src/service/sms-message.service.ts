@@ -5,6 +5,7 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
@@ -25,6 +26,7 @@ import {
   SendSingleSmsDto,
   SmsHistoryFilterDto,
 } from '../utils/dto/sms-message.dto';
+import { SmsContactEntity } from '../entity/sms-contact.entity';
 
 @Injectable()
 export class SmsMessageService {
@@ -33,7 +35,69 @@ export class SmsMessageService {
     private readonly messageRepo: Repository<SmsMessageEntity>,
     @Inject(MODELS.USER)
     private readonly userRepo: Repository<UserEntity>,
+  @Optional()
+  @Inject(MODELS.SMS_CONTACT)
+  private readonly smsContactRepo?: Repository<SmsContactEntity>,
   ) {}
+
+  // Send to single contact by contact_id
+  async sendToContact(
+    payload: { contact_id: number; message: string; sender?: string },
+    user_id: number,
+  ): Promise<SingleResponse<{ message_id: string }>> {
+    try {
+      const contact = await this.smsContactRepo.findOne({
+        where: { id: payload.contact_id },
+      });
+      if (!contact) throw new NotFoundException('Contact not found');
+
+      const dto = {
+        phone: contact.phone,
+        phone_ext: contact.phone,
+        message: payload.message,
+        sender: payload.sender,
+      } as any;
+
+      const res = await this.sendSingle(dto, user_id);
+      return { result: { message_id: res.result.message_id } } as any;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Send to all contacts in a group (queued as bulk)
+  async sendToGroup(
+    payload: {
+      group_id: number;
+      message: string;
+      sender?: string;
+      batch_size?: number;
+    },
+    user_id: number,
+  ): Promise<SingleResponse<{ job_id?: string }>> {
+    try {
+      // Fetch active contacts in group
+      const contacts = await this.smsContactRepo.find({
+        where: { group_id: payload.group_id },
+      });
+      if (!contacts || contacts.length === 0) {
+        throw new NotFoundException('No contacts found for group');
+      }
+
+      const phones = contacts.map((c) => c.phone).filter(Boolean);
+
+      const dto = {
+        phones,
+        message: payload.message,
+        sender: payload.sender,
+      } as any;
+
+      const res = await this.sendBulk(dto, user_id);
+      return { result: { job_id: res.result.batch_id } } as any;
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async sendSingle(
     payload: SendSingleSmsDto,

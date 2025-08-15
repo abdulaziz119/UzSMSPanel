@@ -13,6 +13,7 @@ import { SmsCampaignModule } from './sms-campaign/sms-campaign.module';
 import { SmsMessageModule } from './sms-message/sms-message.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { TariffsFrontendModule } from './tariffs/tariffs.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TariffsFrontendModule } from './tariffs/tariffs.module';
     SmsTemplateModule,
     SmsSenderModule,
     SenderPriceModule,
+    MessagesModule,
     // SmsCampaignModule,
     // SmsMessageModule,
     TransactionModule,
