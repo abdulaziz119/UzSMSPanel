@@ -5,12 +5,9 @@ import {
   IsOptional,
   IsNumber,
   IsBoolean,
-  IsArray,
-  ValidateNested,
   IsIn,
 } from 'class-validator';
 import { PaginationParams } from './dto';
-import { Type } from 'class-transformer';
 
 export class CreateTariffDto {
   @ApiProperty({
@@ -39,16 +36,6 @@ export class CreateTariffDto {
   @IsString()
   phone_ext?: string;
 
-  @ApiProperty({ example: 100.5, description: 'SMS narxi' })
-  @IsNumber()
-  @IsNotEmpty()
-  price: number;
-
-  @ApiProperty({ example: 100.5, description: 'provider tan narxi' })
-  @IsNumber()
-  @IsNotEmpty()
-  price_per_sms: number;
-
   @ApiProperty({
     example: 80.25,
     description: 'Provider tan narhi (cost_price)',
@@ -56,6 +43,14 @@ export class CreateTariffDto {
   @IsNumber()
   @IsNotEmpty()
   cost_price: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Foyiz (%) - provider narxiga qanchalik foyiz qo`shish',
+  })
+  @IsOptional()
+  @IsNumber()
+  margin_percent?: number;
 
   // Tan narx endi SmsPrice jadvalida boshqariladi
 
@@ -107,13 +102,6 @@ export class UpdateTariffDto {
   @IsOptional()
   @IsString()
   phone_ext?: string;
-
-  @ApiProperty({ example: 120, description: 'SMS narxi', required: false })
-  @IsOptional()
-  @IsNumber()
-  price?: number;
-
-  // Tan narx/margin endi SmsPrice orqali boshqariladi
 
   @ApiProperty({
     example: 'BEELINE',

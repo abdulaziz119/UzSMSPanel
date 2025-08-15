@@ -213,8 +213,15 @@ export class TariffService {
         throw new BadRequestException('Tariff with this code already exists');
       }
 
-      // Narxni bevosita kiritilgan price orqali saqlaymiz (cost_price endi ishlatilmaydi)
-      const computedPrice: number = data.price;
+      // Compute tariff price from provider price_per_sms and optional margin_percent
+      const providerPrice: number = Number(data.cost_price ?? 0);
+      const marginPercent: number = Number((data as any).margin_percent ?? 0);
+      let computedPrice: number = providerPrice;
+      if (!isNaN(marginPercent) && marginPercent !== 0) {
+        computedPrice = providerPrice * (1 + marginPercent / 100);
+      }
+      // Round to 4 decimal places to match DECIMAL(15,4)
+      computedPrice = Math.round(Math.max(0, computedPrice) * 10000) / 10000;
 
       const tariff: TariffEntity = this.tariffRepo.create({
         code: data.code,
@@ -254,7 +261,7 @@ export class TariffService {
               operator: normalizedOp,
               operator_name: savedTariff.operator,
               message_type: MessageTypeEnum.SMS,
-              price_per_sms: Number(data.price_per_sms ?? 0),
+              price_per_sms: Number(data.cost_price ?? 0),
               wholesale_price: 0,
               currency: country?.currency,
               active: true,
@@ -285,7 +292,6 @@ export class TariffService {
         throw new NotFoundException('Tariff not found');
       }
 
-      // Check if code is being changed and if it already exists
       if (data.code && data.code !== tariff.code) {
         const existingTariff: TariffEntity = await this.tariffRepo.findOne({
           where: { code: data.code },
@@ -296,14 +302,10 @@ export class TariffService {
         }
       }
 
-      // Narxni to'g'ridan-to'g'ri yangilash (cost_price ishlatilmaydi)
-      const nextPrice = data.price;
-
       await this.tariffRepo.update(data.id, {
         ...(data.code && { code: data.code }),
         ...(data.name && { name: data.name }),
         ...(data.phone_ext && { phone_ext: data.phone_ext }),
-        ...(nextPrice !== undefined && { price: nextPrice }),
         ...(data.operator && { operator: data.operator }),
         ...(data.public !== undefined && { public: data.public }),
         updated_at: new Date(),
@@ -325,7 +327,7 @@ export class TariffService {
   async delete(id: number): Promise<SingleResponse<{ message: string }>> {
     try {
       const tariff: TariffEntity = await this.tariffRepo.findOne({
-        where: { id },
+        where: { id: id },
       });
 
       if (!tariff) {
