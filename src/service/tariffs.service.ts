@@ -179,7 +179,7 @@ export class TariffService {
         .orderBy('tariff.operator', 'ASC')
         .addOrderBy('tariff.price', 'ASC');
 
-      const total = await queryBuilder.getCount();
+      const total: number = await queryBuilder.getCount();
 
       if (filters.page && filters.limit) {
         queryBuilder
@@ -187,7 +187,7 @@ export class TariffService {
           .take(filters.limit);
       }
 
-      const tariffs = await queryBuilder.getMany();
+      const tariffs: TariffEntity[] = await queryBuilder.getMany();
 
       return getPaginationResponse(
         tariffs,
@@ -214,7 +214,7 @@ export class TariffService {
       }
 
       // Narxni bevosita kiritilgan price orqali saqlaymiz (cost_price endi ishlatilmaydi)
-      const computedPrice = data.price;
+      const computedPrice: number = data.price;
 
       const tariff: TariffEntity = this.tariffRepo.create({
         code: data.code,
@@ -229,34 +229,35 @@ export class TariffService {
       const savedTariff: TariffEntity = await this.tariffRepo.save(tariff);
       // Agar bu operator uchun birinchi tarif bo'lsa, SmsPrice ni (SMS turi uchun) bir marta yaratamiz
       try {
-        const totalByOperator = await this.tariffRepo.count({
+        const totalByOperator: number = await this.tariffRepo.count({
           where: { operator: savedTariff.operator },
         });
         if (totalByOperator === 1) {
-          const normalizedOp = (savedTariff.operator || '')
+          const normalizedOp: string = (savedTariff.operator || '')
             .toString()
             .toLowerCase();
-          const existingPrice = await this.smsPriceRepo.findOne({
-            where: {
-              operator: normalizedOp as any,
-              message_type: MessageTypeEnum.SMS,
+          const existingPrice: SmsPriceEntity = await this.smsPriceRepo.findOne(
+            {
+              where: {
+                operator: normalizedOp as any,
+                message_type: MessageTypeEnum.SMS,
+              },
             },
-          });
+          );
           if (!existingPrice) {
-            const country = await this.countryRepo.findOne({
+            const country: CountryEntity = await this.countryRepo.findOne({
               where: { id: savedTariff.country_id },
             });
-            const price = this.smsPriceRepo.create({
-              country_code: country?.code || 'N/A',
-              country_name: country?.name || 'Unknown',
-              operator: normalizedOp as any,
+            const price: SmsPriceEntity = this.smsPriceRepo.create({
+              country_code: country.code,
+              country_name: country.name,
+              operator: normalizedOp,
               operator_name: savedTariff.operator,
               message_type: MessageTypeEnum.SMS,
-              price_per_sms: Number(savedTariff.price ?? 0),
-              wholesale_price: Number(savedTariff.price ?? 0),
-              currency: country?.currency || null,
+              price_per_sms: Number(data.price_per_sms ?? 0),
+              wholesale_price: 0,
+              currency: country?.currency,
               active: true,
-              description: `Auto-created for operator ${savedTariff.operator}`,
             } as Partial<SmsPriceEntity>);
             await this.smsPriceRepo.save(price);
           }
@@ -264,8 +265,6 @@ export class TariffService {
       } catch (autoErr) {
         // Auto-create xatosi asosiy create jarayoniga ta'sir qilmasin
       }
-
-      return { result: savedTariff };
 
       return { result: savedTariff };
     } catch (error) {

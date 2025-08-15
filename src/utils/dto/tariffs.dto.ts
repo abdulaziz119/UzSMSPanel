@@ -44,6 +44,11 @@ export class CreateTariffDto {
   @IsNotEmpty()
   price: number;
 
+  @ApiProperty({ example: 100.5, description: 'provider tan narxi' })
+  @IsNumber()
+  @IsNotEmpty()
+  price_per_sms: number;
+
   @ApiProperty({
     example: 80.25,
     description: 'Provider tan narhi (cost_price)',
@@ -52,7 +57,7 @@ export class CreateTariffDto {
   @IsNotEmpty()
   cost_price: number;
 
-      // Tan narx endi SmsPrice jadvalida boshqariladi
+  // Tan narx endi SmsPrice jadvalida boshqariladi
 
   @ApiProperty({ example: 'BEELINE', description: 'Operator nomi' })
   @IsString()
@@ -108,7 +113,7 @@ export class UpdateTariffDto {
   @IsNumber()
   price?: number;
 
-    // Tan narx/margin endi SmsPrice orqali boshqariladi
+  // Tan narx/margin endi SmsPrice orqali boshqariladi
 
   @ApiProperty({
     example: 'BEELINE',
