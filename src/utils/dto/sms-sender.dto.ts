@@ -1,10 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDefined, IsEnum, IsNumber, IsOptional, IsString, Length } from 'class-validator';
+import {
+  IsDefined,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { SenderStatusEnum } from '../enum/sms-sender.enum';
-import { OperatorEnum } from '../enum/sms-price.enum';
 
 export class CreateSmsSenderDto {
-  @ApiProperty({ example: 'ESKIZ', description: 'Alfa nomi (sender id) 3-11 latin' })
+  @ApiProperty({
+    example: 'ESKIZ',
+    description: 'Alfa nomi (sender id) 3-11 latin',
+  })
   @IsString()
   @Length(3, 20)
   name: string;
@@ -14,17 +23,24 @@ export class CreateSmsSenderDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Telegram/website links', example: 'https://t.me/example, https://example.uz' })
+  @ApiPropertyOptional({
+    description: 'Telegram/website links',
+    example: 'https://t.me/example, https://example.uz',
+  })
   @IsString()
   @IsOptional()
   links?: string;
 
-  @ApiPropertyOptional({ enum: OperatorEnum, description: 'Operator (ixtiyoriy)' })
-  @IsEnum(OperatorEnum)
+  @ApiPropertyOptional({
+    example: 'BLLINE',
+  })
   @IsOptional()
-  operator?: OperatorEnum;
+  operator?: string;
 
-  @ApiPropertyOptional({ example: 250000, description: "Oylik abon to'lov (so'm)" })
+  @ApiPropertyOptional({
+    example: 250000,
+    description: "Oylik abon to'lov (so'm)",
+  })
   @IsOptional()
   monthly_price?: number;
 }
@@ -56,10 +72,9 @@ export class UpdateSmsSenderDto {
   @IsOptional()
   links?: string;
 
-  @ApiPropertyOptional({ enum: OperatorEnum })
-  @IsEnum(OperatorEnum)
+  @ApiPropertyOptional({ example: 'BLLINE' })
   @IsOptional()
-  operator?: OperatorEnum;
+  operator?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

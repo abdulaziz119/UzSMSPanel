@@ -69,7 +69,7 @@ export class SmsContactService {
     }
   }
 
-  async normalizePhone(phone: string): string {
+  async normalizePhone(phone: string) {
     try {
       let parsed = parsePhoneNumberFromString(phone);
       if (!parsed) parsed = parsePhoneNumberFromString(phone, 'UZ');
@@ -91,7 +91,7 @@ export class SmsContactService {
         throw new NotFoundException('SMS Group not found');
       }
 
-      const normalizedPhone: string = this.normalizePhone(payload.phone);
+      const normalizedPhone: string = await this.normalizePhone(payload.phone);
       const status = await this.validatePhoneNumber(normalizedPhone);
 
       const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
@@ -182,7 +182,7 @@ export class SmsContactService {
 
     try {
       if (updateData.phone) {
-        const normalized: string = this.normalizePhone(updateData.phone);
+        const normalized: string = await this.normalizePhone(updateData.phone);
         updateData.status = await this.validatePhoneNumber(normalized);
         updateData.phone = normalized;
       }

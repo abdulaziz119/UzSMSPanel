@@ -12,7 +12,7 @@ import { SmsPriceEntity } from '../entity/sms-price.entity';
 import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
-import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
+import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 import {
   PriceFilterDto,
   CreatePriceDto,
@@ -224,7 +224,7 @@ export class SmsPriceService {
   }
 
   async getPriceForOperator(
-    operator: OperatorEnum,
+    operator: string,
     message_type: MessageTypeEnum = MessageTypeEnum.SMS,
   ): Promise<number> {
     try {

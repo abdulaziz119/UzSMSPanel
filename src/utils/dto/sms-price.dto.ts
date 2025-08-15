@@ -11,17 +11,15 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationParams } from './dto';
-import { MessageTypeEnum, OperatorEnum } from '../enum/sms-price.enum';
+import { MessageTypeEnum } from '../enum/sms-price.enum';
 
 export class PriceFilterDto extends PaginationParams {
   @ApiPropertyOptional({
-    example: OperatorEnum.BEELINE,
-    enum: OperatorEnum,
+    example: 'BEELINE',
     description: 'Operator',
   })
   @IsOptional()
-  @IsEnum(OperatorEnum)
-  operator?: OperatorEnum;
+  operator?: string;
 
   @ApiPropertyOptional({
     example: MessageTypeEnum.SMS,
@@ -53,13 +51,10 @@ export class CreatePriceDto {
   country_name: string;
 
   @ApiProperty({
-    enum: OperatorEnum,
-    description: 'Operator',
-    example: OperatorEnum.BEELINE,
+    example: 'BEELINE',
   })
-  @IsEnum(OperatorEnum)
   @IsNotEmpty()
-  operator: OperatorEnum;
+  operator: string;
 
   @ApiProperty({
     enum: MessageTypeEnum,

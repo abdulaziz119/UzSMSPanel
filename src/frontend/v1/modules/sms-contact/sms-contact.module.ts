@@ -31,6 +31,11 @@ import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
     SmsContactService,
     SmsContactQueue,
   ],
+  exports: [
+    SmsContactService,
+    ...smsContactProviders,
+    ...tariffsProviders,
+  ],
 })
 export class SmsContactModule implements OnModuleInit {
   private readonly logger = new Logger(SmsContactModule.name);

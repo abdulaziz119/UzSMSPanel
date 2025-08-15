@@ -22,11 +22,6 @@ export class SendToContactDto {
   @IsString()
   @IsNotEmpty()
   message: string;
-
-  @ApiProperty({ example: 'SENDER', required: false })
-  @IsOptional()
-  @IsString()
-  sender?: string;
 }
 
 export class SendToGroupDto {

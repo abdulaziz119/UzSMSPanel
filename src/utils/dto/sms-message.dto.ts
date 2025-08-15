@@ -1,49 +1,60 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum, IsArray, IsPhoneNumber } from 'class-validator';
-import { MessageStatusEnum, MessageDirectionEnum } from '../enum/sms-message.enum';
-import { MessageTypeEnum, OperatorEnum } from '../enum/sms-price.enum';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsArray,
+  IsPhoneNumber,
+} from 'class-validator';
+import {
+  MessageStatusEnum,
+  MessageDirectionEnum,
+} from '../enum/sms-message.enum';
+import { MessageTypeEnum } from '../enum/sms-price.enum';
 import { PaginationParams } from './dto';
 
 export class SendSingleSmsDto {
-  @ApiProperty({ 
-    example: "998901234567",
-    description: "Telefon raqam"
+  @ApiProperty({
+    example: '998901234567',
+    description: 'Telefon raqam',
   })
   @IsString()
   @IsNotEmpty()
   phone: string;
 
-  @ApiProperty({ 
-    example: "998",
-    description: "Telefon kod",
-    required: false
+  @ApiProperty({
+    example: '998',
+    description: 'Telefon kod',
+    required: false,
   })
   @IsOptional()
   @IsString()
   phone_ext?: string;
 
-  @ApiProperty({ 
-    example: "Test SMS xabari",
-    description: "SMS matn"
+  @ApiProperty({
+    example: 'Test SMS xabari',
+    description: 'SMS matn',
   })
   @IsString()
   @IsNotEmpty()
   message: string;
 
-  @ApiProperty({ 
-    example: "UzSMS",
+  @ApiProperty({
+    example: 'UzSMS',
     description: "Jo'natuvchi nomi",
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()
   sender?: string;
 
-  @ApiProperty({ 
-    example: "SMS",
+  @ApiProperty({
+    example: 'SMS',
     enum: MessageTypeEnum,
-    description: "Xabar turi",
-    required: false
+    description: 'Xabar turi',
+    required: false,
   })
   @IsOptional()
   @IsEnum(MessageTypeEnum)
@@ -51,45 +62,45 @@ export class SendSingleSmsDto {
 }
 
 export class SendBulkSmsDto {
-  @ApiProperty({ 
-    example: ["998901234567", "998907654321", "998903456789"],
-    description: "Telefon raqamlar ro'yxati"
+  @ApiProperty({
+    example: ['998901234567', '998907654321', '998903456789'],
+    description: "Telefon raqamlar ro'yxati",
   })
   @IsArray()
   @IsString({ each: true })
   phones: string[];
 
-  @ApiProperty({ 
-    example: "Hammaga yuborilayotgan xabar",
-    description: "SMS matn"
+  @ApiProperty({
+    example: 'Hammaga yuborilayotgan xabar',
+    description: 'SMS matn',
   })
   @IsString()
   @IsNotEmpty()
   message: string;
 
-  @ApiProperty({ 
-    example: "UzSMS",
+  @ApiProperty({
+    example: 'UzSMS',
     description: "Jo'natuvchi nomi",
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()
   sender?: string;
 
-  @ApiProperty({ 
-    example: "SMS",
+  @ApiProperty({
+    example: 'SMS',
     enum: MessageTypeEnum,
-    description: "Xabar turi",
-    required: false
+    description: 'Xabar turi',
+    required: false,
   })
   @IsOptional()
   @IsEnum(MessageTypeEnum)
   message_type?: MessageTypeEnum;
 
-  @ApiProperty({ 
-    example: "2025-12-31T23:00:00Z",
-    description: "Rejalashtirilgan vaqt",
-    required: false
+  @ApiProperty({
+    example: '2025-12-31T23:00:00Z',
+    description: 'Rejalashtirilgan vaqt',
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -97,47 +108,47 @@ export class SendBulkSmsDto {
 }
 
 export class SmsHistoryFilterDto extends PaginationParams {
-  @ApiProperty({ 
-    example: "2025-08-01",
-    description: "Boshlanish sanasi",
-    required: false
+  @ApiProperty({
+    example: '2025-08-01',
+    description: 'Boshlanish sanasi',
+    required: false,
   })
   @IsOptional()
   @IsString()
   date_from?: string;
 
-  @ApiProperty({ 
-    example: "2025-08-31",
-    description: "Tugash sanasi",
-    required: false
+  @ApiProperty({
+    example: '2025-08-31',
+    description: 'Tugash sanasi',
+    required: false,
   })
   @IsOptional()
   @IsString()
   date_to?: string;
 
-  @ApiProperty({ 
-    example: "DELIVERED",
+  @ApiProperty({
+    example: 'DELIVERED',
     enum: MessageStatusEnum,
-    description: "SMS holati",
-    required: false
+    description: 'SMS holati',
+    required: false,
   })
   @IsOptional()
   @IsEnum(MessageStatusEnum)
   status?: MessageStatusEnum;
 
-  @ApiProperty({ 
-    example: "998901234567",
-    description: "Telefon raqam",
-    required: false
+  @ApiProperty({
+    example: '998901234567',
+    description: 'Telefon raqam',
+    required: false,
   })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiProperty({ 
-    example: "UzSMS",
+  @ApiProperty({
+    example: 'UzSMS',
     description: "Jo'natuvchi nomi",
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -145,85 +156,82 @@ export class SmsHistoryFilterDto extends PaginationParams {
 }
 
 export class MessageFilterDto extends PaginationParams {
-  @ApiProperty({ 
-    example: "2025-08-01",
-    description: "Boshlanish sanasi",
-    required: false
+  @ApiProperty({
+    example: '2025-08-01',
+    description: 'Boshlanish sanasi',
+    required: false,
   })
   @IsOptional()
   @IsString()
   date_from?: string;
 
-  @ApiProperty({ 
-    example: "2025-08-31",
-    description: "Tugash sanasi",
-    required: false
+  @ApiProperty({
+    example: '2025-08-31',
+    description: 'Tugash sanasi',
+    required: false,
   })
   @IsOptional()
   @IsString()
   date_to?: string;
 
-  @ApiProperty({ 
-    example: "DELIVERED",
+  @ApiProperty({
+    example: 'DELIVERED',
     enum: MessageStatusEnum,
-    description: "SMS holati",
-    required: false
+    description: 'SMS holati',
+    required: false,
   })
   @IsOptional()
   @IsEnum(MessageStatusEnum)
   status?: MessageStatusEnum;
 
-  @ApiProperty({ 
-    example: "998901234567",
-    description: "Telefon raqam",
-    required: false
+  @ApiProperty({
+    example: '998901234567',
+    description: 'Telefon raqam',
+    required: false,
   })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiProperty({ 
-    example: "UzSMS",
+  @ApiProperty({
+    example: 'UzSMS',
     description: "Jo'natuvchi nomi",
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()
   sender?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
-    description: "Foydalanuvchi ID",
-    required: false
+    description: 'Foydalanuvchi ID',
+    required: false,
   })
   @IsOptional()
   @IsNumber()
   user_id?: number;
 
-  @ApiProperty({ 
-    example: "BEELINE",
-    enum: OperatorEnum,
-    description: "Operator",
-    required: false
+  @ApiProperty({
+    example: 'BEELINE',
+    required: false,
   })
   @IsOptional()
-  @IsEnum(OperatorEnum)
-  operator?: OperatorEnum;
+  operator?: string;
 
-  @ApiProperty({ 
-    example: "OUTBOUND",
+  @ApiProperty({
+    example: 'OUTBOUND',
     enum: MessageDirectionEnum,
     description: "SMS yo'nalishi",
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsEnum(MessageDirectionEnum)
   direction?: MessageDirectionEnum;
 
-  @ApiProperty({ 
-    example: "test xabar",
-    description: "Qidiruv matni",
-    required: false
+  @ApiProperty({
+    example: 'test xabar',
+    description: 'Qidiruv matni',
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -231,48 +239,45 @@ export class MessageFilterDto extends PaginationParams {
 }
 
 export class MessageStatsDto {
-  @ApiProperty({ 
-    example: "2025-08-01",
-    description: "Boshlanish sanasi",
-    required: false
+  @ApiProperty({
+    example: '2025-08-01',
+    description: 'Boshlanish sanasi',
+    required: false,
   })
   @IsOptional()
   @IsString()
   date_from?: string;
 
-  @ApiProperty({ 
-    example: "2025-08-31",
-    description: "Tugash sanasi",
-    required: false
+  @ApiProperty({
+    example: '2025-08-31',
+    description: 'Tugash sanasi',
+    required: false,
   })
   @IsOptional()
   @IsString()
   date_to?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
-    description: "Foydalanuvchi ID",
-    required: false
+    description: 'Foydalanuvchi ID',
+    required: false,
   })
   @IsOptional()
   @IsNumber()
   user_id?: number;
 
-  @ApiProperty({ 
-    example: "BEELINE",
-    enum: OperatorEnum,
-    description: "Operator",
-    required: false
+  @ApiProperty({
+    example: 'BEELINE',
+    required: false,
   })
   @IsOptional()
-  @IsEnum(OperatorEnum)
-  operator?: OperatorEnum;
+  operator?: string;
 
-  @ApiProperty({ 
-    example: "day",
-    enum: ["day", "week", "month"],
-    description: "Guruhlash turi",
-    required: false
+  @ApiProperty({
+    example: 'day',
+    enum: ['day', 'week', 'month'],
+    description: 'Guruhlash turi',
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -280,9 +285,9 @@ export class MessageStatsDto {
 }
 
 export class BulkResendDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: [1, 2, 3],
-    description: "SMS ID'lari"
+    description: "SMS ID'lari",
   })
   @IsArray()
   @IsNumber({}, { each: true })

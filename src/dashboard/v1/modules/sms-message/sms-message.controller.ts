@@ -19,81 +19,81 @@ import {
 export class SmsMessageController {
   constructor(private readonly smsMessageService: SmsMessageService) {}
 
-  /**
-   * SMS xabarlar tarixi (filter + pagination)
-   */
-  @Post('/findAll')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async findAllMessages(
-    @Body() filters: MessageFilterDto,
-  ): Promise<PaginationResponse<SmsMessageEntity[]>> {
-    return await this.smsMessageService.getMessageHistory(filters);
-  }
-
-  /**
-   * Bitta SMS tafsilotlari (ID bo'yicha)
-   */
-  @Post('/details')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async getMessageDetails(
-    @Body() param: ParamIdDto,
-  ): Promise<SingleResponse<SmsMessageEntity>> {
-    return await this.smsMessageService.getMessageDetails(param.id);
-  }
-
-  /**
-   * SMS statistikalari (deliveried, failed va h.k.)
-   */
-  @Post('/statistics')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async getMessageStatistics(
-    @Body() filters: MessageStatsDto,
-  ): Promise<SingleResponse<any>> {
-    return await this.smsMessageService.getMessageStatistics(filters);
-  }
-
-  /**
-   * Bitta SMSni qayta yuborish
-   */
-  @Post('/resend')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async resendMessage(
-    @Body() param: ParamIdDto,
-  ): Promise<SingleResponse<{ message: string }>> {
-    return await this.smsMessageService.resendMessage(param.id);
-  }
-
-  /**
-   * Bir nechta SMSni qayta yuborish
-   */
-  @Post('/bulk-resend')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async bulkResend(
-    @Body() body: { message_ids: number[] },
-  ): Promise<SingleResponse<{ message: string; resent_count: number }>> {
-    return await this.smsMessageService.bulkResend(body.message_ids);
-  }
-
-  /**
-   * Operatorlar kesimida statistika
-   */
-  @Post('/operator-statistics')
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
-  @Auth()
-  async getOperatorStatistics(
-    @Body() filters: MessageStatsDto,
-  ): Promise<SingleResponse<any>> {
-    return await this.smsMessageService.getOperatorStatistics(filters);
-  }
+  // /**
+  //  * SMS xabarlar tarixi (filter + pagination)
+  //  */
+  // @Post('/findAll')
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  // @Auth()
+  // async findAllMessages(
+  //   @Body() filters: MessageFilterDto,
+  // ): Promise<PaginationResponse<SmsMessageEntity[]>> {
+  //   return await this.smsMessageService.getMessageHistory(filters);
+  // }
+  //
+  // /**
+  //  * Bitta SMS tafsilotlari (ID bo'yicha)
+  //  */
+  // @Post('/details')
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  // @Auth()
+  // async getMessageDetails(
+  //   @Body() param: ParamIdDto,
+  // ): Promise<SingleResponse<SmsMessageEntity>> {
+  //   return await this.smsMessageService.getMessageDetails(param.id);
+  // }
+  //
+  // /**
+  //  * SMS statistikalari (deliveried, failed va h.k.)
+  //  */
+  // @Post('/statistics')
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  // @Auth()
+  // async getMessageStatistics(
+  //   @Body() filters: MessageStatsDto,
+  // ): Promise<SingleResponse<any>> {
+  //   return await this.smsMessageService.getMessageStatistics(filters);
+  // }
+  //
+  // /**
+  //  * Bitta SMSni qayta yuborish
+  //  */
+  // @Post('/resend')
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  // @Auth()
+  // async resendMessage(
+  //   @Body() param: ParamIdDto,
+  // ): Promise<SingleResponse<{ message: string }>> {
+  //   return await this.smsMessageService.resendMessage(param.id);
+  // }
+  //
+  // /**
+  //  * Bir nechta SMSni qayta yuborish
+  //  */
+  // @Post('/bulk-resend')
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  // @Auth()
+  // async bulkResend(
+  //   @Body() body: { message_ids: number[] },
+  // ): Promise<SingleResponse<{ message: string; resent_count: number }>> {
+  //   return await this.smsMessageService.bulkResend(body.message_ids);
+  // }
+  //
+  // /**
+  //  * Operatorlar kesimida statistika
+  //  */
+  // @Post('/operator-statistics')
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  // @Auth()
+  // async getOperatorStatistics(
+  //   @Body() filters: MessageStatsDto,
+  // ): Promise<SingleResponse<any>> {
+  //   return await this.smsMessageService.getOperatorStatistics(filters);
+  // }
 }

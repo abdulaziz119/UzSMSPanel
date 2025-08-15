@@ -14,6 +14,7 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { User } from '../auth/decorators/user.decorator';
 import { MessagesService } from '../../../../service/messages.service';
 import { SendToContactDto, SendToGroupDto } from './dto/messages.dto';
+import { SmsMessageEntity } from '../../../../entity/sms-message.entity';
 
 @ApiBearerAuth()
 @ApiTags('messages')
@@ -29,20 +30,20 @@ export class MessagesController {
   async sendContact(
     @Body() body: SendToContactDto,
     @User('id') user_id: number,
-  ): Promise<SingleResponse<{ message_id: string }>> {
+  ): Promise<SingleResponse<SmsMessageEntity>> {
     return await this.messageService.sendToContact(body, user_id);
   }
 
-  @Post('/send-group')
-  @HttpCode(200)
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
-  @ApiResponse({ status: 201, description: 'Group messages queued' })
-  async sendGroup(
-    @Body() body: SendToGroupDto,
-    @User('id') user_id: number,
-  ): Promise<SingleResponse<{ job_id?: string }>> {
-    return await this.messageService.sendToGroup(body, user_id);
-  }
+  // @Post('/send-group')
+  // @HttpCode(200)
+  // @ApiBadRequestResponse({ type: ErrorResourceDto })
+  // @Roles(UserRoleEnum.CLIENT)
+  // @Auth(false)
+  // @ApiResponse({ status: 201, description: 'Group messages queued' })
+  // async sendGroup(
+  //   @Body() body: SendToGroupDto,
+  //   @User('id') user_id: number,
+  // ): Promise<SingleResponse<{ job_id?: string }>> {
+  //   return await this.messageService.sendToGroup(body, user_id);
+  // }
 }

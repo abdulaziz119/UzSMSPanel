@@ -6,13 +6,11 @@ import {
   MessageDirectionEnum,
   MessageStatusEnum,
 } from '../utils/enum/sms-message.enum';
-import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
+import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_messages' })
 @Index(['user_id', 'status', 'created_at'])
 @Index(['phone', 'created_at'])
-@Index(['message_id'])
-@Index(['batch_id'])
 export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
@@ -25,11 +23,11 @@ export class SmsMessageEntity extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
-  message_id: string;
+  @Column({ type: 'integer' })
+  message_id: number;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  group_id: string | null;
+  @Column({ type: 'integer', nullable: true })
+  group_id: number | null;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
   phone: string;
@@ -57,8 +55,8 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'enum', enum: MessageTypeEnum, default: MessageTypeEnum.SMS })
   message_type: MessageTypeEnum;
 
-  @Column({ type: 'enum', enum: OperatorEnum, nullable: true })
-  operator: OperatorEnum | null;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  operator: string | null;
 
   @Column({ type: 'integer', default: 1 })
   parts_count: number;
@@ -66,17 +64,8 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
   cost: number;
 
-  @Column({ type: 'timestamp', nullable: true })
-  sent_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  delivered_at: Date | null;
-
   @Column({ type: 'text', nullable: true })
   error_message: string | null;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  external_id: string | null;
 
   @Column({ type: 'json', nullable: true })
   delivery_report: any | null;

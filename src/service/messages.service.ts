@@ -8,8 +8,7 @@ import { SendToContactDto } from '../frontend/v1/modules/messages/dto/messages.d
 @Injectable()
 export class MessagesService {
   constructor(
-    @Inject(MODELS.SMS_MESSAGE)
-    private readonly smsMessageService: SmsMessageService,
+  private readonly smsMessageService: SmsMessageService,
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo?: Repository<SmsContactEntity>,
   ) {}
@@ -18,7 +17,7 @@ export class MessagesService {
     return await this.smsMessageService.sendToContact(payload, user_id);
   }
 
-  async sendToGroup(payload: any, user_id: number) {
-    return await this.smsMessageService.sendToGroup(payload, user_id);
-  }
+  // async sendToGroup(payload: any, user_id: number) {
+  //   return await this.smsMessageService.sendToGroup(payload, user_id);
+  // }
 }
