@@ -24,7 +24,7 @@ export class SmsMessageEntity extends BaseEntity {
   user: UserEntity;
 
   @Column({ type: 'integer' })
-  message_id: number;
+  sms_template: number;
 
   @Column({ type: 'integer', nullable: true })
   group_id: number | null;
