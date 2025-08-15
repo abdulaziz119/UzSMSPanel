@@ -18,6 +18,7 @@ import {
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 import { SmsTemplateFrontendFilterDto } from '../frontend/v1/modules/sms-template/dto/sms-template.dto';
 import { SmsTemplateDashboardFilterDto } from '../dashboard/v1/modules/sms-template/dto/sms-template.dto';
+import { analyzeSmsContent } from '../utils/sms-counter.util';
 
 @Injectable()
 export class SmsTemplateService {
@@ -40,6 +41,9 @@ export class SmsTemplateService {
         last_used_at: null,
         rejection_reason: null,
       });
+      const info = analyzeSmsContent(payload.content || '');
+      newSmsTemplate.content_length = info.length;
+      newSmsTemplate.parts_count = info.parts;
 
       const savedSmsTemplate: SmsTemplateEntity =
         await this.smsTemplateRepo.save(newSmsTemplate);

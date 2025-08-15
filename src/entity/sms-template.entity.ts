@@ -21,6 +21,12 @@ export class SmsTemplateEntity extends BaseEntity {
   @Column({ type: 'text', nullable: false })
   content: string;
 
+  @Column({ type: 'integer', default: 0 })
+  content_length: number;
+
+  @Column({ type: 'integer', default: 0 })
+  parts_count: number;
+
   @Column({
     type: 'enum',
     enum: TemplateStatusEnum,
