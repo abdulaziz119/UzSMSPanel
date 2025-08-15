@@ -33,9 +33,7 @@ export class SmsContactService {
     private readonly smsGroupRepo: Repository<SmsGroupEntity>,
   ) {}
 
-  private async validatePhoneNumber(
-    phone: string,
-  ): Promise<SMSContactStatusEnum> {
+  async validatePhoneNumber(phone: string): Promise<SMSContactStatusEnum> {
     const cleanPhone: string = (phone || '').toString().trim();
 
     try {
@@ -71,7 +69,7 @@ export class SmsContactService {
     }
   }
 
-  private normalizePhone(phone: string): string {
+  async normalizePhone(phone: string): string {
     try {
       let parsed = parsePhoneNumberFromString(phone);
       if (!parsed) parsed = parsePhoneNumberFromString(phone, 'UZ');

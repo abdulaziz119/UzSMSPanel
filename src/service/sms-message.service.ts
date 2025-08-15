@@ -27,6 +27,11 @@ import {
   SmsHistoryFilterDto,
 } from '../utils/dto/sms-message.dto';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
+import { SendToContactDto } from '../frontend/v1/modules/messages/dto/messages.dto';
+import { SmsContactService } from './sms-contact.service';
+import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
+import { CountryEntity } from '../entity/country.entity';
+import { TariffEntity } from '../entity/tariffs.entity';
 
 @Injectable()
 export class SmsMessageService {
@@ -35,31 +40,44 @@ export class SmsMessageService {
     private readonly messageRepo: Repository<SmsMessageEntity>,
     @Inject(MODELS.USER)
     private readonly userRepo: Repository<UserEntity>,
-  @Optional()
-  @Inject(MODELS.SMS_CONTACT)
-  private readonly smsContactRepo?: Repository<SmsContactEntity>,
+    @Inject(MODELS.TARIFFS)
+    private readonly tariffRepo: Repository<TariffEntity>,
+    @Inject(MODELS.SMS_CONTACT)
+    private readonly smsContactRepo: Repository<SmsContactEntity>,
+    private readonly smsContactService: SmsContactService,
   ) {}
 
   // Send to single contact by contact_id
   async sendToContact(
-    payload: { contact_id: number; message: string; sender?: string },
+    payload: SendToContactDto,
     user_id: number,
-  ): Promise<SingleResponse<{ message_id: string }>> {
+  ): Promise<SingleResponse<SmsMessageEntity>> {
     try {
-      const contact = await this.smsContactRepo.findOne({
-        where: { id: payload.contact_id },
+      const normalizedPhone: string = this.smsContactService.normalizePhone(
+        payload.phone,
+      );
+      const status: SMSContactStatusEnum =
+        await this.smsContactService.validatePhoneNumber(normalizedPhone);
+      if (status === SMSContactStatusEnum.INVALID_FORMAT) {
+        throw new BadRequestException('Invalid phone number format');
+      }
+      if (status === SMSContactStatusEnum.BANNED_NUMBER) {
+        throw new BadRequestException('Banned phone number');
+      }
+      const getTareff = await this.tariffRepo.findOne({
+        where: { id: payload.tariff_id },
       });
-      if (!contact) throw new NotFoundException('Contact not found');
 
-      const dto = {
-        phone: contact.phone,
-        phone_ext: contact.phone,
+      const res: SmsMessageEntity = this.messageRepo.create({
+        user_id: user_id,
+        phone: payload.phone,
         message: payload.message,
-        sender: payload.sender,
-      } as any;
-
-      const res = await this.sendSingle(dto, user_id);
-      return { result: { message_id: res.result.message_id } } as any;
+        status: MessageStatusEnum.SENT,
+        message_type: MessageTypeEnum.SMS,
+      });
+      const savedSmsMessage: SmsMessageEntity =
+        await this.messageRepo.save(res);
+      return { result: savedSmsMessage };
     } catch (error) {
       throw error;
     }

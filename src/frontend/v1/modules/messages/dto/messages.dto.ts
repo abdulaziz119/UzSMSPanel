@@ -1,11 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsOptional, IsArray, IsNotEmpty } from 'class-validator';
+import {
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsArray,
+  IsNotEmpty,
+  Length,
+} from 'class-validator';
 
 export class SendToContactDto {
-  @ApiProperty({ example: 123, description: 'Contact ID' })
-  @IsNumber()
+  @ApiProperty({
+    example: '901234567',
+    description: 'Phone number without country code',
+  })
+  @IsString()
   @IsNotEmpty()
-  contact_id: number;
+  @Length(7, 15)
+  phone: string;
 
   @ApiProperty({ example: 'Xizmat habar', description: 'SMS matni' })
   @IsString()
@@ -34,7 +45,11 @@ export class SendToGroupDto {
   @IsString()
   sender?: string;
 
-  @ApiProperty({ example: 100, description: 'Batch size (optional)', required: false })
+  @ApiProperty({
+    example: 100,
+    description: 'Batch size (optional)',
+    required: false,
+  })
   @IsOptional()
   @IsNumber()
   batch_size?: number;

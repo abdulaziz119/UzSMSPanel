@@ -17,7 +17,11 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
 
-  @ManyToOne(() => UserEntity, (user) => user.smsMessages, cascadeUpdateRelationOptions)
+  @ManyToOne(
+    () => UserEntity,
+    (user) => user.smsMessages,
+    cascadeUpdateRelationOptions,
+  )
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -25,19 +29,16 @@ export class SmsMessageEntity extends BaseEntity {
   message_id: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  batch_id: string | null;
+  group_id: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
   phone: string;
-
-  @Column({ type: 'varchar', length: 8, nullable: true })
-  phone_ext: string | null;
 
   @Column({ type: 'text', nullable: false })
   message: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  sender: string | null;
+  sms_template_id: string | null;
 
   @Column({
     type: 'enum',
