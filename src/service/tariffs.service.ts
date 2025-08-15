@@ -19,6 +19,8 @@ import {
   UpdateTariffDto,
 } from '../utils/dto/tariffs.dto';
 import { SmsPriceEntity } from '../entity/sms-price.entity';
+import { CountryEntity } from '../entity/country.entity';
+import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 
 @Injectable()
 export class TariffService {
@@ -26,7 +28,9 @@ export class TariffService {
     @Inject(MODELS.TARIFFS)
     private readonly tariffRepo: Repository<TariffEntity>,
     @Inject(MODELS.SMS_PRICE)
-    private readonly priceRepo: Repository<SmsPriceEntity>,
+    private readonly smsPriceRepo: Repository<SmsPriceEntity>,
+    @Inject(MODELS.COUNTRY)
+    private readonly countryRepo: Repository<CountryEntity>,
   ) {}
 
   async getPublicTariffs(
@@ -209,27 +213,59 @@ export class TariffService {
         throw new BadRequestException('Tariff with this code already exists');
       }
 
-      // Agar margin_percent berilsa, yakuniy price = cost_price * (1 + margin/100)
-      const computedPrice =
-        data.margin_percent !== undefined && data.margin_percent !== null
-          ? Math.max(
-              0,
-              Number(data.cost_price) * (1 + Number(data.margin_percent) / 100),
-            )
-          : data.price;
+      // Narxni bevosita kiritilgan price orqali saqlaymiz (cost_price endi ishlatilmaydi)
+      const computedPrice = data.price;
 
       const tariff: TariffEntity = this.tariffRepo.create({
         code: data.code,
         name: data.name,
         phone_ext: data.phone_ext,
         price: computedPrice,
-        cost_price: data.cost_price,
         operator: data.operator,
         public: data.public ?? true,
         country_id: data.country_id,
       });
 
       const savedTariff: TariffEntity = await this.tariffRepo.save(tariff);
+      // Agar bu operator uchun birinchi tarif bo'lsa, SmsPrice ni (SMS turi uchun) bir marta yaratamiz
+      try {
+        const totalByOperator = await this.tariffRepo.count({
+          where: { operator: savedTariff.operator },
+        });
+        if (totalByOperator === 1) {
+          const normalizedOp = (savedTariff.operator || '')
+            .toString()
+            .toLowerCase();
+          const existingPrice = await this.smsPriceRepo.findOne({
+            where: {
+              operator: normalizedOp as any,
+              message_type: MessageTypeEnum.SMS,
+            },
+          });
+          if (!existingPrice) {
+            const country = await this.countryRepo.findOne({
+              where: { id: savedTariff.country_id },
+            });
+            const price = this.smsPriceRepo.create({
+              country_code: country?.code || 'N/A',
+              country_name: country?.name || 'Unknown',
+              operator: normalizedOp as any,
+              operator_name: savedTariff.operator,
+              message_type: MessageTypeEnum.SMS,
+              price_per_sms: Number(savedTariff.price ?? 0),
+              wholesale_price: Number(savedTariff.price ?? 0),
+              currency: country?.currency || null,
+              active: true,
+              description: `Auto-created for operator ${savedTariff.operator}`,
+            } as Partial<SmsPriceEntity>);
+            await this.smsPriceRepo.save(price);
+          }
+        }
+      } catch (autoErr) {
+        // Auto-create xatosi asosiy create jarayoniga ta'sir qilmasin
+      }
+
+      return { result: savedTariff };
 
       return { result: savedTariff };
     } catch (error) {
@@ -261,22 +297,13 @@ export class TariffService {
         }
       }
 
-      // Agar margin_percent berilsa, mavjud yoki kelgan cost_price asosida price qayta hisoblanadi
-      let nextPrice = data.price;
-      let nextCost = data.cost_price;
-      if (data.margin_percent !== undefined) {
-        const baseCost = nextCost !== undefined ? nextCost : tariff.cost_price;
-        nextPrice = Math.max(
-          0,
-          Number(baseCost) * (1 + Number(data.margin_percent) / 100),
-        );
-      }
+      // Narxni to'g'ridan-to'g'ri yangilash (cost_price ishlatilmaydi)
+      const nextPrice = data.price;
 
       await this.tariffRepo.update(data.id, {
         ...(data.code && { code: data.code }),
         ...(data.name && { name: data.name }),
         ...(data.phone_ext && { phone_ext: data.phone_ext }),
-        ...(nextCost !== undefined && { cost_price: nextCost }),
         ...(nextPrice !== undefined && { price: nextPrice }),
         ...(data.operator && { operator: data.operator }),
         ...(data.public !== undefined && { public: data.public }),
@@ -364,18 +391,27 @@ export class TariffService {
     data: BulkUpdateTariffPricesDto,
   ): Promise<SingleResponse<{ message: string; affected_count: number }>> {
     try {
-      const tariffs = await this.tariffRepo.find({
-        where: { id: data.id },
+      const tariffs: TariffEntity[] = await this.tariffRepo.find({
+        where: { operator: (data as any).operator },
       });
 
       if (tariffs.length === 0) {
-        throw new NotFoundException('Tariffs not found for bulk update');
+        throw new NotFoundException(
+          `No tariffs found for operator: ${(data as any).operator}`,
+        );
       }
 
+      // Bazaviy narxni SmsPrice dan olamiz (operator + SMS turi)
+      const basePriceRow: SmsPriceEntity = await this.smsPriceRepo.findOne({
+        where: {
+          operator: (data as any).operator,
+          message_type: MessageTypeEnum.SMS,
+        },
+      });
+      const baseCost: number = Number(basePriceRow?.price_per_sms ?? 0);
+
       for (const tariff of tariffs) {
-        // Hisob-kitob bazaviy tan narx (cost_price) asosida bo'ladi
-        const baseCost = (tariff as any).cost_price ?? tariff.price ?? 0;
-        let newPrice = baseCost;
+        let newPrice: number = baseCost;
 
         if (data.adjustment_type === 'percent') {
           newPrice = baseCost * (1 + data.price_adjustment / 100);
@@ -394,7 +430,7 @@ export class TariffService {
 
       return {
         result: {
-          message: `Bulk price update completed for ${data.id}`,
+          message: `Bulk price update completed for ${(data as any).operator}`,
           affected_count: tariffs.length,
         },
       };

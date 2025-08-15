@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post, Get, Param } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';

@@ -16,11 +16,8 @@ export class TariffEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 15, nullable: true })
   phone_ext: string | null; // Telefon prefiksi (masalan: "99890", "99891", "7916")
 
-  @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   price: number; // SMS narxi (4 ta decimal uchun)
-
-  @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
-  cost_price: number;
 
   @Column({ type: 'boolean', default: true })
   public: boolean; // Ommaviy foydalanish uchun ruxsat

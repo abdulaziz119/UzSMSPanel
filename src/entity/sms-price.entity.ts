@@ -1,7 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
-import { MessageTypeEnum, OperatorEnum } from '../utils/enum/sms-price.enum';
+import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_prices' })
 @Index(['operator', 'message_type', 'active'])
@@ -13,19 +13,16 @@ export class SmsPriceEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 100, nullable: false })
   country_name: string;
 
-  @Column({ type: 'enum', enum: OperatorEnum })
-  operator: OperatorEnum;
-
   @Column({ type: 'varchar', length: 100, nullable: false })
-  operator_name: string;
+  operator: string;
 
   @Column({ type: 'enum', enum: MessageTypeEnum, default: MessageTypeEnum.SMS })
   message_type: MessageTypeEnum;
 
-  @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
-  price_per_sms: number;
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  price_per_sms: number; //provider dan olingan asil nar
 
-  @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   wholesale_price: number;
 
   @Column({ type: 'varchar', length: 10, nullable: true })

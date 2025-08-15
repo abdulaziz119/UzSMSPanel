@@ -52,15 +52,7 @@ export class CreateTariffDto {
   @IsNotEmpty()
   cost_price: number;
 
-  @ApiProperty({
-    example: 25,
-    description:
-      'Margin % (ixtiyoriy). Berilsa, price = cost_price * (1 + margin/100)',
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  margin_percent?: number;
+      // Tan narx endi SmsPrice jadvalida boshqariladi
 
   @ApiProperty({ example: 'BEELINE', description: 'Operator nomi' })
   @IsString()
@@ -116,23 +108,7 @@ export class UpdateTariffDto {
   @IsNumber()
   price?: number;
 
-  @ApiProperty({
-    example: 90,
-    description: 'Provider tan narhi',
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  cost_price?: number;
-
-  @ApiProperty({
-    example: 10,
-    description: 'Margin % (price ni qayta hisoblash uchun)',
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  margin_percent?: number;
+    // Tan narx/margin endi SmsPrice orqali boshqariladi
 
   @ApiProperty({
     example: 'BEELINE',
