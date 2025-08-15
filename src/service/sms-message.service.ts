@@ -85,6 +85,13 @@ export class SmsMessageService {
         throw new NotFoundException('Tariff not found for this phone number');
       }
 
+      const partsCount: number = Math.max(
+        1,
+        Number(getTemplate.parts_count || 1),
+      );
+      const unitPrice: number = Number(tariff.price || 0);
+      const totalCost: number = unitPrice * partsCount;
+
       const res: SmsMessageEntity = this.messageRepo.create({
         user_id: user_id,
         phone: payload.phone,
@@ -93,7 +100,7 @@ export class SmsMessageService {
         message_type: MessageTypeEnum.SMS,
         operator: tariff.operator,
         sms_template_id: getTemplate.id,
-        cost: tariff.price,
+        cost: totalCost,
       });
       const savedSmsMessage: SmsMessageEntity =
         await this.messageRepo.save(res);

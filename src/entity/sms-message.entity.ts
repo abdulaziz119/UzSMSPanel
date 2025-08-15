@@ -55,9 +55,6 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   operator: string | null;
 
-  @Column({ type: 'integer', default: 1 })
-  parts_count: number;
-
   @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
   cost: number;
 
