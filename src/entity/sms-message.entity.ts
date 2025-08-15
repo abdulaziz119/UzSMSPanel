@@ -2,10 +2,9 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
-import {
-  MessageDirectionEnum,
-  MessageStatusEnum,
-} from '../utils/enum/sms-message.enum';
+import { SmsGroupEntity } from './sms-group.entity';
+import { SmsTemplateEntity } from './sms-template.entity';
+import { MessageStatusEnum } from '../utils/enum/sms-message.enum';
 import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_messages' })
@@ -23,11 +22,12 @@ export class SmsMessageEntity extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @Column({ type: 'integer' })
-  sms_template: number;
-
   @Column({ type: 'integer', nullable: true })
   group_id: number | null;
+
+  @ManyToOne(() => SmsGroupEntity, undefined, cascadeUpdateRelationOptions)
+  @JoinColumn({ name: 'group_id' })
+  smsGroup: SmsGroupEntity;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
   phone: string;
@@ -35,8 +35,12 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'text', nullable: false })
   message: string;
 
-  @Column({ type: 'varchar', length: 20, nullable: true })
-  sms_template_id: string | null;
+  @Column({ type: 'integer' })
+  sms_template_id: number | null;
+
+  @ManyToOne(() => SmsTemplateEntity, undefined, cascadeUpdateRelationOptions)
+  @JoinColumn({ name: 'sms_template_id' })
+  smsTemplate: SmsTemplateEntity;
 
   @Column({
     type: 'enum',
@@ -44,13 +48,6 @@ export class SmsMessageEntity extends BaseEntity {
     default: MessageStatusEnum.PENDING,
   })
   status: MessageStatusEnum;
-
-  @Column({
-    type: 'enum',
-    enum: MessageDirectionEnum,
-    default: MessageDirectionEnum.OUTBOUND,
-  })
-  direction: MessageDirectionEnum;
 
   @Column({ type: 'enum', enum: MessageTypeEnum, default: MessageTypeEnum.SMS })
   message_type: MessageTypeEnum;

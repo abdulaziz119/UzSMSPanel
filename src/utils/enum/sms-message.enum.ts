@@ -5,8 +5,3 @@ export enum MessageStatusEnum {
   FAILED = 'failed',
   REJECTED = 'rejected',
 }
-
-export enum MessageDirectionEnum {
-  OUTBOUND = 'outbound',
-  INBOUND = 'inbound',
-}

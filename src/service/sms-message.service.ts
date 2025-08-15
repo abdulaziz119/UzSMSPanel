@@ -92,7 +92,7 @@ export class SmsMessageService {
         status: MessageStatusEnum.SENT,
         message_type: MessageTypeEnum.SMS,
         operator: tariff.operator,
-        message_id: getTemplate.id,
+        sms_template_id: getTemplate.id,
         cost: tariff.price,
       });
       const savedSmsMessage: SmsMessageEntity =
