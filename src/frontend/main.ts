@@ -18,8 +18,14 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  app.use(bodyParser.json({ limit: '100mb' }));
-  app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
+  // Optimized body parser settings
+  app.use(bodyParser.json({ 
+    limit: '50mb'
+  }));
+  app.use(bodyParser.urlencoded({ 
+    limit: '50mb', 
+    extended: true
+  }));
 
   app.disable('etag');
   app.disable('x-powered-by');
@@ -48,8 +54,6 @@ async function bootstrap() {
       persistAuthorization: true,
     },
   });
-  app.use(bodyParser.json({ limit: '50mb' }));
-  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
   await app.listen(FRONTEND_PORT);
 }

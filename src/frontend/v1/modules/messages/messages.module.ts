@@ -22,7 +22,17 @@ import { SmsMessageQueue } from '../../../../queue/sms-message.queue';
     DatabaseModule,
     SmsContactModule,
     BullModule.forRoot({
-      redis: { host: REDIS_HOST, port: Number(REDIS_PORT) },
+      redis: { 
+        host: REDIS_HOST, 
+        port: Number(REDIS_PORT),
+        maxRetriesPerRequest: 3,
+        connectTimeout: 5000,
+        lazyConnect: true,
+      },
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+      },
     }),
     BullModule.registerQueue({ name: SMS_MESSAGE_QUEUE }),
   ],

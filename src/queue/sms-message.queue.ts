@@ -43,7 +43,7 @@ export class SmsMessageQueue {
     );
   }
 
-  @Process({ name: 'send-contact', concurrency: 5 })
+  @Process({ name: 'send-contact', concurrency: 15 })
   async handleSendToContact(
     job: Job<SendToContactJobData>,
   ): Promise<SingleResponse<SmsMessageEntity>> {
@@ -91,7 +91,8 @@ export class SmsMessageQueue {
       const unitPrice: number = Number(tariff.price || 0);
       const totalCost: number = unitPrice * partsCount;
 
-      await job.progress(50);
+      // Remove progress reporting for better performance
+      // await job.progress(50);
 
       // Create SMS message with transaction (includes billing and message creation)
       const savedSmsMessage =
@@ -110,7 +111,8 @@ export class SmsMessageQueue {
           totalCost,
         );
 
-      await job.progress(100);
+      // Remove progress reporting for better performance
+      // await job.progress(100);
       return { result: savedSmsMessage };
     } catch (error: any) {
       this.logger.error('send-contact job failed', error?.stack || error);
@@ -124,7 +126,7 @@ export class SmsMessageQueue {
     }
   }
 
-  @Process({ name: 'send-group', concurrency: 2 })
+  @Process({ name: 'send-group', concurrency: 8 })
   async handleSendToGroup(
     job: Job<SendToGroupJobData>,
   ): Promise<SingleResponse<SmsMessageEntity[]>> {
@@ -176,7 +178,8 @@ export class SmsMessageQueue {
         0,
       );
 
-      await job.progress(40);
+      // Remove progress reporting for better performance
+      // await job.progress(40);
 
       // Create SMS messages in bulk with transaction (includes billing and message creation)
       const smsDataArray = items.map((it) => ({
@@ -198,7 +201,8 @@ export class SmsMessageQueue {
           totalCost,
         );
 
-      await job.progress(100);
+      // Remove progress reporting for better performance  
+      // await job.progress(100);
       return { result: messages };
     } catch (error: any) {
       this.logger.error('send-group job failed', error?.stack || error);

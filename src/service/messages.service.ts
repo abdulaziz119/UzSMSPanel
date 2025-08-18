@@ -29,9 +29,11 @@ export class MessagesService {
     // Queue the job and wait for result to keep API response shape
     const jobData: SendToContactJobData = { payload, user_id, balance };
     const job = await this.smsMessageQueue.add('send-contact', jobData, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: true,
+      attempts: 2,
+      backoff: { type: 'fixed', delay: 1000 },
+      removeOnComplete: 50,
+      removeOnFail: 10,
+      priority: 1,
     });
     const result = await job.finished();
     return result as SingleResponse<SmsMessageEntity>;
@@ -45,8 +47,10 @@ export class MessagesService {
     const jobData: SendToGroupJobData = { payload, user_id, balance };
     const job = await this.smsMessageQueue.add('send-group', jobData, {
       attempts: 2,
-      backoff: { type: 'fixed', delay: 3000 },
-      removeOnComplete: true,
+      backoff: { type: 'fixed', delay: 1500 },
+      removeOnComplete: 30,
+      removeOnFail: 5,
+      priority: 2,
     });
     const result = await job.finished();
     return result as SingleResponse<SmsMessageEntity[]>;
