@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SmsMessageEntity } from '../entity/sms-message.entity';
 import {
   SendToContactDto,
@@ -6,19 +10,29 @@ import {
 } from '../frontend/v1/modules/messages/dto/messages.dto';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
 import { SingleResponse } from '../utils/dto/dto';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import { SMS_MESSAGE_QUEUE } from '../constants/constants';
-import {
-  SendToContactJobData,
-  SendToGroupJobData,
-} from '../utils/interfaces/sms-message.queue.interfaces';
+import { Repository } from 'typeorm';
+import { Inject } from '@nestjs/common';
+import { MODELS } from '../constants/constants';
+import { SmsTemplateEntity } from '../entity/sms-template.entity';
+import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
+import { SmsContactService } from './sms-contact.service';
+import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
+import { TariffEntity } from '../entity/tariffs.entity';
+import { SmsMessageService } from './sms-message.service';
+import { RedisCacheService } from './redis-cache.service';
+import { BatchProcessor } from '../utils/batch-processor.util';
+import { SmsContactEntity } from '../entity/sms-contact.entity';
 
 @Injectable()
 export class MessagesService {
   constructor(
-    @InjectQueue(SMS_MESSAGE_QUEUE)
-    private readonly smsMessageQueue: Queue,
+    private readonly smsMessageService: SmsMessageService,
+    private readonly smsContactService: SmsContactService,
+    private readonly cache: RedisCacheService,
+    @Inject(MODELS.SMS_TEMPLATE)
+    private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
+    @Inject(MODELS.SMS_CONTACT)
+    private readonly smsContactRepo: Repository<SmsContactEntity>,
   ) {}
 
   async sendToContact(
@@ -26,17 +40,71 @@ export class MessagesService {
     user_id: number,
     balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity>> {
-    // Queue the job and wait for result to keep API response shape
-    const jobData: SendToContactJobData = { payload, user_id, balance };
-    const job = await this.smsMessageQueue.add('send-contact', jobData, {
-      attempts: 2,
-      backoff: { type: 'fixed', delay: 1000 },
-      removeOnComplete: 50,
-      removeOnFail: 10,
-      priority: 1,
-    });
-    const result = await job.finished();
-    return result as SingleResponse<SmsMessageEntity>;
+    // 1) Template cache
+    const templateCacheKey = `tpl:${Buffer.from(payload.message).toString('base64')}`;
+    const getTemplate = await this.cache.getOrSet<SmsTemplateEntity | null>(
+      templateCacheKey,
+      async () =>
+        this.smsTemplateRepo.findOne({
+          where: {
+            content: payload.message,
+            status: TemplateStatusEnum.ACTIVE,
+          },
+        }),
+      60,
+    );
+    if (!getTemplate)
+      throw new NotFoundException('Template not found or inactive');
+
+    // 2) Phone validate
+    const normalizedPhone: string = await this.smsContactService.normalizePhone(
+      payload.phone,
+    );
+    const status: SMSContactStatusEnum =
+      await this.smsContactService.validatePhoneNumber(normalizedPhone);
+    if (status === SMSContactStatusEnum.INVALID_FORMAT)
+      throw new BadRequestException('Invalid phone number format');
+    if (status === SMSContactStatusEnum.BANNED_NUMBER)
+      throw new BadRequestException('Banned phone number');
+
+    // 3) Tariff cache
+    const tariffCacheKey = `tariff:${normalizedPhone.substring(0, 5)}`;
+    const tariff: TariffEntity | null =
+      await this.cache.getOrSet<TariffEntity | null>(
+        tariffCacheKey,
+        async () =>
+          this.smsContactService.resolveTariffForPhone(normalizedPhone),
+        300,
+      );
+    if (!tariff)
+      throw new NotFoundException('Tariff not found for this phone number');
+
+    // 4) Pricing
+    const partsCount: number = Math.max(
+      1,
+      Number(getTemplate.parts_count || 1),
+    );
+    const unitPrice: number = Number(tariff.price || 0);
+    const totalCost: number = unitPrice * partsCount;
+
+    // 5) Create with billing
+    const savedSmsMessage =
+      await this.smsMessageService.createSmsMessageWithBilling(
+        {
+          user_id,
+          phone: payload.phone,
+          message: payload.message,
+          operator: tariff.operator,
+          sms_template_id: getTemplate.id,
+          cost: totalCost,
+          price_provider_sms: tariff.price_provider_sms,
+        },
+        getTemplate,
+        balance,
+        totalCost,
+      );
+
+    return { result: savedSmsMessage };
   }
 
   async sendToGroup(
@@ -44,15 +112,96 @@ export class MessagesService {
     user_id: number,
     balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity[]>> {
-    const jobData: SendToGroupJobData = { payload, user_id, balance };
-    const job = await this.smsMessageQueue.add('send-group', jobData, {
-      attempts: 2,
-      backoff: { type: 'fixed', delay: 1500 },
-      removeOnComplete: 30,
-      removeOnFail: 5,
-      priority: 2,
+    // 1) Template cache (no status check mentioned here originally)
+    const templateCacheKey = `tpl:${Buffer.from(payload.message).toString('base64')}`;
+    const getTemplate = await this.cache.getOrSet<SmsTemplateEntity | null>(
+      templateCacheKey,
+      async () =>
+        this.smsTemplateRepo.findOne({ where: { content: payload.message } }),
+      60,
+    );
+    if (!getTemplate) throw new NotFoundException('Template not found');
+
+    // 2) Group existence check
+    const hasAny = await this.smsContactRepo.findOne({
+      where: { group_id: payload.group_id },
     });
-    const result = await job.finished();
-    return result as SingleResponse<SmsMessageEntity[]>;
+    if (!hasAny) throw new NotFoundException('No contacts found for group');
+
+    // 3) Valid contacts with tariffs
+    const data = await this.smsContactService.getValidContactsWithTariffs(
+      payload.group_id,
+    );
+    const items = data.map((d) => ({
+      phone: d.contact.phone,
+      tariff: d.tariff,
+      unitPrice: Number(d.tariff.price || 0),
+    }));
+    if (items.length === 0)
+      throw new NotFoundException(
+        'No valid contacts with tariffs in the group',
+      );
+
+    // 4) Pricing total
+    const partsCount: number = Math.max(
+      1,
+      Number(getTemplate.parts_count || 1),
+    );
+    const totalCost = items.reduce(
+      (sum, it) => sum + it.unitPrice * partsCount,
+      0,
+    );
+
+    // 5) Batch for very large groups
+    const BATCH_SIZE = 100;
+    if (items.length > BATCH_SIZE) {
+      const messages = await BatchProcessor.processBatch(
+        items,
+        BATCH_SIZE,
+        async (batch) => {
+          const batchSmsData = batch.map((it) => ({
+            user_id,
+            phone: it.phone,
+            message: payload.message,
+            operator: it.tariff.operator,
+            sms_template_id: getTemplate.id,
+            cost: it.unitPrice * partsCount,
+            price_provider_sms: it.tariff.price_provider_sms,
+            group_id: payload.group_id,
+          }));
+
+          return await this.smsMessageService.createBulkSmsMessagesWithBilling(
+            batchSmsData,
+            getTemplate,
+            balance,
+            batch.reduce((sum, it) => sum + it.unitPrice * partsCount, 0),
+          );
+        },
+      );
+
+      return { result: messages.flat() };
+    }
+
+    // 6) Regular bulk
+    const smsDataArray = items.map((it) => ({
+      user_id,
+      phone: it.phone,
+      message: payload.message,
+      operator: it.tariff.operator,
+      sms_template_id: getTemplate.id,
+      cost: it.unitPrice * partsCount,
+      price_provider_sms: it.tariff.price_provider_sms,
+      group_id: payload.group_id,
+    }));
+
+    const messages =
+      await this.smsMessageService.createBulkSmsMessagesWithBilling(
+        smsDataArray,
+        getTemplate,
+        balance,
+        totalCost,
+      );
+
+    return { result: messages };
   }
 }
