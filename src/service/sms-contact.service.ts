@@ -20,6 +20,7 @@ import {
 } from '../utils/dto/sms-contact.dto';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { SmsGroupEntity } from '../entity/sms-group.entity';
+import { BatchProcessor } from '../utils/batch-processor.util';
 const XLSX = require('xlsx');
 
 @Injectable()
@@ -95,6 +96,34 @@ export class SmsContactService {
     const contacts: SmsContactEntity[] = await this.smsContactRepo.find({
       where: { group_id },
     });
+
+    // For large contact groups, process in batches to avoid memory issues
+    if (contacts.length > 500) {
+      const results = await BatchProcessor.processBatch(
+        contacts,
+        100, // Process 100 contacts at a time
+        async (batch) => {
+          const batchResults: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> = [];
+          
+          for (const contact of batch) {
+            const normalizedPhone: string = await this.normalizePhone(contact.phone);
+            const status = await this.validatePhoneNumber(normalizedPhone);
+            if (status !== SMSContactStatusEnum.ACTIVE) continue;
+            
+            const tariff: TariffEntity = await this.resolveTariffForPhone(normalizedPhone);
+            if (!tariff) continue;
+            
+            batchResults.push({ contact, tariff });
+          }
+          
+          return batchResults;
+        }
+      );
+      
+      return results.flat();
+    }
+
+    // For smaller groups, process normally
     const out: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> = [];
     for (const c of contacts) {
       const normalizedPhone: string = await this.normalizePhone(c.phone);
