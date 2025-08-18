@@ -9,7 +9,7 @@ import { FileEntity } from './file.entity';
 @Entity({ schema: DB_SCHEMA, name: 'contacts' })
 @Index(['user_id', 'status'])
 @Index(['phone', 'phone_ext'])
-@Index(['user_id', 'phone'], { unique: true })
+@Index(['user_id', 'phone'])
 export class ContactEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;

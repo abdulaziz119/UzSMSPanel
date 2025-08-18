@@ -1,13 +1,5 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { MODELS } from '../constants/constants';
 import { SmsMessageEntity } from '../entity/sms-message.entity';
 import { UserEntity } from '../entity/user.entity';
@@ -18,23 +10,10 @@ import {
   MessageStatusEnum,
   MessageTypeEnum,
 } from '../utils/enum/sms-message.enum';
-import {
-  MessageFilterDto,
-  MessageStatsDto,
-  SmsHistoryFilterDto,
-} from '../utils/dto/sms-message.dto';
-import { SmsContactEntity } from '../entity/sms-contact.entity';
-import {
-  SendToContactDto,
-  SendToGroupDto,
-} from '../frontend/v1/modules/messages/dto/messages.dto';
-import { SmsContactService } from './sms-contact.service';
-import { BillingService } from './billing.service';
-import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
-import { TariffEntity } from '../entity/tariffs.entity';
+import { SmsHistoryFilterDto } from '../utils/dto/sms-message.dto';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
-import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
+import { BillingService } from './billing.service';
 
 @Injectable()
 export class SmsMessageService {
@@ -45,206 +24,129 @@ export class SmsMessageService {
     private readonly userRepo: Repository<UserEntity>,
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
-    @Inject(MODELS.TARIFFS)
-    private readonly tariffRepo: Repository<TariffEntity>,
-    @Inject(MODELS.SMS_CONTACT)
-    private readonly smsContactRepo: Repository<SmsContactEntity>,
-    private readonly smsContactService: SmsContactService,
     private readonly billingService: BillingService,
   ) {}
 
-  async sendToContact(
-    payload: SendToContactDto,
-    user_id: number,
+  // Create a single SMS message with billing in transaction
+  async createSmsMessageWithBilling(
+    smsData: {
+      user_id: number;
+      phone: string;
+      message: string;
+      operator: string;
+      sms_template_id: number;
+      cost: number;
+      price_provider_sms: number;
+    },
+    template: SmsTemplateEntity,
     balance?: ContactTypeEnum,
-  ): Promise<SingleResponse<SmsMessageEntity>> {
-    try {
-      const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
-        {
-          where: {
-            content: payload.message,
-            status: TemplateStatusEnum.ACTIVE,
-          },
-        },
-      );
-      if (!getTemplate) {
-        throw new NotFoundException('Template not found or inactive');
-      }
-
-      const normalizedPhone: string =
-        await this.smsContactService.normalizePhone(payload.phone);
-      const status: SMSContactStatusEnum =
-        await this.smsContactService.validatePhoneNumber(normalizedPhone);
-      if (status === SMSContactStatusEnum.INVALID_FORMAT) {
-        throw new BadRequestException('Invalid phone number format');
-      }
-      if (status === SMSContactStatusEnum.BANNED_NUMBER) {
-        throw new BadRequestException('Banned phone number');
-      }
-      // Determine tariff for the phone and write operator to message
-      const tariff: TariffEntity | null =
-        await this.smsContactService.resolveTariffForPhone(normalizedPhone);
-
-      if (!tariff) {
-        throw new NotFoundException('Tariff not found for this phone number');
-      }
-
-      const partsCount: number = Math.max(
-        1,
-        Number(getTemplate.parts_count || 1),
-      );
-      const unitPrice: number = Number(tariff.price || 0);
-      const totalCost: number = unitPrice * partsCount;
-
-      // Transaction: check and deduct balance, then create message
-      const savedSmsMessage: SmsMessageEntity =
-        await this.messageRepo.manager.transaction(async (em) => {
-          // Deduct from contact balance when header is provided, otherwise from user balance
-          if (balance) {
-            await this.billingService.deductContactBalanceTransactional(
-              em,
-              user_id,
-              balance,
-              totalCost,
-            );
-          } else {
-            await this.billingService.deductBalanceTransactional(
-              em,
-              user_id,
-              totalCost,
-            );
-          }
-          // Create SMS message
-          const msg = em.getRepository(SmsMessageEntity).create({
-            user_id: user_id,
-            phone: payload.phone,
-            message: payload.message,
-            status: MessageStatusEnum.SENT,
-            message_type: MessageTypeEnum.SMS,
-            operator: tariff.operator,
-            sms_template_id: getTemplate.id,
-            cost: totalCost,
-            price_provider_sms: tariff.price_provider_sms,
-          });
-          const saved = await em.getRepository(SmsMessageEntity).save(msg);
-
-          // Update template usage
-          await em.getRepository(SmsTemplateEntity).update(
-            { id: getTemplate.id },
-            {
-              usage_count: () => 'usage_count + 1',
-              last_used_at: saved.created_at,
-            },
-          );
-
-          return saved;
-        });
-
-      return { result: savedSmsMessage };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Send to all contacts in a group (queued as bulk)
-  async sendToGroup(
-    payload: SendToGroupDto,
-    user_id: number,
-    balance?: ContactTypeEnum,
-  ): Promise<SingleResponse<SmsMessageEntity[]>> {
-    try {
-      const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
-        { where: { content: payload.message } },
-      );
-      if (!getTemplate) {
-        throw new NotFoundException('Template not found');
-      }
-
-      // Fetch contacts of the group
-      const contacts: SmsContactEntity[] = await this.smsContactRepo.find({
-        where: { group_id: payload.group_id },
-      });
-      if (!contacts || contacts.length === 0) {
-        throw new NotFoundException('No contacts found for group');
-      }
-
-      const partsCount: number = Math.max(
-        1,
-        Number(getTemplate.parts_count || 1),
-      );
-
-      const data = await this.smsContactService.getValidContactsWithTariffs(
-        payload.group_id,
-      );
-      const items = data.map((d) => ({
-        phone: d.contact.phone,
-        tariff: d.tariff,
-        unitPrice: Number(d.tariff.price || 0),
-      }));
-
-      if (items.length === 0) {
-        throw new NotFoundException(
-          'No valid contacts with tariffs in the group',
+    totalCost?: number,
+  ): Promise<SmsMessageEntity> {
+    return await this.messageRepo.manager.transaction(async (em) => {
+      // Deduct from contact balance when header is provided, otherwise from user balance
+      if (balance) {
+        await this.billingService.deductContactBalanceTransactional(
+          em,
+          smsData.user_id,
+          balance,
+          totalCost,
+        );
+      } else {
+        await this.billingService.deductBalanceTransactional(
+          em,
+          smsData.user_id,
+          totalCost,
         );
       }
 
-      const totalCost = items.reduce(
-        (sum, it) => sum + it.unitPrice * partsCount,
-        0,
-      );
+      // Create SMS message
+      const msg = em.getRepository(SmsMessageEntity).create({
+        user_id: smsData.user_id,
+        phone: smsData.phone,
+        message: smsData.message,
+        status: MessageStatusEnum.SENT,
+        message_type: MessageTypeEnum.SMS,
+        operator: smsData.operator,
+        sms_template_id: smsData.sms_template_id,
+        cost: smsData.cost,
+        price_provider_sms: smsData.price_provider_sms,
+      });
+      const saved = await em.getRepository(SmsMessageEntity).save(msg);
 
-      const messages = await this.messageRepo.manager.transaction(
-        async (em) => {
-          // Deduct total from contact or user balance
-          if (balance) {
-            await this.billingService.deductContactBalanceTransactional(
-              em,
-              user_id,
-              balance,
-              totalCost,
-            );
-          } else {
-            await this.billingService.deductBalanceTransactional(
-              em,
-              user_id,
-              totalCost,
-            );
-          }
-
-          const repo = em.getRepository(SmsMessageEntity);
-          const toSave = items.map((it) =>
-            repo.create({
-              user_id,
-              phone: it.phone,
-              message: payload.message,
-              status: MessageStatusEnum.SENT,
-              message_type: MessageTypeEnum.SMS,
-              operator: it.tariff.operator,
-              sms_template_id: getTemplate.id,
-              cost: it.unitPrice * partsCount,
-              price_provider_sms: it.tariff.price_provider_sms,
-              group_id: payload.group_id,
-            }),
-          );
-
-          const saved = await repo.save(toSave);
-
-          await em.getRepository(SmsTemplateEntity).update(
-            { id: getTemplate.id },
-            {
-              usage_count: () => `usage_count + ${saved.length}`,
-              last_used_at: new Date(),
-            },
-          );
-
-          return saved;
+      // Update template usage
+      await em.getRepository(SmsTemplateEntity).update(
+        { id: template.id },
+        {
+          usage_count: () => 'usage_count + 1',
+          last_used_at: saved.created_at,
         },
       );
 
-      return { result: messages };
-    } catch (error) {
-      throw error;
-    }
+      return saved;
+    });
+  }
+
+  // Create bulk SMS messages with billing in transaction
+  async createBulkSmsMessagesWithBilling(
+    smsDataArray: Array<{
+      user_id: number;
+      phone: string;
+      message: string;
+      operator: string;
+      sms_template_id: number;
+      cost: number;
+      price_provider_sms: number;
+      group_id: number;
+    }>,
+    template: SmsTemplateEntity,
+    balance?: ContactTypeEnum,
+    totalCost?: number,
+  ): Promise<SmsMessageEntity[]> {
+    return await this.messageRepo.manager.transaction(async (em) => {
+      // Deduct total from contact or user balance
+      if (balance) {
+        await this.billingService.deductContactBalanceTransactional(
+          em,
+          smsDataArray[0].user_id,
+          balance,
+          totalCost,
+        );
+      } else {
+        await this.billingService.deductBalanceTransactional(
+          em,
+          smsDataArray[0].user_id,
+          totalCost,
+        );
+      }
+
+      const repo = em.getRepository(SmsMessageEntity);
+      const toSave = smsDataArray.map((smsData) =>
+        repo.create({
+          user_id: smsData.user_id,
+          phone: smsData.phone,
+          message: smsData.message,
+          status: MessageStatusEnum.SENT,
+          message_type: MessageTypeEnum.SMS,
+          operator: smsData.operator,
+          sms_template_id: smsData.sms_template_id,
+          cost: smsData.cost,
+          price_provider_sms: smsData.price_provider_sms,
+          group_id: smsData.group_id,
+        }),
+      );
+
+      const saved = await repo.save(toSave);
+
+      await em.getRepository(SmsTemplateEntity).update(
+        { id: template.id },
+        {
+          usage_count: () => `usage_count + ${saved.length}`,
+          last_used_at: new Date(),
+        },
+      );
+
+      return saved;
+    });
   }
 
   async getHistory(
