@@ -29,6 +29,7 @@ import { SmsContactService } from './sms-contact.service';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
+import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 
 @Injectable()
 export class SmsMessageService {
@@ -46,7 +47,6 @@ export class SmsMessageService {
     private readonly smsContactService: SmsContactService,
   ) {}
 
-  // Send to single contact by contact_id
   async sendToContact(
     payload: SendToContactDto,
     user_id: number,
@@ -54,11 +54,14 @@ export class SmsMessageService {
     try {
       const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
         {
-          where: { content: payload.message },
+          where: {
+            content: payload.message,
+            status: TemplateStatusEnum.ACTIVE,
+          },
         },
       );
       if (!getTemplate) {
-        throw new NotFoundException('Template not found');
+        throw new NotFoundException('Template not found or inactive');
       }
 
       const normalizedPhone: string =
