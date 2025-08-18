@@ -6,7 +6,6 @@ import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_contacts' })
 @Index(['phone'])
-@Index(['phone'])
 export class SmsContactEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   name: string | null;
