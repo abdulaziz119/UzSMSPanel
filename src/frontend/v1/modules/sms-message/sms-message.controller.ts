@@ -67,7 +67,7 @@ export class SmsMessageController {
     @Body() filters: SmsHistoryFilterDto,
     @User('id') user_id: number,
   ): Promise<PaginationResponse<SmsMessageEntity[]>> {
-    return await this.messageService.getHistory(filters, user_id);
+    return await this.messageService.getHistory(filters, user_id, false);
   }
   //
   // /**

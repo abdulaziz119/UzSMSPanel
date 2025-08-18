@@ -271,6 +271,7 @@ export class SmsMessageService {
   async getHistory(
     filters: SmsHistoryFilterDto,
     user_id: number,
+    isDashboard: boolean,
   ): Promise<PaginationResponse<SmsMessageEntity[]>> {
     const { page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
@@ -280,6 +281,27 @@ export class SmsMessageService {
         .createQueryBuilder('message')
         .where('message.user_id = :user_id', { user_id })
         .orderBy('message.created_at', 'DESC');
+
+      // By default select all columns; if not dashboard, omit provider price from results
+      if (isDashboard === false) {
+        queryBuilder.select([
+          'message.id',
+          'message.user_id',
+          'message.group_id',
+          'message.phone',
+          'message.message',
+          'message.sms_template_id',
+          'message.status',
+          'message.message_type',
+          'message.operator',
+          'message.cost',
+          // omit message.price_provider_sms intentionally
+          'message.error_message',
+          'message.delivery_report',
+          'message.created_at',
+          'message.updated_at',
+        ]);
+      }
 
       // Filtrlarni qo'llash
       if (filters.date_from) {
