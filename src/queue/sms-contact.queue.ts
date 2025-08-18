@@ -1,5 +1,13 @@
-import { Process, Processor } from '@nestjs/bull';
-import { Job } from 'bull';
+import {
+  InjectQueue,
+  OnQueueCompleted,
+  OnQueueFailed,
+  OnQueueProgress,
+  OnQueueStalled,
+  Process,
+  Processor,
+} from '@nestjs/bull';
+import { Job, Queue } from 'bull';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { SmsContactService } from '../service/sms-contact.service';
 import { SMS_CONTACT_QUEUE } from '../constants/constants';
@@ -16,7 +24,10 @@ export interface ImportExcelJobData {
 export class SmsContactQueue {
   private readonly logger = new Logger(SmsContactQueue.name);
 
-  constructor(private readonly smsContactService: SmsContactService) {
+  constructor(
+    private readonly smsContactService: SmsContactService,
+    @InjectQueue(SMS_CONTACT_QUEUE) private readonly contactQueue: Queue,
+  ) {
     this.logger.log(
       `SMS Contact Queue processor initialized for queue: ${SMS_CONTACT_QUEUE}`,
     );
@@ -33,6 +44,8 @@ export class SmsContactQueue {
     };
   }> {
     try {
+      this.logger.log(`Processing import-excel job ${job.id}`);
+      await job.progress(0);
       const fileBuffer = Buffer.from(job.data.buffer || '', 'base64');
 
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
@@ -40,7 +53,9 @@ export class SmsContactQueue {
 
       if (!sheetName) {
         this.logger.warn('No sheet found in uploaded file');
-        return { result: { total: 0, inserted: 0, skipped: 0, failed: 0, errors: [] } };
+        return {
+          result: { total: 0, inserted: 0, skipped: 0, failed: 0, errors: [] },
+        };
       }
 
       const sheet = workbook.Sheets[sheetName];
@@ -48,69 +63,71 @@ export class SmsContactQueue {
 
       if (!Array.isArray(rows) || rows.length === 0) {
         this.logger.warn('No data rows detected in the first sheet');
-        return { result: { total: 0, inserted: 0, skipped: 0, failed: 0, errors: [] } };
+        return {
+          result: { total: 0, inserted: 0, skipped: 0, failed: 0, errors: [] },
+        };
       }
 
-      let inserted: number = 0;
-      let skipped: number = 0;
+      let inserted = 0;
+      let skipped = 0;
       const errors: Array<{ row: number; error: string }> = [];
+      let lastProgress = 0;
+      let errorsLogged = 0;
+      const maxErrorsToLog = 20;
 
-      // Process all rows in parallel without batching
-      const allPromises = rows.map(async (r, rowIndex) => {
+      for (let i = 0; i < totalRows; i++) {
+        const r = rows[i];
+        const rowIndex = i + 2; // Account for header row
+
         const name = (r.name || r.Name || r.Nomi || '').toString().trim();
-        const phone = (r.phone || r.Phone || r.Telefon || '')
-          .toString()
-          .trim();
+        const phone = (r.phone || r.Phone || r.Telefon || '').toString().trim();
 
         // Skip if name is empty (don't create contact)
         if (!name) {
-          return { success: true as const, skipped: true };
+          skipped++;
+          continue;
         }
 
         // Phone is required if name exists
         if (!phone) {
-          return {
-            success: false as const,
-            error: {
-              row: rowIndex + 2,
-              error: 'Missing required field (phone)',
-            },
-          };
+          errors.push({
+            row: rowIndex,
+            error: 'Missing required field (phone)',
+          });
+          continue;
         }
 
         try {
-          const cleanPhone = (phone || '').replace(/^\+/, '');
+          const cleanPhone = phone.replace(/^\+/, '');
 
           await this.smsContactService.create({
             name,
             phone: cleanPhone,
             group_id: Number(job.data?.defaults?.default_group_id || 0),
           });
-
-          return { success: true as const };
+          inserted++;
         } catch (e: any) {
-          return {
-            success: false as const,
-            error: {
-              row: rowIndex + 2,
-              error: e?.message || 'Failed to insert',
-            },
-          };
+          const errorMessage =
+            e?.code === '23505'
+              ? 'Duplicate phone number'
+              : e?.message || 'Unknown error';
+          // Log the specific error for debugging, but only for the first few
+          if (errorsLogged < maxErrorsToLog) {
+            this.logger.warn(
+              `[${job.id}] Failed to insert row ${rowIndex}: ${errorMessage}`,
+            );
+            errorsLogged++;
+          }
+          errors.push({ row: rowIndex, error: errorMessage });
         }
-      });
 
-      // Process all results
-      const allResults = await Promise.allSettled(allPromises);
-
-      allResults.forEach((res, index) => {
-        if (res.status === 'fulfilled') {
-          if (res.value.success && !res.value.skipped) inserted++;
-          else if (res.value.success && res.value.skipped) skipped++;
-          else if (!res.value.success) errors.push(res.value.error);
-        } else {
-          errors.push({ row: index + 2, error: String(res.reason) });
+        // Throttle progress updates
+        const progress = Math.min(99, Math.round(((inserted + skipped) / total) * 100));
+        if (progress !== lastProgress) {
+          await job.progress(progress);
+          lastProgress = progress;
         }
-      });
+      }
 
       // Update progress to 100%
       await job.progress(100);
@@ -130,5 +147,40 @@ export class SmsContactQueue {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  // Queue lifecycle handlers (observability)
+  @OnQueueCompleted()
+  async onCompleted(job: Job) {
+    try {
+      this.logger.log(
+        `Completed sms-contact job ${job.id} of type ${job.name}`,
+      );
+      const counts = await this.contactQueue.getJobCounts();
+      this.logger.debug(
+        `Queue counts -> waiting: ${counts.waiting}, active: ${counts.active}, delayed: ${counts.delayed}`,
+      );
+    } catch (e) {
+      this.logger.warn(`onCompleted hook error: ${e?.message || e}`);
+    }
+  }
+
+  @OnQueueFailed()
+  onFailed(job: Job, err: any) {
+    this.logger.error(
+      `Failed sms-contact job ${job.id} (${job.name}): ${err?.message || err}`,
+    );
+  }
+
+  @OnQueueProgress()
+  onProgress(job: Job, progress: number) {
+    this.logger.verbose(
+      `Progress sms-contact job ${job.id} (${job.name}): ${progress}%`,
+    );
+  }
+
+  @OnQueueStalled()
+  onStalled(job: Job) {
+    this.logger.warn(`Stalled sms-contact job ${job.id} (${job.name})`);
   }
 }
