@@ -94,26 +94,50 @@ export class SmsMessageService {
       const unitPrice: number = Number(tariff.price || 0);
       const totalCost: number = unitPrice * partsCount;
 
-      const res: SmsMessageEntity = this.messageRepo.create({
-        user_id: user_id,
-        phone: payload.phone,
-        message: payload.message,
-        status: MessageStatusEnum.SENT,
-        message_type: MessageTypeEnum.SMS,
-        operator: tariff.operator,
-        sms_template_id: getTemplate.id,
-        cost: totalCost,
-      });
+      // Transaction: check and deduct balance, then create message
       const savedSmsMessage: SmsMessageEntity =
-        await this.messageRepo.save(res);
+        await this.messageRepo.manager.transaction(async (em) => {
+          // Try atomic balance deduction (only if sufficient)
+          const deductRes = await em
+            .createQueryBuilder()
+            .update(UserEntity)
+            .set({ balance: () => 'balance - :amount' })
+            .where('id = :id')
+            .andWhere('balance >= :amount')
+            .setParameters({ id: user_id, amount: totalCost })
+            .returning('*')
+            .execute();
 
-      await this.smsTemplateRepo.update(
-        { id: getTemplate.id },
-        {
-          usage_count: () => 'usage_count + 1',
-          last_used_at: savedSmsMessage.created_at,
-        },
-      );
+          if (deductRes.affected === 0) {
+            throw new BadRequestException('Insufficient balance');
+          }
+
+          // Create SMS message
+          const msg = em.getRepository(SmsMessageEntity).create({
+            user_id: user_id,
+            phone: payload.phone,
+            message: payload.message,
+            status: MessageStatusEnum.SENT,
+            message_type: MessageTypeEnum.SMS,
+            operator: tariff.operator,
+            sms_template_id: getTemplate.id,
+            cost: totalCost,
+            price_provider_sms: tariff.price_provider_sms,
+          });
+          const saved = await em.getRepository(SmsMessageEntity).save(msg);
+
+          // Update template usage
+          await em.getRepository(SmsTemplateEntity).update(
+            { id: getTemplate.id },
+            {
+              usage_count: () => 'usage_count + 1',
+              last_used_at: saved.created_at,
+            },
+          );
+
+          return saved;
+        });
+
       return { result: savedSmsMessage };
     } catch (error) {
       throw error;
