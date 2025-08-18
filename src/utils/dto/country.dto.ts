@@ -11,7 +11,7 @@ import {
 import { PaginationParams } from './dto';
 
 export class CreateCountryDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'Uzbekistan',
     description: 'Country name',
   })
@@ -19,7 +19,7 @@ export class CreateCountryDto {
   @IsDefined()
   name: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'UZB',
     description: 'ISO 3166-1 alpha-3 country code',
   })
@@ -29,7 +29,7 @@ export class CreateCountryDto {
   @IsDefined()
   code: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'UZ',
     description: 'ISO 3166-1 alpha-2 country code',
   })
@@ -39,15 +39,15 @@ export class CreateCountryDto {
   @IsDefined()
   iso_code: string;
 
-  @ApiPropertyOptional({ 
-    example: '+998',
+  @ApiPropertyOptional({
+    example: '998',
     description: 'International dialing code',
   })
   @IsString()
   @IsOptional()
   phone_code?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'UZS',
     description: 'Currency code',
   })
@@ -55,7 +55,7 @@ export class CreateCountryDto {
   @IsOptional()
   currency?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: true,
     description: 'Is country active',
     default: true,
