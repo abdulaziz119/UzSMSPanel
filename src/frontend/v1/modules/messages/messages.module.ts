@@ -7,7 +7,6 @@ import { userProviders } from '../../../../providers/user.providers';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
 import { smsTemplateProviders } from '../../../../providers/sms-template.providers';
 import { DatabaseModule } from '../../../../database/database.module';
-import { MessagesService } from '../../../../service/messages.service';
 import { smsGroupProviders } from '../../../../providers/sms-group.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
 import { BillingService } from '../../../../service/billing.service';
@@ -42,8 +41,6 @@ import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
     BillingService,
     PerformanceMonitor,
     SmsMessageService,
-    // frontend wrapper service
-    MessagesService,
     // queue processor
     MessagesQueue,
   ],
