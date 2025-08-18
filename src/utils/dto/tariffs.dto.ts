@@ -42,7 +42,7 @@ export class CreateTariffDto {
   })
   @IsNumber()
   @IsNotEmpty()
-  cost_price: number;
+  price_provider_sms: number;
 
   @ApiProperty({
     example: 10,

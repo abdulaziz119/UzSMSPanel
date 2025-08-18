@@ -4,7 +4,6 @@ import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
 import { SmsGroupEntity } from './sms-group.entity';
 import { ContactEntity } from './contact.entity';
-import { SmsCampaignEntity } from './sms-campaign.entity';
 import { SmsTemplateEntity } from './sms-template.entity';
 import { SmsSenderEntity } from './sms-sender.entity';
 import { SmsMessageEntity } from './sms-message.entity';
@@ -62,7 +61,11 @@ export class UserEntity extends BaseEntity {
   @Column({ select: false, nullable: true })
   login: string | null;
 
-  @OneToMany(() => ContactEntity, (entity) => entity.user, cascadeUpdateRelationOptions)
+  @OneToMany(
+    () => ContactEntity,
+    (entity) => entity.user,
+    cascadeUpdateRelationOptions,
+  )
   contacts: ContactEntity[];
 
   @OneToMany(
@@ -72,18 +75,31 @@ export class UserEntity extends BaseEntity {
   )
   smsGroup: SmsGroupEntity[];
 
-  @OneToMany(() => SmsCampaignEntity, (entity) => entity.user, cascadeUpdateRelationOptions)
-  smsCampaigns: SmsCampaignEntity[];
-
-  @OneToMany(() => SmsTemplateEntity, (entity) => entity.user, cascadeUpdateRelationOptions)
+  @OneToMany(
+    () => SmsTemplateEntity,
+    (entity) => entity.user,
+    cascadeUpdateRelationOptions,
+  )
   smsTemplates: SmsTemplateEntity[];
 
-  @OneToMany(() => SmsSenderEntity, (entity) => entity.user, cascadeUpdateRelationOptions)
+  @OneToMany(
+    () => SmsSenderEntity,
+    (entity) => entity.user,
+    cascadeUpdateRelationOptions,
+  )
   smsSenders: SmsSenderEntity[];
 
-  @OneToMany(() => SmsMessageEntity, (entity) => entity.user, cascadeUpdateRelationOptions)
+  @OneToMany(
+    () => SmsMessageEntity,
+    (entity) => entity.user,
+    cascadeUpdateRelationOptions,
+  )
   smsMessages: SmsMessageEntity[];
 
-  @OneToMany(() => TransactionEntity, (entity) => entity.user, cascadeUpdateRelationOptions)
+  @OneToMany(
+    () => TransactionEntity,
+    (entity) => entity.user,
+    cascadeUpdateRelationOptions,
+  )
   transactions: TransactionEntity[];
 }

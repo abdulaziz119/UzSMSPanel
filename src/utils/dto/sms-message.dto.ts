@@ -8,8 +8,7 @@ import {
   IsArray,
   IsPhoneNumber,
 } from 'class-validator';
-import { MessageStatusEnum } from '../enum/sms-message.enum';
-import { MessageTypeEnum } from '../enum/sms-price.enum';
+import { MessageStatusEnum, MessageTypeEnum } from '../enum/sms-message.enum';
 import { PaginationParams } from './dto';
 
 export class SendSingleSmsDto {

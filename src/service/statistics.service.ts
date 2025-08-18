@@ -4,7 +4,6 @@ import { MODELS } from '../constants/constants';
 import { UserEntity } from '../entity/user.entity';
 import { SmsMessageEntity } from '../entity/sms-message.entity';
 import { TransactionEntity } from '../entity/transaction.entity';
-import { SmsCampaignEntity } from '../entity/sms-campaign.entity';
 import { SingleResponse } from '../utils/dto/dto';
 import { UserRoleEnum } from '../utils/enum/user.enum';
 import { MessageStatusEnum } from '../utils/enum/sms-message.enum';
@@ -12,7 +11,6 @@ import {
   TransactionStatusEnum,
   TransactionTypeEnum,
 } from '../utils/enum/transaction.enum';
-import { CampaignStatusEnum } from '../utils/enum/sms-campaign.enum';
 import { DashboardStatsFilterDto } from '../utils/dto/statistics.dto';
 
 @Injectable()
@@ -24,8 +22,6 @@ export class StatisticsService {
     private readonly messageRepo: Repository<SmsMessageEntity>,
     @Inject(MODELS.TRANSACTION)
     private readonly transactionRepo: Repository<TransactionEntity>,
-    @Inject(MODELS.SMS_CAMPAIGN)
-    private readonly campaignRepo: Repository<SmsCampaignEntity>,
   ) {}
 
   async getDashboardStatistics(
@@ -50,14 +46,10 @@ export class StatisticsService {
         where: { status: MessageStatusEnum.FAILED },
       });
 
-      // Kampaniya statistikalari
-      const totalCampaigns = await this.campaignRepo.count();
-      const activeCampaigns = await this.campaignRepo.count({
-        where: { status: CampaignStatusEnum.RUNNING },
-      });
-      const completedCampaigns = await this.campaignRepo.count({
-        where: { status: CampaignStatusEnum.COMPLETED },
-      });
+  // Kampaniya statistikalari (hozircha kampaniya modul mavjud emas, 0 qaytaramiz)
+  const totalCampaigns = 0;
+  const activeCampaigns = 0;
+  const completedCampaigns = 0;
 
       // Moliyaviy statistikalar
       const totalRevenue = await this.transactionRepo

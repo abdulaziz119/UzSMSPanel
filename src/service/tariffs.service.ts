@@ -209,65 +209,28 @@ export class TariffService {
         throw new BadRequestException('Tariff with this code already exists');
       }
 
-      // Compute tariff price from provider price_per_sms and optional margin_percent
-      const providerPrice: number = Number(data.cost_price ?? 0);
+      // Compute tariff price from provider base (price_provider_sms) and optional margin_percent
+      const providerPrice: number = Number(data.price_provider_sms ?? 0);
       const marginPercent: number = Number((data as any).margin_percent ?? 0);
       let computedPrice: number = providerPrice;
       if (!isNaN(marginPercent) && marginPercent !== 0) {
         computedPrice = providerPrice * (1 + marginPercent / 100);
       }
-      // Round to 4 decimal places to match DECIMAL(15,4)
-      computedPrice = Math.round(Math.max(0, computedPrice) * 10000) / 10000;
+      // Round to 2 decimal places to match DECIMAL(15,2)
+      computedPrice = Math.round(Math.max(0, computedPrice) * 100) / 100;
 
       const tariff: TariffEntity = this.tariffRepo.create({
         code: data.code,
         name: data.name,
         phone_ext: data.phone_ext,
         price: computedPrice,
+        price_provider_sms: providerPrice,
         operator: data.operator,
         public: data.public ?? true,
         country_id: data.country_id,
       });
 
       const savedTariff: TariffEntity = await this.tariffRepo.save(tariff);
-      // Agar bu operator uchun birinchi tarif bo'lsa, SmsPrice ni (SMS turi uchun) bir marta yaratamiz
-      try {
-        const totalByOperator: number = await this.tariffRepo.count({
-          where: { operator: savedTariff.operator },
-        });
-        if (totalByOperator === 1) {
-          const normalizedOp: string = (savedTariff.operator || '')
-            .toString()
-            .toLowerCase();
-          const existingPrice: SmsPriceEntity = await this.smsPriceRepo.findOne(
-            {
-              where: {
-                operator: normalizedOp as any,
-                message_type: MessageTypeEnum.SMS,
-              },
-            },
-          );
-          if (!existingPrice) {
-            const country: CountryEntity = await this.countryRepo.findOne({
-              where: { id: savedTariff.country_id },
-            });
-            const price: SmsPriceEntity = this.smsPriceRepo.create({
-              country_code: country.code,
-              country_name: country.name,
-              operator: normalizedOp,
-              operator_name: savedTariff.operator,
-              message_type: MessageTypeEnum.SMS,
-              price_per_sms: Number(data.cost_price ?? 0),
-              wholesale_price: 0,
-              currency: country?.currency,
-              active: true,
-            } as Partial<SmsPriceEntity>);
-            await this.smsPriceRepo.save(price);
-          }
-        }
-      } catch (autoErr) {
-        // Auto-create xatosi asosiy create jarayoniga ta'sir qilmasin
-      }
 
       return { result: savedTariff };
     } catch (error) {
@@ -343,17 +306,9 @@ export class TariffService {
 
   async getTariffStatistics(): Promise<SingleResponse<any>> {
     try {
-      // Summary statistics including provider (sms_prices) awareness.
-      // Join tariffs -> country -> sms_prices (message_type = SMS) by operator (normalized to lower)
+      // Summary statistics using tariff.price and tariff.price_provider_sms
       const statistics = await this.tariffRepo
         .createQueryBuilder('tariff')
-        .leftJoin('tariff.country', 'country')
-        .leftJoin(
-          'sms_prices',
-          'sms',
-          'sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg',
-          { msg: MessageTypeEnum.SMS },
-        )
         .select([
           'COUNT(*) as total_tariffs',
           'COUNT(CASE WHEN tariff.public = true THEN 1 END) as public_tariffs',
@@ -362,30 +317,22 @@ export class TariffService {
           'AVG(tariff.price) as average_price',
           'MIN(tariff.price) as min_price',
           'MAX(tariff.price) as max_price',
-          'AVG(sms.price_per_sms) as average_provider_price',
-          // average margin percent = AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 )
-          'AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as average_margin_percent',
+          'AVG(tariff.price_provider_sms) as average_provider_price',
+          'AVG( (tariff.price - tariff.price_provider_sms) / NULLIF(tariff.price_provider_sms,0) * 100 ) as average_margin_percent',
         ])
         .getRawOne();
 
-      // Operator distribution with provider-aware columns
+      // Operator distribution using tariff columns only
       const operatorStats = await this.tariffRepo
         .createQueryBuilder('tariff')
-        .leftJoin('tariff.country', 'country')
-        .leftJoin(
-          'sms_prices',
-          'sms',
-          'sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg',
-          { msg: MessageTypeEnum.SMS },
-        )
         .select([
           'tariff.operator as operator',
           'COUNT(*) as tariff_count',
           'AVG(tariff.price) as avg_price',
           'MIN(tariff.price) as min_price',
           'MAX(tariff.price) as max_price',
-          'AVG(sms.price_per_sms) as avg_provider_price',
-          'AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as avg_margin_percent',
+          'AVG(tariff.price_provider_sms) as avg_provider_price',
+          'AVG( (tariff.price - tariff.price_provider_sms) / NULLIF(tariff.price_provider_sms,0) * 100 ) as avg_margin_percent',
         ])
         .groupBy('tariff.operator')
         .orderBy('tariff_count', 'DESC')
@@ -419,16 +366,9 @@ export class TariffService {
         );
       }
 
-      // Bazaviy narxni SmsPrice dan olamiz (operator + SMS turi)
-      const basePriceRow: SmsPriceEntity = await this.smsPriceRepo.findOne({
-        where: {
-          operator: (data as any).operator,
-          message_type: MessageTypeEnum.SMS,
-        },
-      });
-      const baseCost: number = Number(basePriceRow?.price_per_sms ?? 0);
-
       for (const tariff of tariffs) {
+        // Use each tariff's provider base price
+        const baseCost: number = Number(tariff.price_provider_sms ?? 0);
         let newPrice: number = baseCost;
 
         if (data.adjustment_type === 'percent') {
@@ -437,8 +377,8 @@ export class TariffService {
           newPrice = baseCost + data.price_adjustment;
         }
 
-        // 4 ta kasr belgigacha yaxlitlash (DECIMAL(15,4) bilan mos)
-        newPrice = Math.round(Math.max(0, newPrice) * 10000) / 10000;
+        // Round to 2 decimals (DECIMAL(15,2))
+        newPrice = Math.round(Math.max(0, newPrice) * 100) / 100;
 
         await this.tariffRepo.update(tariff.id, {
           price: newPrice,
