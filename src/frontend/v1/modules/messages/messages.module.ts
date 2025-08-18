@@ -12,30 +12,9 @@ import { SmsContactModule } from '../sms-contact/sms-contact.module';
 import { smsGroupProviders } from '../../../../providers/sms-group.providers';
 import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
-import { BullModule } from '@nestjs/bull';
-import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
-import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
-import { SmsMessageQueue } from '../../../../queue/sms-message.queue';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    SmsContactModule,
-    BullModule.forRoot({
-      redis: { 
-        host: REDIS_HOST, 
-        port: Number(REDIS_PORT),
-        maxRetriesPerRequest: 3,
-        connectTimeout: 5000,
-        lazyConnect: true,
-      },
-      defaultJobOptions: {
-        removeOnComplete: 100,
-        removeOnFail: 50,
-      },
-    }),
-    BullModule.registerQueue({ name: SMS_MESSAGE_QUEUE }),
-  ],
+  imports: [DatabaseModule, SmsContactModule],
   controllers: [MessagesController],
   providers: [
     ...smsMessageProviders,
@@ -48,8 +27,6 @@ import { SmsMessageQueue } from '../../../../queue/sms-message.queue';
     SmsMessageService,
     // frontend wrapper service
     MessagesService,
-    // queue processor
-    SmsMessageQueue,
   ],
 })
 export class MessagesModule {}
