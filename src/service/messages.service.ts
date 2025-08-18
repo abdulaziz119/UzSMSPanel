@@ -84,20 +84,21 @@ export class MessagesService {
       const totalCost: number = unitPrice * partsCount;
 
       // Create SMS message with transaction (includes billing and message creation)
-      const savedSmsMessage = await this.smsMessageService.createSmsMessageWithBilling(
-        {
-          user_id: user_id,
-          phone: payload.phone,
-          message: payload.message,
-          operator: tariff.operator,
-          sms_template_id: getTemplate.id,
-          cost: totalCost,
-          price_provider_sms: tariff.price_provider_sms,
-        },
-        getTemplate,
-        balance,
-        totalCost,
-      );
+      const savedSmsMessage =
+        await this.smsMessageService.createSmsMessageWithBilling(
+          {
+            user_id: user_id,
+            phone: payload.phone,
+            message: payload.message,
+            operator: tariff.operator,
+            sms_template_id: getTemplate.id,
+            cost: totalCost,
+            price_provider_sms: tariff.price_provider_sms,
+          },
+          getTemplate,
+          balance,
+          totalCost,
+        );
 
       return { result: savedSmsMessage };
     } catch (error) {
@@ -120,10 +121,10 @@ export class MessagesService {
       }
 
       // Fetch contacts of the group
-      const contacts: SmsContactEntity[] = await this.smsContactRepo.find({
+      const contacts: SmsContactEntity = await this.smsContactRepo.findOne({
         where: { group_id: payload.group_id },
       });
-      if (!contacts || contacts.length === 0) {
+      if (!contacts) {
         throw new NotFoundException('No contacts found for group');
       }
 
@@ -165,12 +166,13 @@ export class MessagesService {
         group_id: payload.group_id,
       }));
 
-      const messages = await this.smsMessageService.createBulkSmsMessagesWithBilling(
-        smsDataArray,
-        getTemplate,
-        balance,
-        totalCost,
-      );
+      const messages =
+        await this.smsMessageService.createBulkSmsMessagesWithBilling(
+          smsDataArray,
+          getTemplate,
+          balance,
+          totalCost,
+        );
 
       return { result: messages };
     } catch (error) {
