@@ -4,7 +4,6 @@ import {
   ApiTags,
   ApiBadRequestResponse,
   ApiResponse,
-  ApiBody,
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';

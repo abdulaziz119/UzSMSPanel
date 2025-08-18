@@ -20,20 +20,16 @@ import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { SingleResponse } from '../utils/dto/dto';
 import { SmsContactService } from './sms-contact.service';
-import { BillingService } from './billing.service';
 
 @Injectable()
 export class MessagesService {
   constructor(
     private readonly smsMessageService: SmsMessageService,
     private readonly smsContactService: SmsContactService,
-    private readonly billingService: BillingService,
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
-    @Inject(MODELS.TARIFFS)
-    private readonly tariffRepo: Repository<TariffEntity>,
   ) {}
 
   async sendToContact(
@@ -75,7 +71,7 @@ export class MessagesService {
         throw new NotFoundException('Tariff not found for this phone number');
       }
 
-      // Calculate cost
+      // Calculate cost - parts_count qanchalik bo'lsa, shunchalik kontaktlar uchun narx hisoblanadi
       const partsCount: number = Math.max(
         1,
         Number(getTemplate.parts_count || 1),
@@ -144,7 +140,7 @@ export class MessagesService {
         );
       }
 
-      // Calculate total cost
+      // Calculate total cost - parts_count qanchalik bo'lsa, har bir kontakt uchun shunchalik marta narx hisoblanadi
       const partsCount: number = Math.max(
         1,
         Number(getTemplate.parts_count || 1),
