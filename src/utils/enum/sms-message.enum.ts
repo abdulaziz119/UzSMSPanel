@@ -5,3 +5,8 @@ export enum MessageStatusEnum {
   FAILED = 'failed',
   REJECTED = 'rejected',
 }
+export enum MessageTypeEnum {
+  SMS = 'sms',
+  FLASH = 'flash',
+  UNICODE = 'unicode',
+}

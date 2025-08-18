@@ -9,7 +9,6 @@ import { SmsContactModule } from './sms-contact/sms-contact.module';
 import { SmsTemplateModule } from './sms-template/sms-template.module';
 import { SmsSenderModule } from './sms-sender/sms-sender.module';
 import { SenderPriceModule } from './sender-price/sender-price.module';
-import { SmsCampaignModule } from './sms-campaign/sms-campaign.module';
 import { SmsMessageModule } from './sms-message/sms-message.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { TariffsFrontendModule } from './tariffs/tariffs.module';
@@ -28,7 +27,6 @@ import { MessagesModule } from './messages/messages.module';
     SmsSenderModule,
     SenderPriceModule,
     MessagesModule,
-    // SmsCampaignModule,
     // SmsMessageModule,
     TransactionModule,
     TariffsFrontendModule,

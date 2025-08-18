@@ -14,8 +14,10 @@ import { UserEntity } from '../entity/user.entity';
 import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
-import { MessageStatusEnum } from '../utils/enum/sms-message.enum';
-import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
+import {
+  MessageStatusEnum,
+  MessageTypeEnum,
+} from '../utils/enum/sms-message.enum';
 import {
   MessageFilterDto,
   MessageStatsDto,

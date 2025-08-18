@@ -18,17 +18,13 @@ import {
   TariffFilterDto,
   UpdateTariffDto,
 } from '../utils/dto/tariffs.dto';
-import { SmsPriceEntity } from '../entity/sms-price.entity';
 import { CountryEntity } from '../entity/country.entity';
-import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
 
 @Injectable()
 export class TariffService {
   constructor(
     @Inject(MODELS.TARIFFS)
     private readonly tariffRepo: Repository<TariffEntity>,
-    @Inject(MODELS.SMS_PRICE)
-    private readonly smsPriceRepo: Repository<SmsPriceEntity>,
     @Inject(MODELS.COUNTRY)
     private readonly countryRepo: Repository<CountryEntity>,
   ) {}
@@ -355,20 +351,20 @@ export class TariffService {
         .leftJoin(
           'sms_prices',
           'sms',
-          "sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg",
+          'sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg',
           { msg: MessageTypeEnum.SMS },
         )
         .select([
           'COUNT(*) as total_tariffs',
-          "COUNT(CASE WHEN tariff.public = true THEN 1 END) as public_tariffs",
-          "COUNT(CASE WHEN tariff.public = false THEN 1 END) as private_tariffs",
+          'COUNT(CASE WHEN tariff.public = true THEN 1 END) as public_tariffs',
+          'COUNT(CASE WHEN tariff.public = false THEN 1 END) as private_tariffs',
           'COUNT(DISTINCT tariff.operator) as total_operators',
           'AVG(tariff.price) as average_price',
           'MIN(tariff.price) as min_price',
           'MAX(tariff.price) as max_price',
           'AVG(sms.price_per_sms) as average_provider_price',
           // average margin percent = AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 )
-          "AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as average_margin_percent",
+          'AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as average_margin_percent',
         ])
         .getRawOne();
 
@@ -379,7 +375,7 @@ export class TariffService {
         .leftJoin(
           'sms_prices',
           'sms',
-          "sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg",
+          'sms.operator = LOWER(tariff.operator) AND sms.country_code = country.code AND sms.message_type = :msg',
           { msg: MessageTypeEnum.SMS },
         )
         .select([
@@ -389,7 +385,7 @@ export class TariffService {
           'MIN(tariff.price) as min_price',
           'MAX(tariff.price) as max_price',
           'AVG(sms.price_per_sms) as avg_provider_price',
-          "AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as avg_margin_percent",
+          'AVG( (tariff.price - sms.price_per_sms) / NULLIF(sms.price_per_sms,0) * 100 ) as avg_margin_percent',
         ])
         .groupBy('tariff.operator')
         .orderBy('tariff_count', 'DESC')

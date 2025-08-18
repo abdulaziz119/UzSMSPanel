@@ -4,12 +4,20 @@ import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { SmsGroupEntity } from './sms-group.entity';
 import { SmsTemplateEntity } from './sms-template.entity';
-import { MessageStatusEnum } from '../utils/enum/sms-message.enum';
-import { MessageTypeEnum } from '../utils/enum/sms-price.enum';
+import {
+  MessageStatusEnum,
+  MessageTypeEnum,
+} from '../utils/enum/sms-message.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_messages' })
-@Index(['user_id', 'status', 'created_at'])
-@Index(['phone', 'created_at'])
+@Index([
+  'user_id',
+  'status',
+  'created_at',
+  'phone',
+  'price_provider_sms',
+  'cost',
+])
 export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
@@ -57,6 +65,9 @@ export class SmsMessageEntity extends BaseEntity {
 
   @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
   cost: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  price_provider_sms: number; //provider dan olingan asil nar
 
   @Column({ type: 'text', nullable: true })
   error_message: string | null;
