@@ -38,24 +38,6 @@ export const databaseProviders = [
         synchronize: DB_SYNCHRONIZE,
         logging: false,
         schema: DB_SCHEMA,
-        // Optimized performance configurations
-        extra: {
-          max: 100, // increased maximum pool size
-          min: 10,  // increased minimum pool size
-          idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 3000, // reduced timeout
-          acquireTimeoutMillis: 8000, // reduced timeout
-          timezone: 'UTC',
-          // PostgreSQL specific optimizations
-          statement_timeout: 30000,
-          query_timeout: 15000,
-          application_name: 'UzSMSPanel',
-        },
-        // Query performance optimizations
-        cache: {
-          duration: 60000, // 1 minute cache
-          type: 'redis',
-        },
         entities: [
           TransactionEntity,
           ContactEntity,
@@ -71,7 +53,9 @@ export const databaseProviders = [
           UserEntity,
           FileEntity,
         ],
-        // Removed extra timezone comment block
+        // extra: {
+        //   timezone: 'UTC',
+        // },
       });
       await dataSource.initialize();
       return dataSource;

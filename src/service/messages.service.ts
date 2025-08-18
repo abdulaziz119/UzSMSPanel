@@ -19,7 +19,6 @@ import { SmsContactService } from './sms-contact.service';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { SmsMessageService } from './sms-message.service';
-import { RedisCacheService } from './redis-cache.service';
 import { BatchProcessor } from '../utils/batch-processor.util';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
 
@@ -28,7 +27,6 @@ export class MessagesService {
   constructor(
     private readonly smsMessageService: SmsMessageService,
     private readonly smsContactService: SmsContactService,
-    private readonly cache: RedisCacheService,
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     @Inject(MODELS.SMS_CONTACT)
@@ -40,49 +38,32 @@ export class MessagesService {
     user_id: number,
     balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity>> {
-    // 1) Template cache with longer TTL
-    const templateCacheKey = `tpl:${Buffer.from(payload.message).toString('base64')}`;
-    const getTemplate = await this.cache.getOrSet<SmsTemplateEntity | null>(
-      templateCacheKey,
-      async () =>
-        this.smsTemplateRepo.findOne({
-          where: {
-            content: payload.message,
-            status: TemplateStatusEnum.ACTIVE,
-          },
-        }),
-      300, // Increased from 60 to 300 seconds
-    );
+    // 1) Template lookup
+    const getTemplate = await this.smsTemplateRepo.findOne({
+      where: {
+        content: payload.message,
+        status: TemplateStatusEnum.ACTIVE,
+      },
+    });
     if (!getTemplate)
       throw new NotFoundException('Template not found or inactive');
 
-    // 2) Optimized phone validation with cache
+    // 2) Phone validation
     const normalizedPhone: string = await this.smsContactService.normalizePhone(
       payload.phone,
     );
-    
-    // Cache phone validation results
-    const phoneValidationKey = `phone_val:${normalizedPhone}`;
-    const status: SMSContactStatusEnum = await this.cache.getOrSet<SMSContactStatusEnum>(
-      phoneValidationKey,
-      async () => this.smsContactService.validatePhoneNumber(normalizedPhone),
-      1800, // 30 minutes cache for phone validation
-    );
-    
+
+    const status: SMSContactStatusEnum =
+      await this.smsContactService.validatePhoneNumber(normalizedPhone);
+
     if (status === SMSContactStatusEnum.INVALID_FORMAT)
       throw new BadRequestException('Invalid phone number format');
     if (status === SMSContactStatusEnum.BANNED_NUMBER)
       throw new BadRequestException('Banned phone number');
 
-    // 3) Tariff cache with longer TTL
-    const tariffCacheKey = `tariff:${normalizedPhone.substring(0, 5)}`;
+    // 3) Tariff lookup
     const tariff: TariffEntity | null =
-      await this.cache.getOrSet<TariffEntity | null>(
-        tariffCacheKey,
-        async () =>
-          this.smsContactService.resolveTariffForPhone(normalizedPhone),
-        600, // Increased from 300 to 600 seconds
-      );
+      await this.smsContactService.resolveTariffForPhone(normalizedPhone);
     if (!tariff)
       throw new NotFoundException('Tariff not found for this phone number');
 
@@ -119,39 +100,31 @@ export class MessagesService {
     user_id: number,
     balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity[]>> {
-    // 1) Template cache with longer TTL
-    const templateCacheKey = `tpl:${Buffer.from(payload.message).toString('base64')}`;
-    const getTemplate = await this.cache.getOrSet<SmsTemplateEntity | null>(
-      templateCacheKey,
-      async () =>
-        this.smsTemplateRepo.findOne({ where: { content: payload.message } }),
-      300, // Increased from 60 to 300 seconds
-    );
+    // 1) Template lookup
+    const getTemplate = await this.smsTemplateRepo.findOne({
+      where: { content: payload.message },
+    });
     if (!getTemplate) throw new NotFoundException('Template not found');
 
-    // 2) Group existence check with cache
-    const groupCacheKey = `group_exists:${payload.group_id}`;
-    const hasAny = await this.cache.getOrSet<boolean>(
-      groupCacheKey,
-      async () => {
-        const contact = await this.smsContactRepo.findOne({
-          where: { group_id: payload.group_id },
-        });
-        return !!contact;
-      },
-      600, // 10 minutes cache
-    );
+    // 2) Group existence check
+    const contact = await this.smsContactRepo.findOne({
+      where: { group_id: payload.group_id },
+    });
+    const hasAny = !!contact;
     if (!hasAny) throw new NotFoundException('No contacts found for group');
 
-    // 3) Valid contacts with tariffs (with cache)
-    const contactsCacheKey = `group_contacts:${payload.group_id}`;
-    const data = await this.cache.getOrSet(
-      contactsCacheKey,
-      async () => this.smsContactService.getValidContactsWithTariffs(payload.group_id),
-      300, // 5 minutes cache for contacts
+    // 3) Valid contacts with tariffs
+    const data = await this.smsContactService.getValidContactsWithTariffs(
+      payload.group_id,
     );
-    
-    const items = data.map((d) => ({
+
+    type ContactWithTariff = {
+      phone: string;
+      tariff: TariffEntity;
+      unitPrice: number;
+    };
+
+    const items: ContactWithTariff[] = data.map((d) => ({
       phone: d.contact.phone,
       tariff: d.tariff,
       unitPrice: Number(d.tariff.price || 0),

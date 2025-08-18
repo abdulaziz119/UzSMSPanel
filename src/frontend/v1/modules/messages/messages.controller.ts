@@ -1,4 +1,6 @@
 import { Body, Controller, HttpCode, Post, Headers } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -7,23 +9,27 @@ import {
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
-import { SingleResponse } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { User } from '../auth/decorators/user.decorator';
-import { MessagesService } from '../../../../service/messages.service';
 import { SendToContactDto, SendToGroupDto } from './dto/messages.dto';
-import { SmsMessageEntity } from '../../../../entity/sms-message.entity';
 import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
+import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
+import {
+  SendToContactJobData,
+  SendToGroupJobData,
+} from '../../../../queue/messages.queue';
 
 @ApiBearerAuth()
 @ApiTags('messages')
 @Controller({ path: '/frontend/messages', version: '1' })
 export class MessagesController {
-  constructor(private readonly messageService: MessagesService) {}
+  constructor(
+    @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
+  ) {}
 
   @Post('/send-contact')
-  @HttpCode(200)
+  @HttpCode(202)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
@@ -31,21 +37,53 @@ export class MessagesController {
     @Body() body: SendToContactDto,
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
-  ): Promise<SingleResponse<SmsMessageEntity>> {
-    return await this.messageService.sendToContact(body, user_id, balance);
+  ): Promise<{ jobId: string; message: string }> {
+    const job = await this.messageQueue.add(
+      'send-to-contact',
+      {
+        payload: body,
+        user_id,
+        balance,
+      } as SendToContactJobData,
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+      },
+    );
+
+    return {
+      jobId: job.id.toString(),
+      message: 'Message queued for processing',
+    };
   }
 
   @Post('/send-group')
-  @HttpCode(200)
+  @HttpCode(202)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
-  @ApiResponse({ status: 201, description: 'Group messages queued' })
+  @ApiResponse({ status: 202, description: 'Group messages queued' })
   async sendGroup(
     @Body() body: SendToGroupDto,
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
-  ): Promise<SingleResponse<SmsMessageEntity[]>> {
-    return await this.messageService.sendToGroup(body, user_id, balance);
+  ): Promise<{ jobId: string; message: string }> {
+    const job = await this.messageQueue.add(
+      'send-to-group',
+      {
+        payload: body,
+        user_id,
+        balance,
+      } as SendToGroupJobData,
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+      },
+    );
+
+    return {
+      jobId: job.id.toString(),
+      message: 'Group messages queued for processing',
+    };
   }
 }
