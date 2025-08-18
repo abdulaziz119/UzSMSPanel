@@ -6,15 +6,16 @@ import { smsMessageProviders } from '../../../../providers/sms-message.providers
 import { userProviders } from '../../../../providers/user.providers';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
+import { smsTemplateProviders } from '../../../../providers/sms-template.providers';
+import { SmsContactModule } from '../sms-contact/sms-contact.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, SmsContactModule],
   controllers: [SmsMessageController],
   providers: [
     ...smsMessageProviders,
     ...userProviders,
-    ...smsContactProviders,
-    ...tariffsProviders,
+    ...smsTemplateProviders,
     SmsMessageService,
   ],
 })

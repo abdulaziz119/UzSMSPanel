@@ -59,16 +59,16 @@ export class SmsMessageController {
   // /**
   //  * Yuborilgan SMSlar tarixi (filter va pagination bilan)
   //  */
-  // @Post('/history')
-  // @ApiBadRequestResponse({ type: ErrorResourceDto })
-  // @Roles(UserRoleEnum.CLIENT)
-  // @Auth(false)
-  // async getHistory(
-  //   @Body() filters: SmsHistoryFilterDto,
-  //   @User('id') user_id: number,
-  // ): Promise<PaginationResponse<SmsMessageEntity[]>> {
-  //   return await this.messageService.getHistory(filters, user_id);
-  // }
+  @Post('/history')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async getHistory(
+    @Body() filters: SmsHistoryFilterDto,
+    @User('id') user_id: number,
+  ): Promise<PaginationResponse<SmsMessageEntity[]>> {
+    return await this.messageService.getHistory(filters, user_id);
+  }
   //
   // /**
   //  * SMS statistikalari (umumiy yuborilgan, muvaffaqiyatli, muvaffaqiyatsiz)

@@ -27,7 +27,7 @@ import { MessagesModule } from './messages/messages.module';
     SmsSenderModule,
     SenderPriceModule,
     MessagesModule,
-    // SmsMessageModule,
+    SmsMessageModule,
     TransactionModule,
     TariffsFrontendModule,
   ],

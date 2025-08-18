@@ -24,7 +24,10 @@ import {
   SmsHistoryFilterDto,
 } from '../utils/dto/sms-message.dto';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
-import { SendToContactDto } from '../frontend/v1/modules/messages/dto/messages.dto';
+import {
+  SendToContactDto,
+  SendToGroupDto,
+} from '../frontend/v1/modules/messages/dto/messages.dto';
 import { SmsContactService } from './sms-contact.service';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { TariffEntity } from '../entity/tariffs.entity';
@@ -148,254 +151,186 @@ export class SmsMessageService {
   }
 
   // Send to all contacts in a group (queued as bulk)
-  // async sendToGroup(
-  //   payload: {
-  //     group_id: number;
-  //     message: string;
-  //     sender?: string;
-  //     batch_size?: number;
-  //   },
-  //   user_id: number,
-  // ): Promise<SingleResponse<{ job_id?: string }>> {
-  //   try {
-  //     // Fetch active contacts in group
-  //     const contacts = await this.smsContactRepo.find({
-  //       where: { group_id: payload.group_id },
-  //     });
-  //     if (!contacts || contacts.length === 0) {
-  //       throw new NotFoundException('No contacts found for group');
-  //     }
-  //
-  //     const phones = contacts.map((c) => c.phone).filter(Boolean);
-  //
-  //     const dto = {
-  //       phones,
-  //       message: payload.message,
-  //       sender: payload.sender,
-  //     } as any;
-  //
-  //     const res = await this.sendBulk(dto, user_id);
-  //     return { result: { job_id: res.result.batch_id } } as any;
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
+  async sendToGroup(
+    payload: SendToGroupDto,
+    user_id: number,
+  ): Promise<SingleResponse<SmsMessageEntity[]>> {
+    try {
+      const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
+        { where: { content: payload.message } },
+      );
+      if (!getTemplate) {
+        throw new NotFoundException('Template not found');
+      }
 
-  // async sendSingle(
-  //   payload: SendSingleSmsDto,
-  //   user_id: number,
-  // ): Promise<SingleResponse<{ message_id: string; cost: number }>> {
-  //   try {
-  //     // Foydalanuvchini tekshirish
-  //     const user = await this.userRepo.findOne({ where: { id: user_id } });
-  //     if (!user) {
-  //       throw new NotFoundException('User not found');
-  //     }
-  //
-  //     // SMS narxini hisoblash
-  //     const partsCount = Math.ceil(payload.message.length / 160);
-  //     const smsPrice = this.calculateSmsPrice(
-  //       payload.phone,
-  //       payload.message_type,
-  //     );
-  //     const totalCost = partsCount * smsPrice;
-  //
-  //     // Balansni tekshirish
-  //     if (user.balance < totalCost) {
-  //       throw new BadRequestException('Insufficient balance');
-  //     }
-  //
-  //     // Unique message ID yaratish
-  //     const messageId = this.generateMessageId();
-  //
-  //     // SMS yaratish
-  //     const smsMessage = this.messageRepo.create({
-  //       user_id,
-  //       message_id: messageId,
-  //       phone: payload.phone,
-  //       phone_ext: payload.phone_ext,
-  //       message: payload.message,
-  //       sender: payload.sender || 'UzSMS',
-  //       status: MessageStatusEnum.PENDING,
-  //       direction: MessageDirectionEnum.OUTBOUND,
-  //       message_type: payload.message_type || MessageTypeEnum.SMS,
-  //       operator: this.detectOperator(payload.phone),
-  //       parts_count: partsCount,
-  //       cost: totalCost,
-  //     });
-  //
-  //     const savedMessage = await this.messageRepo.save(smsMessage);
-  //
-  //     // Balansni yangilash
-  //     await this.userRepo.update(user_id, {
-  //       balance: user.balance - totalCost,
-  //     });
-  //
-  //     // SMS yuborish (bu yerda real SMS provider bilan integratsiya bo'lishi kerak)
-  //     await this.sendSmsToProvider(savedMessage);
-  //
-  //     return {
-  //       result: {
-  //         message_id: messageId,
-  //         cost: totalCost,
-  //       },
-  //     };
-  //   } catch (error) {
-  //     throw new HttpException(
-  //       { message: 'Error sending SMS', error: error.message },
-  //       HttpStatus.INTERNAL_SERVER_ERROR,
-  //     );
-  //   }
-  // }
+      // Fetch contacts of the group
+      const contacts: SmsContactEntity[] = await this.smsContactRepo.find({
+        where: { group_id: payload.group_id },
+      });
+      if (!contacts || contacts.length === 0) {
+        throw new NotFoundException('No contacts found for group');
+      }
 
-  // async sendBulk(
-  //   payload: SendBulkSmsDto,
-  //   user_id: number,
-  // ): Promise<
-  //   SingleResponse<{
-  //     batch_id: string;
-  //     total_cost: number;
-  //     messages_count: number;
-  //   }>
-  // > {
-  //   try {
-  //     // Foydalanuvchini tekshirish
-  //     const user = await this.userRepo.findOne({ where: { id: user_id } });
-  //     if (!user) {
-  //       throw new NotFoundException('User not found');
-  //     }
-  //
-  //     // Umumiy narxni hisoblash
-  //     const partsCount = Math.ceil(payload.message.length / 160);
-  //     let totalCost = 0;
-  //
-  //     for (const phone of payload.phones) {
-  //       const smsPrice = this.calculateSmsPrice(phone, payload.message_type);
-  //       totalCost += partsCount * smsPrice;
-  //     }
-  //
-  //     // Balansni tekshirish
-  //     if (user.balance < totalCost) {
-  //       throw new BadRequestException('Insufficient balance');
-  //     }
-  //
-  //     // Batch ID yaratish
-  //     const batchId = this.generateBatchId();
-  //
-  //     // SMS xabarlarini yaratish
-  //     const messages = [];
-  //     for (const phone of payload.phones) {
-  //       const messageId = this.generateMessageId();
-  //       const smsPrice = this.calculateSmsPrice(phone, payload.message_type);
-  //
-  //       const smsMessage = this.messageRepo.create({
-  //         user_id,
-  //         message_id: messageId,
-  //         batch_id: batchId,
-  //         phone,
-  //         message: payload.message,
-  //         sender: payload.sender || 'UzSMS',
-  //         status: MessageStatusEnum.PENDING,
-  //         direction: MessageDirectionEnum.OUTBOUND,
-  //         message_type: payload.message_type || MessageTypeEnum.SMS,
-  //         operator: this.detectOperator(phone),
-  //         parts_count: partsCount,
-  //         cost: partsCount * smsPrice,
-  //       });
-  //
-  //       messages.push(smsMessage);
-  //     }
-  //
-  //     await this.messageRepo.save(messages);
-  //
-  //     // Balansni yangilash
-  //     await this.userRepo.update(user_id, {
-  //       balance: user.balance - totalCost,
-  //     });
-  //
-  //     // SMS'larni yuborish
-  //     for (const message of messages) {
-  //       await this.sendSmsToProvider(message);
-  //     }
-  //
-  //     return {
-  //       result: {
-  //         batch_id: batchId,
-  //         total_cost: totalCost,
-  //         messages_count: payload.phones.length,
-  //       },
-  //     };
-  //   } catch (error) {
-  //     throw new HttpException(
-  //       { message: 'Error sending bulk SMS', error: error.message },
-  //       HttpStatus.INTERNAL_SERVER_ERROR,
-  //     );
-  //   }
-  // }
+      const partsCount: number = Math.max(
+        1,
+        Number(getTemplate.parts_count || 1),
+      );
 
-  // async getHistory(
-  //   filters: SmsHistoryFilterDto,
-  //   user_id: number,
-  // ): Promise<PaginationResponse<SmsMessageEntity[]>> {
-  //   const { page = 1, limit = 20 } = filters;
-  //   const skip = (page - 1) * limit;
-  //
-  //   try {
-  //     const queryBuilder = this.messageRepo
-  //       .createQueryBuilder('message')
-  //       .where('message.user_id = :user_id', { user_id })
-  //       .orderBy('message.created_at', 'DESC');
-  //
-  //     // Filtrlarni qo'llash
-  //     if (filters.date_from) {
-  //       queryBuilder.andWhere('message.created_at >= :date_from', {
-  //         date_from: filters.date_from,
-  //       });
-  //     }
-  //
-  //     if (filters.date_to) {
-  //       queryBuilder.andWhere('message.created_at <= :date_to', {
-  //         date_to: filters.date_to,
-  //       });
-  //     }
-  //
-  //     if (filters.status) {
-  //       queryBuilder.andWhere('message.status = :status', {
-  //         status: filters.status,
-  //       });
-  //     }
-  //
-  //     if (filters.phone) {
-  //       queryBuilder.andWhere('message.phone LIKE :phone', {
-  //         phone: `%${filters.phone}%`,
-  //       });
-  //     }
-  //
-  //     if (filters.sender) {
-  //       queryBuilder.andWhere('message.sender = :sender', {
-  //         sender: filters.sender,
-  //       });
-  //     }
-  //
-  //     const [messages, total] = await queryBuilder
-  //       .skip(skip)
-  //       .take(limit)
-  //       .getManyAndCount();
-  //
-  //     return getPaginationResponse<SmsMessageEntity>(
-  //       messages,
-  //       page,
-  //       limit,
-  //       total,
-  //     );
-  //   } catch (error) {
-  //     throw new HttpException(
-  //       { message: 'Error fetching SMS history', error: error.message },
-  //       HttpStatus.INTERNAL_SERVER_ERROR,
-  //     );
-  //   }
-  // }
-  //
+      const items: Array<{
+        phone: string;
+        tariff: TariffEntity;
+        unitPrice: number;
+      }> = [];
+      for (const c of contacts) {
+        const normalizedPhone = await this.smsContactService.normalizePhone(
+          c.phone,
+        );
+        const st =
+          await this.smsContactService.validatePhoneNumber(normalizedPhone);
+        if (st !== SMSContactStatusEnum.ACTIVE) continue;
+
+        const parsed =
+          parsePhoneNumberFromString(normalizedPhone) ||
+          parsePhoneNumberFromString(normalizedPhone, 'UZ');
+        const national = parsed ? parsed.nationalNumber || '' : '';
+        const candidates: string[] = [national.substring(0, 2)].filter(Boolean);
+        const tariff = await this.tariffRepo.findOne({
+          where: [...candidates.map((code) => ({ code }))],
+        });
+        if (!tariff) continue;
+
+        items.push({
+          phone: c.phone,
+          tariff,
+          unitPrice: Number(tariff.price || 0),
+        });
+      }
+
+      if (items.length === 0) {
+        throw new NotFoundException(
+          'No valid contacts with tariffs in the group',
+        );
+      }
+
+      const totalCost = items.reduce(
+        (sum, it) => sum + it.unitPrice * partsCount,
+        0,
+      );
+
+      const messages = await this.messageRepo.manager.transaction(
+        async (em) => {
+          const deductRes = await em
+            .createQueryBuilder()
+            .update(UserEntity)
+            .set({ balance: () => 'balance - :amount' })
+            .where('id = :id')
+            .andWhere('balance >= :amount')
+            .setParameters({ id: user_id, amount: totalCost })
+            .returning('*')
+            .execute();
+
+          if (deductRes.affected === 0) {
+            throw new BadRequestException('Insufficient balance');
+          }
+
+          const repo = em.getRepository(SmsMessageEntity);
+          const toSave = items.map((it) =>
+            repo.create({
+              user_id,
+              phone: it.phone,
+              message: payload.message,
+              status: MessageStatusEnum.SENT,
+              message_type: MessageTypeEnum.SMS,
+              operator: it.tariff.operator,
+              sms_template_id: getTemplate.id,
+              cost: it.unitPrice * partsCount,
+              price_provider_sms: it.tariff.price_provider_sms,
+            }),
+          );
+
+          const saved = await repo.save(toSave);
+
+          await em.getRepository(SmsTemplateEntity).update(
+            { id: getTemplate.id },
+            {
+              usage_count: () => `usage_count + ${saved.length}`,
+              last_used_at: new Date(),
+            },
+          );
+
+          return saved;
+        },
+      );
+
+      return { result: messages };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getHistory(
+    filters: SmsHistoryFilterDto,
+    user_id: number,
+  ): Promise<PaginationResponse<SmsMessageEntity[]>> {
+    const { page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    try {
+      const queryBuilder = this.messageRepo
+        .createQueryBuilder('message')
+        .where('message.user_id = :user_id', { user_id })
+        .orderBy('message.created_at', 'DESC');
+
+      // Filtrlarni qo'llash
+      if (filters.date_from) {
+        queryBuilder.andWhere('message.created_at >= :date_from', {
+          date_from: filters.date_from,
+        });
+      }
+
+      if (filters.date_to) {
+        queryBuilder.andWhere('message.created_at <= :date_to', {
+          date_to: filters.date_to,
+        });
+      }
+
+      if (filters.status) {
+        queryBuilder.andWhere('message.status = :status', {
+          status: filters.status,
+        });
+      }
+
+      if (filters.phone) {
+        queryBuilder.andWhere('message.phone LIKE :phone', {
+          phone: `%${filters.phone}%`,
+        });
+      }
+
+      if (filters.sender) {
+        queryBuilder.andWhere('message.sender = :sender', {
+          sender: filters.sender,
+        });
+      }
+
+      const [messages, total] = await queryBuilder
+        .skip(skip)
+        .take(limit)
+        .getManyAndCount();
+
+      return getPaginationResponse<SmsMessageEntity>(
+        messages,
+        page,
+        limit,
+        total,
+      );
+    } catch (error) {
+      throw new HttpException(
+        { message: 'Error fetching SMS history', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   // async getStatistics(user_id: number): Promise<SingleResponse<any>> {
   //   try {
   //     const totalSent = await this.messageRepo.count({

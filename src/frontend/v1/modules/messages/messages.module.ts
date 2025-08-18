@@ -17,7 +17,7 @@ import { SmsContactModule } from '../sms-contact/sms-contact.module';
     ...smsMessageProviders,
     ...userProviders,
     ...smsContactProviders,
-  ...smsTemplateProviders,
+    ...smsTemplateProviders,
     ...tariffsProviders,
     SmsMessageService,
     // frontend wrapper service

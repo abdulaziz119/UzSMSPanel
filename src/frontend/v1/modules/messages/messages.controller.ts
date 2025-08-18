@@ -34,16 +34,16 @@ export class MessagesController {
     return await this.messageService.sendToContact(body, user_id);
   }
 
-  // @Post('/send-group')
-  // @HttpCode(200)
-  // @ApiBadRequestResponse({ type: ErrorResourceDto })
-  // @Roles(UserRoleEnum.CLIENT)
-  // @Auth(false)
-  // @ApiResponse({ status: 201, description: 'Group messages queued' })
-  // async sendGroup(
-  //   @Body() body: SendToGroupDto,
-  //   @User('id') user_id: number,
-  // ): Promise<SingleResponse<{ job_id?: string }>> {
-  //   return await this.messageService.sendToGroup(body, user_id);
-  // }
+  @Post('/send-group')
+  @HttpCode(200)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  @ApiResponse({ status: 201, description: 'Group messages queued' })
+  async sendGroup(
+    @Body() body: SendToGroupDto,
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<SmsMessageEntity[]>> {
+    return await this.messageService.sendToGroup(body, user_id);
+  }
 }

@@ -34,18 +34,4 @@ export class SendToGroupDto {
   @IsString()
   @IsNotEmpty()
   message: string;
-
-  @ApiProperty({ example: 'SENDER', required: false })
-  @IsOptional()
-  @IsString()
-  sender?: string;
-
-  @ApiProperty({
-    example: 100,
-    description: 'Batch size (optional)',
-    required: false,
-  })
-  @IsOptional()
-  @IsNumber()
-  batch_size?: number;
 }
