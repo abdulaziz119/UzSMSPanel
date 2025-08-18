@@ -27,6 +27,7 @@ export class SmsContactQueue {
     result: {
       total: number;
       inserted: number;
+      skipped: number;
       failed: number;
       errors: Array<{ row: number; error: string }>;
     };
@@ -41,7 +42,7 @@ export class SmsContactQueue {
 
       if (!sheetName) {
         this.logger.warn('No sheet found in uploaded file');
-        return { result: { total: 0, inserted: 0, failed: 0, errors: [] } };
+        return { result: { total: 0, inserted: 0, skipped: 0, failed: 0, errors: [] } };
       }
 
       const sheet = workbook.Sheets[sheetName];
@@ -49,10 +50,11 @@ export class SmsContactQueue {
 
       if (!Array.isArray(rows) || rows.length === 0) {
         this.logger.warn('No data rows detected in the first sheet');
-        return { result: { total: 0, inserted: 0, failed: 0, errors: [] } };
+        return { result: { total: 0, inserted: 0, skipped: 0, failed: 0, errors: [] } };
       }
 
       let inserted: number = 0;
+      let skipped: number = 0;
       const errors: Array<{ row: number; error: string }> = [];
 
       // Use optimized parallel batch processing
@@ -68,12 +70,18 @@ export class SmsContactQueue {
             .toString()
             .trim();
 
-          if (!name || !phone) {
+          // Skip if name is empty (don't create contact)
+          if (!name) {
+            return { success: true as const, skipped: true };
+          }
+
+          // Phone is required if name exists
+          if (!phone) {
             return {
               success: false as const,
               error: {
                 row: rowIndex + 2,
-                error: 'Missing required fields (name/phone)',
+                error: 'Missing required field (phone)',
               },
             };
           }
@@ -104,8 +112,9 @@ export class SmsContactQueue {
 
         batchResults.forEach((res) => {
           if (res.status === 'fulfilled') {
-            if (res.value.success) inserted++;
-            else errors.push(res.value.error);
+            if (res.value.success && !res.value.skipped) inserted++;
+            else if (res.value.success && res.value.skipped) skipped++;
+            else if (!res.value.success) errors.push(res.value.error);
           } else {
             errors.push({ row: i + 2, error: String(res.reason) });
           }
@@ -125,7 +134,8 @@ export class SmsContactQueue {
         result: {
           total: rows.length,
           inserted,
-          failed: rows.length - inserted,
+          skipped,
+          failed: rows.length - inserted - skipped,
           errors,
         },
       };
