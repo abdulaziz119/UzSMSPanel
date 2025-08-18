@@ -1,5 +1,13 @@
-import { Process, Processor } from '@nestjs/bull';
-import { Job } from 'bull';
+import {
+  InjectQueue,
+  OnQueueCompleted,
+  OnQueueFailed,
+  OnQueueProgress,
+  OnQueueStalled,
+  Process,
+  Processor,
+} from '@nestjs/bull';
+import { Job, Queue } from 'bull';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { SmsContactService } from '../service/sms-contact.service';
 import { SMS_CONTACT_QUEUE } from '../constants/constants';
@@ -16,7 +24,10 @@ export interface ImportExcelJobData {
 export class SmsContactQueue {
   private readonly logger = new Logger(SmsContactQueue.name);
 
-  constructor(private readonly smsContactService: SmsContactService) {
+  constructor(
+    private readonly smsContactService: SmsContactService,
+    @InjectQueue(SMS_CONTACT_QUEUE) private readonly contactQueue: Queue,
+  ) {
     this.logger.log(
       `SMS Contact Queue processor initialized for queue: ${SMS_CONTACT_QUEUE}`,
     );
@@ -33,6 +44,8 @@ export class SmsContactQueue {
     };
   }> {
     try {
+      this.logger.log(`Processing import-excel job ${job.id}`);
+      await job.progress(0);
       const fileBuffer = Buffer.from(job.data.buffer || '', 'base64');
 
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
@@ -57,20 +70,31 @@ export class SmsContactQueue {
 
       let inserted: number = 0;
       let skipped: number = 0;
+      let processed: number = 0;
       const errors: Array<{ row: number; error: string }> = [];
 
-      // Process all rows in parallel without batching
+      const total = rows.length;
+
+      // Process all rows in parallel; update progress on each completion
       const allPromises = rows.map(async (r, rowIndex) => {
         const name = (r.name || r.Name || r.Nomi || '').toString().trim();
         const phone = (r.phone || r.Phone || r.Telefon || '').toString().trim();
 
         // Skip if name is empty (don't create contact)
         if (!name) {
+          processed++;
+          await job.progress(
+            Math.min(99, Math.round((processed / total) * 100)),
+          );
           return { success: true as const, skipped: true };
         }
 
         // Phone is required if name exists
         if (!phone) {
+          processed++;
+          await job.progress(
+            Math.min(99, Math.round((processed / total) * 100)),
+          );
           return {
             success: false as const,
             error: {
@@ -89,8 +113,16 @@ export class SmsContactQueue {
             group_id: Number(job.data?.defaults?.default_group_id || 0),
           });
 
+          processed++;
+          await job.progress(
+            Math.min(99, Math.round((processed / total) * 100)),
+          );
           return { success: true as const };
         } catch (e: any) {
+          processed++;
+          await job.progress(
+            Math.min(99, Math.round((processed / total) * 100)),
+          );
           return {
             success: false as const,
             error: {
@@ -132,5 +164,40 @@ export class SmsContactQueue {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  // Queue lifecycle handlers (observability)
+  @OnQueueCompleted()
+  async onCompleted(job: Job) {
+    try {
+      this.logger.log(
+        `Completed sms-contact job ${job.id} of type ${job.name}`,
+      );
+      const counts = await this.contactQueue.getJobCounts();
+      this.logger.debug(
+        `Queue counts -> waiting: ${counts.waiting}, active: ${counts.active}, delayed: ${counts.delayed}`,
+      );
+    } catch (e) {
+      this.logger.warn(`onCompleted hook error: ${e?.message || e}`);
+    }
+  }
+
+  @OnQueueFailed()
+  onFailed(job: Job, err: any) {
+    this.logger.error(
+      `Failed sms-contact job ${job.id} (${job.name}): ${err?.message || err}`,
+    );
+  }
+
+  @OnQueueProgress()
+  onProgress(job: Job, progress: number) {
+    this.logger.verbose(
+      `Progress sms-contact job ${job.id} (${job.name}): ${progress}%`,
+    );
+  }
+
+  @OnQueueStalled()
+  onStalled(job: Job) {
+    this.logger.warn(`Stalled sms-contact job ${job.id} (${job.name})`);
   }
 }
