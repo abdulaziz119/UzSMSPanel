@@ -1,0 +1,17 @@
+import {
+  SendToContactDto,
+  SendToGroupDto,
+} from '../../frontend/v1/modules/messages/dto/messages.dto';
+import { ContactTypeEnum } from '../enum/contact.enum';
+
+export interface SendToContactJobData {
+  payload: SendToContactDto;
+  user_id: number;
+  balance?: ContactTypeEnum;
+}
+
+export interface SendToGroupJobData {
+  payload: SendToGroupDto;
+  user_id: number;
+  balance?: ContactTypeEnum;
+}
