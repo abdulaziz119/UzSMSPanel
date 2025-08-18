@@ -38,15 +38,6 @@ export const databaseProviders = [
         synchronize: DB_SYNCHRONIZE,
         logging: false,
         schema: DB_SCHEMA,
-        // Performance optimizations
-        extra: {
-          max: 25, // maximum pool size
-          min: 5,  // minimum pool size
-          idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 5000,
-          acquireTimeoutMillis: 10000,
-          timezone: 'UTC',
-        },
         entities: [
           TransactionEntity,
           ContactEntity,
@@ -62,7 +53,9 @@ export const databaseProviders = [
           UserEntity,
           FileEntity,
         ],
-        // Removed extra timezone comment block
+        // extra: {
+        //   timezone: 'UTC',
+        // },
       });
       await dataSource.initialize();
       return dataSource;
