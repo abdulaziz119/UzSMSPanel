@@ -1,4 +1,4 @@
-import { Module, Logger, OnModuleInit } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { DatabaseModule } from '../../../../database/database.module';
 import { SmsContactController } from './sms-contact.controller';
@@ -31,20 +31,6 @@ import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
     SmsContactService,
     SmsContactQueue,
   ],
-  exports: [
-    SmsContactService,
-    ...smsContactProviders,
-    ...tariffsProviders,
-  ],
+  exports: [SmsContactService, ...smsContactProviders, ...tariffsProviders],
 })
-export class SmsContactModule implements OnModuleInit {
-  private readonly logger = new Logger(SmsContactModule.name);
-
-  onModuleInit() {
-    this.logger.log(
-      `🔗 Redis connection configured - Host: ${REDIS_HOST}, Port: ${REDIS_PORT}`,
-    );
-    this.logger.log(`📦 Queue registered - Name: ${SMS_CONTACT_QUEUE}`);
-    this.logger.log(`✅ SMS Contact Module initialized successfully`);
-  }
-}
+export class SmsContactModule {}

@@ -17,3 +17,4 @@ export const MODELS = {
 };
 
 export const SMS_CONTACT_QUEUE = 'smsContactNtfQueueGF';
+export const SMS_MESSAGE_QUEUE = 'smsMessageNtfQueueGF';

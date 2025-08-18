@@ -12,9 +12,20 @@ import { SmsContactModule } from '../sms-contact/sms-contact.module';
 import { smsGroupProviders } from '../../../../providers/sms-group.providers';
 import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
+import { BullModule } from '@nestjs/bull';
+import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
+import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
+import { SmsMessageQueue } from '../../../../queue/sms-message.queue';
 
 @Module({
-  imports: [DatabaseModule, SmsContactModule],
+  imports: [
+    DatabaseModule,
+    SmsContactModule,
+    BullModule.forRoot({
+      redis: { host: REDIS_HOST, port: Number(REDIS_PORT) },
+    }),
+    BullModule.registerQueue({ name: SMS_MESSAGE_QUEUE }),
+  ],
   controllers: [MessagesController],
   providers: [
     ...smsMessageProviders,
@@ -27,6 +38,8 @@ import { SmsContactService } from '../../../../service/sms-contact.service';
     SmsMessageService,
     // frontend wrapper service
     MessagesService,
+    // queue processor
+    SmsMessageQueue,
   ],
 })
 export class MessagesModule {}
