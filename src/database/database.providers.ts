@@ -38,14 +38,23 @@ export const databaseProviders = [
         synchronize: DB_SYNCHRONIZE,
         logging: false,
         schema: DB_SCHEMA,
-        // Performance optimizations
+        // Optimized performance configurations
         extra: {
-          max: 25, // maximum pool size
-          min: 5,  // minimum pool size
+          max: 100, // increased maximum pool size
+          min: 10,  // increased minimum pool size
           idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 5000,
-          acquireTimeoutMillis: 10000,
+          connectionTimeoutMillis: 3000, // reduced timeout
+          acquireTimeoutMillis: 8000, // reduced timeout
           timezone: 'UTC',
+          // PostgreSQL specific optimizations
+          statement_timeout: 30000,
+          query_timeout: 15000,
+          application_name: 'UzSMSPanel',
+        },
+        // Query performance optimizations
+        cache: {
+          duration: 60000, // 1 minute cache
+          type: 'redis',
         },
         entities: [
           TransactionEntity,

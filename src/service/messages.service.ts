@@ -40,7 +40,7 @@ export class MessagesService {
     user_id: number,
     balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity>> {
-    // 1) Template cache
+    // 1) Template cache with longer TTL
     const templateCacheKey = `tpl:${Buffer.from(payload.message).toString('base64')}`;
     const getTemplate = await this.cache.getOrSet<SmsTemplateEntity | null>(
       templateCacheKey,
@@ -51,35 +51,42 @@ export class MessagesService {
             status: TemplateStatusEnum.ACTIVE,
           },
         }),
-      60,
+      300, // Increased from 60 to 300 seconds
     );
     if (!getTemplate)
       throw new NotFoundException('Template not found or inactive');
 
-    // 2) Phone validate
+    // 2) Optimized phone validation with cache
     const normalizedPhone: string = await this.smsContactService.normalizePhone(
       payload.phone,
     );
-    const status: SMSContactStatusEnum =
-      await this.smsContactService.validatePhoneNumber(normalizedPhone);
+    
+    // Cache phone validation results
+    const phoneValidationKey = `phone_val:${normalizedPhone}`;
+    const status: SMSContactStatusEnum = await this.cache.getOrSet<SMSContactStatusEnum>(
+      phoneValidationKey,
+      async () => this.smsContactService.validatePhoneNumber(normalizedPhone),
+      1800, // 30 minutes cache for phone validation
+    );
+    
     if (status === SMSContactStatusEnum.INVALID_FORMAT)
       throw new BadRequestException('Invalid phone number format');
     if (status === SMSContactStatusEnum.BANNED_NUMBER)
       throw new BadRequestException('Banned phone number');
 
-    // 3) Tariff cache
+    // 3) Tariff cache with longer TTL
     const tariffCacheKey = `tariff:${normalizedPhone.substring(0, 5)}`;
     const tariff: TariffEntity | null =
       await this.cache.getOrSet<TariffEntity | null>(
         tariffCacheKey,
         async () =>
           this.smsContactService.resolveTariffForPhone(normalizedPhone),
-        300,
+        600, // Increased from 300 to 600 seconds
       );
     if (!tariff)
       throw new NotFoundException('Tariff not found for this phone number');
 
-    // 4) Pricing
+    // 4) Pricing calculation (unchanged)
     const partsCount: number = Math.max(
       1,
       Number(getTemplate.parts_count || 1),
@@ -112,26 +119,38 @@ export class MessagesService {
     user_id: number,
     balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity[]>> {
-    // 1) Template cache (no status check mentioned here originally)
+    // 1) Template cache with longer TTL
     const templateCacheKey = `tpl:${Buffer.from(payload.message).toString('base64')}`;
     const getTemplate = await this.cache.getOrSet<SmsTemplateEntity | null>(
       templateCacheKey,
       async () =>
         this.smsTemplateRepo.findOne({ where: { content: payload.message } }),
-      60,
+      300, // Increased from 60 to 300 seconds
     );
     if (!getTemplate) throw new NotFoundException('Template not found');
 
-    // 2) Group existence check
-    const hasAny = await this.smsContactRepo.findOne({
-      where: { group_id: payload.group_id },
-    });
+    // 2) Group existence check with cache
+    const groupCacheKey = `group_exists:${payload.group_id}`;
+    const hasAny = await this.cache.getOrSet<boolean>(
+      groupCacheKey,
+      async () => {
+        const contact = await this.smsContactRepo.findOne({
+          where: { group_id: payload.group_id },
+        });
+        return !!contact;
+      },
+      600, // 10 minutes cache
+    );
     if (!hasAny) throw new NotFoundException('No contacts found for group');
 
-    // 3) Valid contacts with tariffs
-    const data = await this.smsContactService.getValidContactsWithTariffs(
-      payload.group_id,
+    // 3) Valid contacts with tariffs (with cache)
+    const contactsCacheKey = `group_contacts:${payload.group_id}`;
+    const data = await this.cache.getOrSet(
+      contactsCacheKey,
+      async () => this.smsContactService.getValidContactsWithTariffs(payload.group_id),
+      300, // 5 minutes cache for contacts
     );
+    
     const items = data.map((d) => ({
       phone: d.contact.phone,
       tariff: d.tariff,
@@ -152,12 +171,13 @@ export class MessagesService {
       0,
     );
 
-    // 5) Batch for very large groups
-    const BATCH_SIZE = 100;
+    // 5) Optimized batch processing for very large groups
+    const BATCH_SIZE = 500; // Increased from 100 to 500
     if (items.length > BATCH_SIZE) {
-      const messages = await BatchProcessor.processBatch(
+      const messages = await BatchProcessor.processParallelBatches(
         items,
         BATCH_SIZE,
+        5, // 5 parallel batches instead of sequential
         async (batch) => {
           const batchSmsData = batch.map((it) => ({
             user_id,
@@ -182,7 +202,7 @@ export class MessagesService {
       return { result: messages.flat() };
     }
 
-    // 6) Regular bulk
+    // 6) Regular bulk processing
     const smsDataArray = items.map((it) => ({
       user_id,
       phone: it.phone,

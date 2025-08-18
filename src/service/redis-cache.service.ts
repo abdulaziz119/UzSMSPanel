@@ -52,10 +52,60 @@ export class RedisCacheService {
   }
 
   async getOrSet<T>(key: string, factory: () => Promise<T>, ttl?: number): Promise<T> {
+    try {
+      const cached = await this.get<T>(key);
+      if (cached !== undefined) return cached;
+      
+      const fresh = await factory();
+      // Use background set to avoid blocking
+      this.set(key, fresh, ttl).catch(err => 
+        this.logger.warn(`Background cache set failed for key=${key}: ${err?.message || err}`)
+      );
+      return fresh;
+    } catch (error) {
+      this.logger.error(`getOrSet failed for key=${key}: ${error?.message || error}`);
+      // Return fresh data even if cache fails
+      return await factory();
+    }
+  }
+
+  async getBatch<T>(keys: string[]): Promise<Map<string, T>> {
+    const results = new Map<string, T>();
+    try {
+      const values = await this.mget<T>(...keys);
+      keys.forEach((key, index) => {
+        const value = values[index];
+        if (value !== undefined) {
+          results.set(key, value);
+        }
+      });
+    } catch (e) {
+      this.logger.warn(`Batch get failed: ${e?.message || e}`);
+    }
+    return results;
+  }
+
+  async setBatch(items: Array<[string, any]>, ttl?: number): Promise<void> {
+    try {
+      await this.mset(items, ttl);
+    } catch (e) {
+      this.logger.warn(`Batch set failed: ${e?.message || e}`);
+    }
+  }
+
+  async getWithFallback<T>(
+    key: string,
+    fallback: () => Promise<T>,
+    ttl?: number
+  ): Promise<T> {
     const cached = await this.get<T>(key);
     if (cached !== undefined) return cached;
-    const fresh = await factory();
-    await this.set(key, fresh, ttl);
+
+    const fresh = await fallback();
+    // Set cache in background
+    this.set(key, fresh, ttl).catch(err =>
+      this.logger.warn(`Fallback cache set failed for key=${key}: ${err?.message || err}`)
+    );
     return fresh;
   }
 }

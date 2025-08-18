@@ -14,6 +14,7 @@ import { SmsHistoryFilterDto } from '../utils/dto/sms-message.dto';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
 import { BillingService } from './billing.service';
+import { PerformanceMonitor } from '../utils/performance-monitor.util';
 
 @Injectable()
 export class SmsMessageService {
@@ -25,6 +26,7 @@ export class SmsMessageService {
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     private readonly billingService: BillingService,
+    private readonly performanceMonitor: PerformanceMonitor,
   ) {}
 
   // Create a single SMS message with billing in transaction
@@ -86,7 +88,7 @@ export class SmsMessageService {
     });
   }
 
-  // Create bulk SMS messages with billing in transaction
+  // Create bulk SMS messages with billing in transaction (optimized)
   async createBulkSmsMessagesWithBilling(
     smsDataArray: Array<{
       user_id: number;
@@ -102,51 +104,73 @@ export class SmsMessageService {
     balance?: ContactTypeEnum,
     totalCost?: number,
   ): Promise<SmsMessageEntity[]> {
-    return await this.messageRepo.manager.transaction(async (em) => {
-      // Deduct total from contact or user balance
-      if (balance) {
-        await this.billingService.deductContactBalanceTransactional(
-          em,
-          smsDataArray[0].user_id,
-          balance,
-          totalCost,
-        );
-      } else {
-        await this.billingService.deductBalanceTransactional(
-          em,
-          smsDataArray[0].user_id,
-          totalCost,
-        );
+    return await this.performanceMonitor.measureAsync(
+      'createBulkSmsMessagesWithBilling',
+      async () => {
+        return await this.messageRepo.manager.transaction(async (em) => {
+          // Deduct total from contact or user balance
+          const billingTimer = this.performanceMonitor.startTimer('billing_deduction');
+          if (balance) {
+            await this.billingService.deductContactBalanceTransactional(
+              em,
+              smsDataArray[0].user_id,
+              balance,
+              totalCost,
+            );
+          } else {
+            await this.billingService.deductBalanceTransactional(
+              em,
+              smsDataArray[0].user_id,
+              totalCost,
+            );
+          }
+          billingTimer();
+
+          // Optimized bulk insert
+          const insertTimer = this.performanceMonitor.startTimer('bulk_insert');
+          const repo = em.getRepository(SmsMessageEntity);
+          
+          // Create entities in batches to avoid memory issues
+          const CHUNK_SIZE = 1000;
+          const savedMessages: SmsMessageEntity[] = [];
+          
+          for (let i = 0; i < smsDataArray.length; i += CHUNK_SIZE) {
+            const chunk = smsDataArray.slice(i, i + CHUNK_SIZE);
+            const toSave = chunk.map((smsData) =>
+              repo.create({
+                user_id: smsData.user_id,
+                phone: smsData.phone,
+                message: smsData.message,
+                status: MessageStatusEnum.SENT,
+                message_type: MessageTypeEnum.SMS,
+                operator: smsData.operator,
+                sms_template_id: smsData.sms_template_id,
+                cost: smsData.cost,
+                price_provider_sms: smsData.price_provider_sms,
+                group_id: smsData.group_id,
+              }),
+            );
+
+            const chunkSaved = await repo.save(toSave, { chunk: 500 });
+            savedMessages.push(...chunkSaved);
+          }
+          insertTimer();
+
+          // Update template usage with single query
+          const templateTimer = this.performanceMonitor.startTimer('template_update');
+          await em.getRepository(SmsTemplateEntity).update(
+            { id: template.id },
+            {
+              usage_count: () => `usage_count + ${savedMessages.length}`,
+              last_used_at: new Date(),
+            },
+          );
+          templateTimer();
+
+          return savedMessages;
+        });
       }
-
-      const repo = em.getRepository(SmsMessageEntity);
-      const toSave = smsDataArray.map((smsData) =>
-        repo.create({
-          user_id: smsData.user_id,
-          phone: smsData.phone,
-          message: smsData.message,
-          status: MessageStatusEnum.SENT,
-          message_type: MessageTypeEnum.SMS,
-          operator: smsData.operator,
-          sms_template_id: smsData.sms_template_id,
-          cost: smsData.cost,
-          price_provider_sms: smsData.price_provider_sms,
-          group_id: smsData.group_id,
-        }),
-      );
-
-      const saved = await repo.save(toSave);
-
-      await em.getRepository(SmsTemplateEntity).update(
-        { id: template.id },
-        {
-          usage_count: () => `usage_count + ${saved.length}`,
-          last_used_at: new Date(),
-        },
-      );
-
-      return saved;
-    });
+    );
   }
 
   async getHistory(

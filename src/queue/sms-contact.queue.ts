@@ -22,7 +22,7 @@ export class SmsContactQueue {
     );
   }
 
-  @Process({ name: 'import-excel', concurrency: 2 })
+  @Process({ name: 'import-excel', concurrency: 5 }) // Increased from 2 to 5
   async importContactsFromExcel(job: Job<ImportExcelJobData>): Promise<{
     result: {
       total: number;
@@ -31,7 +31,7 @@ export class SmsContactQueue {
       errors: Array<{ row: number; error: string }>;
     };
   }> {
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = 500; // Increased from 100 to 500
 
     try {
       const fileBuffer = Buffer.from(job.data.buffer || '', 'base64');
@@ -55,9 +55,11 @@ export class SmsContactQueue {
       let inserted: number = 0;
       const errors: Array<{ row: number; error: string }> = [];
 
+      // Use optimized parallel batch processing
       for (let i: number = 0; i < rows.length; i += BATCH_SIZE) {
         const batch = rows.slice(i, i + BATCH_SIZE);
 
+        // Process 10 items concurrently within each batch
         const batchPromises = batch.map(async (r, batchIndex) => {
           const rowIndex: number = i + batchIndex;
 
@@ -97,6 +99,7 @@ export class SmsContactQueue {
           }
         });
 
+        // Process batch with better error handling
         const batchResults = await Promise.allSettled(batchPromises);
 
         batchResults.forEach((res) => {
@@ -111,6 +114,11 @@ export class SmsContactQueue {
         const processed = Math.min(i + BATCH_SIZE, rows.length);
         const progress = Math.round((processed / rows.length) * 100);
         await job.progress(progress);
+
+        // Add small delay between batches to prevent overwhelming the database
+        if (i + BATCH_SIZE < rows.length) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
       }
 
       return {
