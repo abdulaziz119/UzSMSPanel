@@ -9,6 +9,9 @@ import { DatabaseModule } from '../../../../database/database.module';
 import { MessagesService } from '../../../../service/messages.service';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
 import { SmsContactModule } from '../sms-contact/sms-contact.module';
+import { smsGroupProviders } from '../../../../providers/sms-group.providers';
+import { BillingService } from '../../../../service/billing.service';
+import { SmsContactService } from '../../../../service/sms-contact.service';
 
 @Module({
   imports: [DatabaseModule, SmsContactModule],
@@ -16,10 +19,13 @@ import { SmsContactModule } from '../sms-contact/sms-contact.module';
   providers: [
     ...smsMessageProviders,
     ...userProviders,
-    ...smsContactProviders,
-    ...smsTemplateProviders,
-    ...tariffsProviders,
-    SmsMessageService,
+  ...smsContactProviders,
+  ...smsTemplateProviders,
+  ...smsGroupProviders,
+  ...tariffsProviders,
+  SmsContactService,
+  BillingService,
+  SmsMessageService,
     // frontend wrapper service
     MessagesService,
   ],

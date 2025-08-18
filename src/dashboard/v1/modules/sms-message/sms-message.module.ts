@@ -7,7 +7,10 @@ import { userProviders } from '../../../../providers/user.providers';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
 import { SmsContactModule } from '../../../../frontend/v1/modules/sms-contact/sms-contact.module';
+import { smsGroupProviders } from '../../../../providers/sms-group.providers';
 import { smsTemplateProviders } from '../../../../providers/sms-template.providers';
+import { BillingService } from '../../../../service/billing.service';
+import { SmsContactService } from '../../../../service/sms-contact.service';
 
 @Module({
   imports: [DatabaseModule, SmsContactModule],
@@ -16,8 +19,11 @@ import { smsTemplateProviders } from '../../../../providers/sms-template.provide
     ...smsMessageProviders,
     ...userProviders,
     ...smsContactProviders,
+  ...smsGroupProviders,
   ...smsTemplateProviders,
     ...tariffsProviders,
+  SmsContactService,
+  BillingService,
     SmsMessageService,
   ],
 })

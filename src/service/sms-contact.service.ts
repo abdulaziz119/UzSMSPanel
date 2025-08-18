@@ -69,6 +69,39 @@ export class SmsContactService {
     }
   }
 
+  /**
+   * Resolve tariff by a phone string. Returns TariffEntity or null when not found.
+   */
+  async resolveTariffForPhone(phone: string): Promise<TariffEntity | null> {
+    try {
+      const normalized = await this.normalizePhone(phone);
+      const parsed = parsePhoneNumberFromString(normalized) || parsePhoneNumberFromString(normalized, 'UZ');
+      const national = parsed ? parsed.nationalNumber || '' : '';
+      const candidates: string[] = [national.substring(0, 3), national.substring(0, 2)].filter(Boolean);
+      const tariff = await this.tariffRepo.findOne({ where: candidates.map((code) => ({ code })) });
+      return tariff || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Fetch contacts in group and return only those active and that have a tariff.
+   */
+  async getValidContactsWithTariffs(group_id: number): Promise<Array<{ contact: SmsContactEntity; tariff: TariffEntity }>> {
+    const contacts: SmsContactEntity[] = await this.smsContactRepo.find({ where: { group_id } });
+    const out: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> = [];
+    for (const c of contacts) {
+      const normalizedPhone = await this.normalizePhone(c.phone);
+      const st = await this.validatePhoneNumber(normalizedPhone);
+      if (st !== SMSContactStatusEnum.ACTIVE) continue;
+      const tariff = await this.resolveTariffForPhone(normalizedPhone);
+      if (!tariff) continue;
+      out.push({ contact: c, tariff });
+    }
+    return out;
+  }
+
   async normalizePhone(phone: string) {
     try {
       let parsed = parsePhoneNumberFromString(phone);

@@ -7,6 +7,7 @@ import {
   SendToContactDto,
   SendToGroupDto,
 } from '../frontend/v1/modules/messages/dto/messages.dto';
+import { ContactTypeEnum } from '../utils/enum/contact.enum';
 
 @Injectable()
 export class MessagesService {
@@ -16,11 +17,23 @@ export class MessagesService {
     private readonly smsContactRepo?: Repository<SmsContactEntity>,
   ) {}
 
-  async sendToContact(payload: SendToContactDto, user_id: number) {
-    return await this.smsMessageService.sendToContact(payload, user_id);
+  async sendToContact(
+    payload: SendToContactDto,
+    user_id: number,
+    balance?: ContactTypeEnum,
+  ) {
+    return await this.smsMessageService.sendToContact(
+      payload,
+      user_id,
+      balance,
+    );
   }
 
-  async sendToGroup(payload: SendToGroupDto, user_id: number) {
-    return await this.smsMessageService.sendToGroup(payload, user_id);
+  async sendToGroup(
+    payload: SendToGroupDto,
+    user_id: number,
+    balance?: ContactTypeEnum,
+  ) {
+    return await this.smsMessageService.sendToGroup(payload, user_id, balance);
   }
 }

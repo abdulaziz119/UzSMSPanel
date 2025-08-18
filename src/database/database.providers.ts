@@ -8,6 +8,7 @@ import {
   DB_PORT,
   DB_SCHEMA,
   DB_USER,
+  DB_SYNCHRONIZE,
 } from '../utils/env/env';
 import { TransactionEntity } from '../entity/transaction.entity';
 import { ContactEntity } from '../entity/contact.entity';
@@ -33,8 +34,8 @@ export const databaseProviders = [
         port: DB_PORT,
         username: DB_USER,
         password: DB_PASS,
-        database: DB_DB,
-        synchronize: true,
+  database: DB_DB,
+  synchronize: DB_SYNCHRONIZE,
         logging: false,
         schema: DB_SCHEMA,
         entities: [

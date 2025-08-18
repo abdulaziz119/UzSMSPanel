@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Headers } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -15,6 +15,7 @@ import { User } from '../auth/decorators/user.decorator';
 import { MessagesService } from '../../../../service/messages.service';
 import { SendToContactDto, SendToGroupDto } from './dto/messages.dto';
 import { SmsMessageEntity } from '../../../../entity/sms-message.entity';
+import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 
 @ApiBearerAuth()
 @ApiTags('messages')
@@ -30,8 +31,9 @@ export class MessagesController {
   async sendContact(
     @Body() body: SendToContactDto,
     @User('id') user_id: number,
+    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity>> {
-    return await this.messageService.sendToContact(body, user_id);
+    return await this.messageService.sendToContact(body, user_id, balance);
   }
 
   @Post('/send-group')
@@ -43,7 +45,8 @@ export class MessagesController {
   async sendGroup(
     @Body() body: SendToGroupDto,
     @User('id') user_id: number,
+    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity[]>> {
-    return await this.messageService.sendToGroup(body, user_id);
+    return await this.messageService.sendToGroup(body, user_id, balance);
   }
 }

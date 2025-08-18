@@ -14,7 +14,11 @@ export class ContactEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
 
-  @ManyToOne(() => UserEntity, (user) => user.contacts, cascadeUpdateRelationOptions)
+  @ManyToOne(
+    () => UserEntity,
+    (user) => user.contacts,
+    cascadeUpdateRelationOptions,
+  )
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
@@ -106,4 +110,7 @@ export class ContactEntity extends BaseEntity {
 
   @Column({ type: 'enum', enum: language, default: language.UZ })
   lang: language;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  balance: number;
 }

@@ -7,6 +7,7 @@ const DB_USER = process.env.DB_USERNAME || '';
 const DB_DB = process.env.DB_DATABASE || '';
 const DB_PASS = process.env.DB_PASSWORD || '';
 const DB_SCHEMA = process.env.DB_SCHEMA || '';
+const DB_SYNCHRONIZE = (process.env.DB_SYNCHRONIZE || 'false').toLowerCase() === 'true';
 
 const REDIS_HOST = process.env.REDIS_HOST || '';
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
@@ -37,6 +38,7 @@ export {
   DB_PASS,
   DB_PORT,
   DB_SCHEMA,
+  DB_SYNCHRONIZE,
   DB_USER,
   FRONTEND_PORT,
   JWT_SECRET,

@@ -29,10 +29,12 @@ import {
   SendToGroupDto,
 } from '../frontend/v1/modules/messages/dto/messages.dto';
 import { SmsContactService } from './sms-contact.service';
+import { BillingService } from './billing.service';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
+import { ContactTypeEnum } from '../utils/enum/contact.enum';
 
 @Injectable()
 export class SmsMessageService {
@@ -48,11 +50,13 @@ export class SmsMessageService {
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,
     private readonly smsContactService: SmsContactService,
+    private readonly billingService: BillingService,
   ) {}
 
   async sendToContact(
     payload: SendToContactDto,
     user_id: number,
+    balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity>> {
     try {
       const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
@@ -78,16 +82,8 @@ export class SmsMessageService {
         throw new BadRequestException('Banned phone number');
       }
       // Determine tariff for the phone and write operator to message
-      const parsed =
-        parsePhoneNumberFromString(normalizedPhone) ||
-        parsePhoneNumberFromString(normalizedPhone, 'UZ');
-
-      const national = parsed ? parsed.nationalNumber || '' : '';
-      const candidates: string[] = [national.substring(0, 2)].filter(Boolean);
-
-      const tariff: TariffEntity = await this.tariffRepo.findOne({
-        where: [...candidates.map((code) => ({ code }))],
-      });
+      const tariff: TariffEntity | null =
+        await this.smsContactService.resolveTariffForPhone(normalizedPhone);
 
       if (!tariff) {
         throw new NotFoundException('Tariff not found for this phone number');
@@ -103,21 +99,21 @@ export class SmsMessageService {
       // Transaction: check and deduct balance, then create message
       const savedSmsMessage: SmsMessageEntity =
         await this.messageRepo.manager.transaction(async (em) => {
-          // Try atomic balance deduction (only if sufficient)
-          const deductRes = await em
-            .createQueryBuilder()
-            .update(UserEntity)
-            .set({ balance: () => 'balance - :amount' })
-            .where('id = :id')
-            .andWhere('balance >= :amount')
-            .setParameters({ id: user_id, amount: totalCost })
-            .returning('*')
-            .execute();
-
-          if (deductRes.affected === 0) {
-            throw new BadRequestException('Insufficient balance');
+          // Deduct from contact balance when header is provided, otherwise from user balance
+          if (balance) {
+            await this.billingService.deductContactBalanceTransactional(
+              em,
+              user_id,
+              balance,
+              totalCost,
+            );
+          } else {
+            await this.billingService.deductBalanceTransactional(
+              em,
+              user_id,
+              totalCost,
+            );
           }
-
           // Create SMS message
           const msg = em.getRepository(SmsMessageEntity).create({
             user_id: user_id,
@@ -154,6 +150,7 @@ export class SmsMessageService {
   async sendToGroup(
     payload: SendToGroupDto,
     user_id: number,
+    balance?: ContactTypeEnum,
   ): Promise<SingleResponse<SmsMessageEntity[]>> {
     try {
       const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
@@ -176,35 +173,14 @@ export class SmsMessageService {
         Number(getTemplate.parts_count || 1),
       );
 
-      const items: Array<{
-        phone: string;
-        tariff: TariffEntity;
-        unitPrice: number;
-      }> = [];
-      for (const c of contacts) {
-        const normalizedPhone = await this.smsContactService.normalizePhone(
-          c.phone,
-        );
-        const st =
-          await this.smsContactService.validatePhoneNumber(normalizedPhone);
-        if (st !== SMSContactStatusEnum.ACTIVE) continue;
-
-        const parsed =
-          parsePhoneNumberFromString(normalizedPhone) ||
-          parsePhoneNumberFromString(normalizedPhone, 'UZ');
-        const national = parsed ? parsed.nationalNumber || '' : '';
-        const candidates: string[] = [national.substring(0, 2)].filter(Boolean);
-        const tariff = await this.tariffRepo.findOne({
-          where: [...candidates.map((code) => ({ code }))],
-        });
-        if (!tariff) continue;
-
-        items.push({
-          phone: c.phone,
-          tariff,
-          unitPrice: Number(tariff.price || 0),
-        });
-      }
+      const data = await this.smsContactService.getValidContactsWithTariffs(
+        payload.group_id,
+      );
+      const items = data.map((d) => ({
+        phone: d.contact.phone,
+        tariff: d.tariff,
+        unitPrice: Number(d.tariff.price || 0),
+      }));
 
       if (items.length === 0) {
         throw new NotFoundException(
@@ -219,18 +195,20 @@ export class SmsMessageService {
 
       const messages = await this.messageRepo.manager.transaction(
         async (em) => {
-          const deductRes = await em
-            .createQueryBuilder()
-            .update(UserEntity)
-            .set({ balance: () => 'balance - :amount' })
-            .where('id = :id')
-            .andWhere('balance >= :amount')
-            .setParameters({ id: user_id, amount: totalCost })
-            .returning('*')
-            .execute();
-
-          if (deductRes.affected === 0) {
-            throw new BadRequestException('Insufficient balance');
+          // Deduct total from contact or user balance
+          if (balance) {
+            await this.billingService.deductContactBalanceTransactional(
+              em,
+              user_id,
+              balance,
+              totalCost,
+            );
+          } else {
+            await this.billingService.deductBalanceTransactional(
+              em,
+              user_id,
+              totalCost,
+            );
           }
 
           const repo = em.getRepository(SmsMessageEntity);
@@ -245,6 +223,7 @@ export class SmsMessageService {
               sms_template_id: getTemplate.id,
               cost: it.unitPrice * partsCount,
               price_provider_sms: it.tariff.price_provider_sms,
+              group_id: payload.group_id,
             }),
           );
 
