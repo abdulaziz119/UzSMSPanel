@@ -7,19 +7,15 @@ import { smsContactProviders } from '../../../../providers/sms-contact.providers
 import { smsTemplateProviders } from '../../../../providers/sms-template.providers';
 import { DatabaseModule } from '../../../../database/database.module';
 import { MessagesService } from '../../../../service/messages.service';
-import { tariffsProviders } from '../../../../providers/tariffs.providers';
 import { SmsContactModule } from '../sms-contact/sms-contact.module';
 import { smsGroupProviders } from '../../../../providers/sms-group.providers';
 import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
 import { CacheModule } from '../../../../utils/cache/cache.module';
+import { PerformanceMonitor } from '../../../../utils/performance-monitor.util';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    SmsContactModule,
-  CacheModule,
-  ],
+  imports: [DatabaseModule, SmsContactModule, CacheModule],
   controllers: [MessagesController],
   providers: [
     ...smsMessageProviders,
@@ -29,6 +25,7 @@ import { CacheModule } from '../../../../utils/cache/cache.module';
     ...smsGroupProviders,
     SmsContactService,
     BillingService,
+    PerformanceMonitor,
     SmsMessageService,
     // frontend wrapper service
     MessagesService,
