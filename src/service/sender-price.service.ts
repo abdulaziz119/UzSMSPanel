@@ -14,7 +14,7 @@ import {
   UpdateSenderPriceDto,
   SenderPriceFilterDto,
 } from '../utils/dto/sender-price.dto';
-import { SingleResponse, ParamIdDto, PaginationParams } from '../utils/dto/dto';
+import { SingleResponse, ParamIdDto } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 
@@ -52,9 +52,6 @@ export class SenderPriceService {
       const saved = await this.senderPriceRepo.save(entity);
       return { result: saved };
     } catch (error) {
-      if (error instanceof ConflictException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error creating sender price', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -65,7 +62,15 @@ export class SenderPriceService {
   async findAll(
     query: SenderPriceFilterDto,
   ): Promise<PaginationResponse<SenderPriceEntity[]>> {
-    const { page = 1, limit = 10, operator, active, search, price_from, price_to } = query;
+    const {
+      page = 1,
+      limit = 10,
+      operator,
+      active,
+      search,
+      price_from,
+      price_to,
+    } = query;
     const skip: number = (page - 1) * limit;
 
     const qb = this.senderPriceRepo
@@ -108,7 +113,9 @@ export class SenderPriceService {
     return getPaginationResponse(items, page, limit, total);
   }
 
-  async findOne(params: ParamIdDto): Promise<SingleResponse<SenderPriceEntity>> {
+  async findOne(
+    params: ParamIdDto,
+  ): Promise<SingleResponse<SenderPriceEntity>> {
     const found = await this.senderPriceRepo.findOne({
       where: { id: params.id },
       relations: ['smsSenders'],
@@ -175,7 +182,7 @@ export class SenderPriceService {
     // Agar sender price ishlatilayotgan bo'lsa, o'chirib bo'lmaydi
     if (found.smsSenders && found.smsSenders.length > 0) {
       throw new ConflictException(
-        'Bu sender price ishlatilmoqda, o\'chirib bo\'lmaydi',
+        "Bu sender price ishlatilmoqda, o'chirib bo'lmaydi",
       );
     }
 

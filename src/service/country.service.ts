@@ -103,9 +103,6 @@ export class CountryService {
         result: country,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         error.message || 'Failed to fetch country',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -132,9 +129,6 @@ export class CountryService {
         result: updatedCountry,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         error.message || 'Failed to update country',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -156,9 +150,6 @@ export class CountryService {
 
       return { result: true };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         error.message || 'Failed to delete country',
         HttpStatus.INTERNAL_SERVER_ERROR,

@@ -9,28 +9,12 @@ import {
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { UserEntity } from '../entity/user.entity';
-import { SingleResponse, PaginationParams } from '../utils/dto/dto';
+import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { UserRoleEnum, BalanceOperationEnum } from '../utils/enum/user.enum';
-
-export interface UserFilterDto extends PaginationParams {
-  role?: UserRoleEnum;
-  blocked?: boolean;
-  search?: string;
-}
-
-export interface UpdateUserBalanceDto {
-  user_id: number;
-  amount: number;
-  operation: BalanceOperationEnum;
-  description?: string;
-}
-
-export interface BlockUserDto {
-  user_id: number;
-  reason?: string;
-}
+import { BlockUserDto, UpdateUserBalanceDto } from '../utils/dto/user.dto';
+import { UserFilterDto } from '../utils/interfaces/user.interfaces';
 
 @Injectable()
 export class UserService {
@@ -101,7 +85,9 @@ export class UserService {
       }
 
       if (filters.blocked !== undefined) {
-        queryBuilder.andWhere('user.block = :blocked', { blocked: filters.blocked });
+        queryBuilder.andWhere('user.block = :blocked', {
+          blocked: filters.blocked,
+        });
       }
 
       if (filters.search) {
@@ -125,7 +111,9 @@ export class UserService {
     }
   }
 
-  async blockUser(payload: BlockUserDto): Promise<SingleResponse<{ message: string }>> {
+  async blockUser(
+    payload: BlockUserDto,
+  ): Promise<SingleResponse<{ message: string }>> {
     try {
       const user = await this.userRepo.findOne({
         where: { id: payload.user_id },
@@ -152,7 +140,9 @@ export class UserService {
     }
   }
 
-  async unblockUser(payload: BlockUserDto): Promise<SingleResponse<{ message: string }>> {
+  async unblockUser(
+    payload: BlockUserDto,
+  ): Promise<SingleResponse<{ message: string }>> {
     try {
       const user = await this.userRepo.findOne({
         where: { id: payload.user_id },
@@ -226,7 +216,7 @@ export class UserService {
   async getUserStatistics(): Promise<SingleResponse<any>> {
     try {
       const totalUsers = await this.userRepo.count();
-      
+
       const clientUsers = await this.userRepo.count({
         where: { role: UserRoleEnum.CLIENT },
       });

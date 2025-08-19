@@ -6,7 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { In, Repository } from 'typeorm';
-import { parsePhoneNumberFromString, PhoneNumber } from 'libphonenumber-js';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { MODELS } from '../constants/constants';
 import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
@@ -22,10 +22,7 @@ import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { SmsGroupEntity } from '../entity/sms-group.entity';
 import { BatchProcessor } from '../utils/batch-processor.util';
 const XLSX = require('xlsx');
-import {
-  SmsContactExcelService,
-  ParsedContactRow,
-} from '../utils/sms.contact.excel.service';
+import { ParsedContactRow } from '../utils/sms.contact.excel.service';
 
 @Injectable()
 export class SmsContactService {
@@ -155,17 +152,28 @@ export class SmsContactService {
     group_id: number,
   ): Promise<Array<{ contact: SmsContactEntity; tariff: TariffEntity }>> {
     // Fetch only needed fields
-    const contacts: Pick<SmsContactEntity, 'id' | 'phone' | 'group_id' | 'name' | 'status'>[] =
-      await this.smsContactRepo.find({
-        where: { group_id },
-        select: { id: true, phone: true, group_id: true, name: true, status: true },
-      });
+    const contacts: Pick<
+      SmsContactEntity,
+      'id' | 'phone' | 'group_id' | 'name' | 'status'
+    >[] = await this.smsContactRepo.find({
+      where: { group_id },
+      select: {
+        id: true,
+        phone: true,
+        group_id: true,
+        name: true,
+        status: true,
+      },
+    });
 
     if (!contacts.length) return [];
 
     // Normalize phones and compute candidate codes
     const normalizedList: Array<{
-      contact: Pick<SmsContactEntity, 'id' | 'phone' | 'group_id' | 'name' | 'status'>;
+      contact: Pick<
+        SmsContactEntity,
+        'id' | 'phone' | 'group_id' | 'name' | 'status'
+      >;
       national: string;
       codes: string[];
     }> = [];
@@ -179,7 +187,10 @@ export class SmsContactService {
           parsePhoneNumberFromString(normalized, 'UZ');
         if (!parsed || !parsed.isValid()) continue;
         const national: string = (parsed.nationalNumber || '').toString();
-        const codes = [national.substring(0, 3), national.substring(0, 2)].filter(Boolean);
+        const codes = [
+          national.substring(0, 3),
+          national.substring(0, 2),
+        ].filter(Boolean);
         for (const code of codes) codeSet.add(code);
         normalizedList.push({ contact: c, national, codes });
       } catch {
@@ -191,17 +202,21 @@ export class SmsContactService {
 
     // Fetch all tariffs for required codes in one query
     const codesArr = Array.from(codeSet);
-    const tariffs = await this.tariffRepo.find({ where: { code: In(codesArr) } });
+    const tariffs = await this.tariffRepo.find({
+      where: { code: In(codesArr) },
+    });
     const tariffByCode = new Map<string, TariffEntity>();
     for (const t of tariffs) {
       if (t.code) tariffByCode.set(t.code, t);
     }
 
     // Build results preferring 3-digit match then 2-digit
-    const results: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> = [];
+    const results: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> =
+      [];
     for (const row of normalizedList) {
       const [c3, c2] = row.codes;
-      const tariff = (c3 && tariffByCode.get(c3)) || (c2 && tariffByCode.get(c2));
+      const tariff =
+        (c3 && tariffByCode.get(c3)) || (c2 && tariffByCode.get(c2));
       if (!tariff) continue;
       // Consider as ACTIVE when tariff exists (same semantics as previous path)
       results.push({ contact: row.contact as SmsContactEntity, tariff });

@@ -189,9 +189,6 @@ export class SmsGroupService {
 
       return { result: group };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new HttpException(
         { message: 'Error fetching group details', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
