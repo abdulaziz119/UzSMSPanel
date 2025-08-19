@@ -40,6 +40,7 @@ import { Queue } from 'bull';
 import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
 import { FileUploadResponseDto } from '../../../../utils/dto/file.dto';
 import * as multer from 'multer';
+import { SmsContactExcelService } from '../../../../utils/sms.contact.excel.service';
 
 @ApiBearerAuth()
 @ApiTags('sms-contact')
@@ -144,14 +145,31 @@ export class SmsContactController {
     if (!file || !body) {
       throw new BadRequestException('File is missing.');
     }
-    const res = await this.smsContactService.importFromExcel(
-      file,
-      body.default_group_id,
+    // Parse rows here to avoid Buffer serialization issues in Bull/Redis
+    const rows = SmsContactExcelService.parseContacts(file.buffer);
+    if (!rows.length) {
+      return {
+        success: true,
+        message: 'No valid rows found in file',
+        data: { jobId: null, created: 0, skipped: 0 },
+      } as any;
+    }
+
+    // Queue the job for background processing with parsed rows
+    const job = await this.smsContactQueue.add(
+      'import-excel',
+      { default_group_id: body.default_group_id, rows },
+      {
+        attempts: 3,
+        removeOnComplete: true,
+        backoff: { type: 'exponential', delay: 2000 },
+      },
     );
+
     return {
       success: true,
-      message: `Imported contacts: ${res.created}, skipped: ${res.skipped}`,
-      data: res,
+      message: 'Import queued',
+      data: { jobId: job.id },
     } as any;
   }
 
