@@ -13,8 +13,8 @@ import { PaginationParams } from './dto';
 export class CreateSmsContactDto {
   @ApiProperty({ example: 'John Doe', description: 'SMS contact name' })
   @IsString()
-  @IsNotEmpty()
-  name: string;
+  @IsOptional()
+  name?: string;
 
   @ApiProperty({
     example: '998901234567',

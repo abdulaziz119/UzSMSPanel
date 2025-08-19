@@ -22,6 +22,7 @@ import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { SmsGroupEntity } from '../entity/sms-group.entity';
 import { BatchProcessor } from '../utils/batch-processor.util';
 const XLSX = require('xlsx');
+import { SmsContactExcelService, ParsedContactRow } from '../utils/sms.contact.excel.service';
 
 @Injectable()
 export class SmsContactService {
@@ -187,6 +188,62 @@ export class SmsContactService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async importFromExcel(file: Express.Multer.File, default_group_id: number): Promise<{ result: true; created: number; skipped: number }> {
+    if (!file || !file.buffer) {
+      throw new HttpException({ message: 'Invalid file' }, HttpStatus.BAD_REQUEST);
+    }
+
+    const rows: ParsedContactRow[] = SmsContactExcelService.parseContacts(file.buffer);
+    if (!rows.length) return { result: true, created: 0, skipped: 0 };
+
+    let created = 0;
+    let skipped = 0;
+
+    // Preload group data once
+    const smsGroupData: SmsGroupEntity = await this.smsGroupRepo.findOne({ where: { id: default_group_id } });
+    if (!smsGroupData) throw new NotFoundException('SMS Group not found');
+
+    // Process in small batches to reduce DB overhead
+    const batchSize = 200;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const toSave: SmsContactEntity[] = [];
+      for (const r of batch) {
+        const phoneNormalized: string = await this.normalizePhone(r.phone);
+        if (!phoneNormalized) {
+          skipped++;
+          continue;
+        }
+        const status = await this.validatePhoneNumber(phoneNormalized);
+
+        const entity = this.smsContactRepo.create({
+          name: (r.name ?? null) as any,
+          phone: (phoneNormalized || r.phone || '').replace(/^\+/, ''),
+          status,
+          group_name: smsGroupData.title,
+          group_id: default_group_id,
+        });
+        toSave.push(entity);
+      }
+      if (toSave.length) {
+        const saved = await this.smsContactRepo.save(toSave);
+        created += saved.length;
+      }
+    }
+
+    // Update group contact_count by created
+    if (created > 0) {
+      await this.smsGroupRepo
+        .createQueryBuilder()
+        .update(SmsGroupEntity)
+        .set({ contact_count: () => `COALESCE(contact_count, 0) + ${created}` })
+        .where('id = :id', { id: default_group_id })
+        .execute();
+    }
+
+    return { result: true, created, skipped };
   }
 
   async findAll(

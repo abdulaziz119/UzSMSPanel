@@ -39,6 +39,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
 import { FileUploadResponseDto } from '../../../../utils/dto/file.dto';
+import * as multer from 'multer';
 
 @ApiBearerAuth()
 @ApiTags('sms-contact')
@@ -89,7 +90,12 @@ export class SmsContactController {
   }
 
   @Post('/import-excel')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
   @ApiOperation({
     summary: 'Contact lar ni excel da yuklash (multipart/form-data)',
   })
@@ -101,6 +107,7 @@ export class SmsContactController {
       type: 'object',
       properties: {
         file: {
+          type: 'string',
           format: 'binary',
         },
         default_group_id: { type: 'number', example: 1 },
@@ -123,7 +130,10 @@ export class SmsContactController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|svg|webp)' }),
+          new FileTypeValidator({
+            fileType:
+              /(application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application\/vnd\.ms-excel|text\/csv)$/,
+          }),
           new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }),
         ],
       }),
@@ -134,10 +144,15 @@ export class SmsContactController {
     if (!file || !body) {
       throw new BadRequestException('File is missing.');
     }
-    await this.smsContactService.create({
+    const res = await this.smsContactService.importFromExcel(
       file,
-      body,
-    });
+      body.default_group_id,
+    );
+    return {
+      success: true,
+      message: `Imported contacts: ${res.created}, skipped: ${res.skipped}`,
+      data: res,
+    } as any;
   }
 
   @Post('/download-template')
