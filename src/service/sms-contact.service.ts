@@ -5,7 +5,7 @@ import {
   NotFoundException,
   HttpStatus,
 } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { parsePhoneNumberFromString, PhoneNumber } from 'libphonenumber-js';
 import { MODELS } from '../constants/constants';
 import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
@@ -145,6 +145,69 @@ export class SmsContactService {
       out.push({ contact: c, tariff });
     }
     return out;
+  }
+
+  /**
+   * Optimized version: fetch contacts once, pre-resolve all needed tariff codes with a single query,
+   * and build results without per-contact DB calls. Significantly faster for large groups.
+   */
+  async getValidContactsWithTariffsOptimized(
+    group_id: number,
+  ): Promise<Array<{ contact: SmsContactEntity; tariff: TariffEntity }>> {
+    // Fetch only needed fields
+    const contacts: Pick<SmsContactEntity, 'id' | 'phone' | 'group_id' | 'name' | 'status'>[] =
+      await this.smsContactRepo.find({
+        where: { group_id },
+        select: { id: true, phone: true, group_id: true, name: true, status: true },
+      });
+
+    if (!contacts.length) return [];
+
+    // Normalize phones and compute candidate codes
+    const normalizedList: Array<{
+      contact: Pick<SmsContactEntity, 'id' | 'phone' | 'group_id' | 'name' | 'status'>;
+      national: string;
+      codes: string[];
+    }> = [];
+    const codeSet = new Set<string>();
+
+    for (const c of contacts) {
+      const normalized = await this.normalizePhone(c.phone);
+      try {
+        const parsed =
+          parsePhoneNumberFromString(normalized) ||
+          parsePhoneNumberFromString(normalized, 'UZ');
+        if (!parsed || !parsed.isValid()) continue;
+        const national: string = (parsed.nationalNumber || '').toString();
+        const codes = [national.substring(0, 3), national.substring(0, 2)].filter(Boolean);
+        for (const code of codes) codeSet.add(code);
+        normalizedList.push({ contact: c, national, codes });
+      } catch {
+        // skip invalid
+      }
+    }
+
+    if (!normalizedList.length) return [];
+
+    // Fetch all tariffs for required codes in one query
+    const codesArr = Array.from(codeSet);
+    const tariffs = await this.tariffRepo.find({ where: { code: In(codesArr) } });
+    const tariffByCode = new Map<string, TariffEntity>();
+    for (const t of tariffs) {
+      if (t.code) tariffByCode.set(t.code, t);
+    }
+
+    // Build results preferring 3-digit match then 2-digit
+    const results: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> = [];
+    for (const row of normalizedList) {
+      const [c3, c2] = row.codes;
+      const tariff = (c3 && tariffByCode.get(c3)) || (c2 && tariffByCode.get(c2));
+      if (!tariff) continue;
+      // Consider as ACTIVE when tariff exists (same semantics as previous path)
+      results.push({ contact: row.contact as SmsContactEntity, tariff });
+    }
+
+    return results;
   }
 
   async normalizePhone(phone: string) {

@@ -175,7 +175,8 @@ export class MessagesService {
     );
 
     // Get valid contacts with tariffs
-    const items = await this.smsContactService.getValidContactsWithTariffs(
+    // Use optimized bulk tariff resolver to minimize DB roundtrips
+    const items = await this.smsContactService.getValidContactsWithTariffsOptimized(
       body.group_id,
     );
 

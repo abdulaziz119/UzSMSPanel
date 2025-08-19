@@ -6,6 +6,7 @@ import {
   ApiTags,
   ApiBadRequestResponse,
   ApiResponse,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
@@ -94,6 +95,13 @@ export class MessagesController {
   @HttpCode(200)
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
+  @ApiHeader({
+    name: 'balance_type',
+    required: false,
+    description: 'Balance manbai: individual yoki company (default: individual)',
+    schema: { type: 'string', enum: Object.values(ContactTypeEnum) },
+    example: 'individual',
+  })
   async canSendContact(
   @Body() body: CanSendContactDto,
     @User('id') user_id: number,
@@ -107,6 +115,13 @@ export class MessagesController {
   @HttpCode(200)
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
+  @ApiHeader({
+    name: 'balance_type',
+    required: false,
+    description: 'Balance manbai: individual yoki company (default: individual)',
+    schema: { type: 'string', enum: Object.values(ContactTypeEnum) },
+    example: 'company',
+  })
   async canSendGroup(
   @Body() body: CanSendGroupDto,
     @User('id') user_id: number,
