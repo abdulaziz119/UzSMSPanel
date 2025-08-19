@@ -1,15 +1,8 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  BadRequestException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { SmsMessageEntity } from '../entity/sms-message.entity';
 import { UserEntity } from '../entity/user.entity';
-import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import {
@@ -18,31 +11,27 @@ import {
 } from '../utils/enum/sms-message.enum';
 import { SmsHistoryFilterDto } from '../utils/dto/sms-message.dto';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
-import { ContactTypeEnum } from '../utils/enum/contact.enum';
+import { ContactStatusEnum, ContactTypeEnum } from '../utils/enum/contact.enum';
 import { BillingService } from './billing.service';
 import { PerformanceMonitor } from '../utils/performance-monitor.util';
-import { SmsContactService } from './sms-contact.service';
-import { analyzeSmsContent } from '../utils/sms-counter.util';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
-import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { ContactEntity } from '../entity/contact.entity';
+import { TransactionEntity } from '../entity/transaction.entity';
+import {
+  TransactionStatusEnum,
+  TransactionTypeEnum,
+} from '../utils/enum/transaction.enum';
 
 @Injectable()
 export class SmsMessageService {
   constructor(
     @Inject(MODELS.SMS_MESSAGE)
     private readonly messageRepo: Repository<SmsMessageEntity>,
-    @Inject(MODELS.USER)
-    private readonly userRepo: Repository<UserEntity>,
-    @Inject(MODELS.SMS_TEMPLATE)
-    private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
-  @Inject(MODELS.SMS_CONTACT)
-  private readonly smsContactRepo: Repository<SmsContactEntity>,
-  @Inject(MODELS.CONTACT)
-  private readonly contactRepo: Repository<ContactEntity>,
+    @Inject(MODELS.SMS_CONTACT)
+    private readonly smsContactRepo: Repository<SmsContactEntity>,
+    @Inject(MODELS.CONTACT)
     private readonly billingService: BillingService,
     private readonly performanceMonitor: PerformanceMonitor,
-    private readonly smsContactService: SmsContactService,
   ) {}
 
   // Create a single SMS message with billing in transaction
@@ -61,6 +50,26 @@ export class SmsMessageService {
     totalCost?: number,
   ): Promise<SmsMessageEntity> {
     return await this.messageRepo.manager.transaction(async (em) => {
+      // Capture balance_before
+      let balanceBefore = 0;
+      if (balance) {
+        const row = await em
+          .getRepository(ContactEntity)
+          .createQueryBuilder('c')
+          .select('COALESCE(SUM(c.balance), 0)', 'sum')
+          .where('c.user_id = :user_id', { user_id: smsData.user_id })
+          .andWhere('c.type = :type', { type: balance })
+          .andWhere('c.status = :status', { status: ContactStatusEnum.ACTIVE })
+          .getRawOne<{ sum: string }>();
+        balanceBefore = Number(row?.sum || 0);
+      } else {
+        const user = await em.getRepository(UserEntity).findOne({
+          where: { id: smsData.user_id },
+          select: ['balance'],
+        });
+        balanceBefore = Number(user?.balance || 0);
+      }
+
       // Deduct from contact balance when header is provided, otherwise from user balance
       if (balance) {
         await this.billingService.deductContactBalanceTransactional(
@@ -100,6 +109,23 @@ export class SmsMessageService {
         },
       );
 
+      // Create Transaction record linked to this single message
+      const amount = Number(totalCost || smsData.cost || 0);
+      const balanceAfter = Math.max(0, balanceBefore - amount);
+      const trx = em.getRepository(TransactionEntity).create({
+        user_id: smsData.user_id,
+        transaction_id: this.generateExternalTransactionId(),
+        type: TransactionTypeEnum.SMS_PAYMENT,
+        status: TransactionStatusEnum.COMPLETED,
+        amount: -Math.abs(amount),
+        balance_before: balanceBefore,
+        balance_after: balanceAfter,
+        description: `Single SMS send to ${smsData.phone}`,
+        sms_message_id: saved.id,
+        group_id: null,
+      });
+      await em.getRepository(TransactionEntity).save(trx);
+
       return saved;
     });
   }
@@ -124,20 +150,43 @@ export class SmsMessageService {
       'createBulkSmsMessagesWithBilling',
       async () => {
         return await this.messageRepo.manager.transaction(async (em) => {
+          // Capture balance_before
+          const user_id = smsDataArray[0].user_id;
+          let balanceBefore = 0;
+          if (balance) {
+            const row = await em
+              .getRepository(ContactEntity)
+              .createQueryBuilder('c')
+              .select('COALESCE(SUM(c.balance), 0)', 'sum')
+              .where('c.user_id = :user_id', { user_id })
+              .andWhere('c.type = :type', { type: balance })
+              .andWhere('c.status = :status', {
+                status: ContactStatusEnum.ACTIVE,
+              })
+              .getRawOne<{ sum: string }>();
+            balanceBefore = Number(row?.sum || 0);
+          } else {
+            const user = await em.getRepository(UserEntity).findOne({
+              where: { id: user_id },
+              select: ['balance'],
+            });
+            balanceBefore = Number(user?.balance || 0);
+          }
+
           // Deduct total from contact or user balance
           const billingTimer =
             this.performanceMonitor.startTimer('billing_deduction');
           if (balance) {
             await this.billingService.deductContactBalanceTransactional(
               em,
-              smsDataArray[0].user_id,
+              user_id,
               balance,
               totalCost,
             );
           } else {
             await this.billingService.deductBalanceTransactional(
               em,
-              smsDataArray[0].user_id,
+              user_id,
               totalCost,
             );
           }
@@ -184,6 +233,24 @@ export class SmsMessageService {
             },
           );
           templateTimer();
+
+          // Create single aggregated Transaction for the group
+          const amount = Number(totalCost || 0);
+          const balanceAfter = Math.max(0, balanceBefore - amount);
+          const group_id = smsDataArray[0]?.group_id ?? null;
+          const trx = em.getRepository(TransactionEntity).create({
+            user_id,
+            transaction_id: this.generateExternalTransactionId(),
+            type: TransactionTypeEnum.SMS_PAYMENT,
+            status: TransactionStatusEnum.COMPLETED,
+            amount: -Math.abs(amount),
+            balance_before: balanceBefore,
+            balance_after: balanceAfter,
+            description: `Group SMS send (group_id=${group_id}) x${savedMessages.length}`,
+            group_id,
+            sms_message_id: null,
+          });
+          await em.getRepository(TransactionEntity).save(trx);
 
           return savedMessages;
         });
@@ -404,6 +471,9 @@ export class SmsMessageService {
   // }
 
   // Dashboard-specific methods
+  private generateExternalTransactionId(): string {
+    return `TXN_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+  }
   // async getMessageHistory(
   //   filters: MessageFilterDto,
   // ): Promise<PaginationResponse<SmsMessageEntity[]>> {
