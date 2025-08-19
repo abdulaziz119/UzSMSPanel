@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { MessagesController } from './messages.controller';
 import { SmsMessageService } from '../../../../service/sms-message.service';
+import { MessagesService } from '../../../../service/messages.service';
 import { smsMessageProviders } from '../../../../providers/sms-message.providers';
 import { userProviders } from '../../../../providers/user.providers';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
+import { contactProviders } from '../../../../providers/contact.providers';
 import { smsTemplateProviders } from '../../../../providers/sms-template.providers';
 import { DatabaseModule } from '../../../../database/database.module';
 import { smsGroupProviders } from '../../../../providers/sms-group.providers';
@@ -33,6 +35,7 @@ import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
   providers: [
     ...smsMessageProviders,
     ...userProviders,
+  ...contactProviders,
     ...smsContactProviders,
     ...tariffsProviders,
     ...smsTemplateProviders,
@@ -41,6 +44,7 @@ import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
     BillingService,
     PerformanceMonitor,
     SmsMessageService,
+  MessagesService,
     // queue processor
     MessagesQueue,
   ],

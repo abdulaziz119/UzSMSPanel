@@ -12,6 +12,7 @@ import { smsTemplateProviders } from '../../../../providers/sms-template.provide
 import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
 import { PerformanceMonitor } from '../../../../utils/performance-monitor.util';
+import { contactProviders } from '../../../../providers/contact.providers';
 
 @Module({
   imports: [DatabaseModule, SmsContactModule],
@@ -20,11 +21,12 @@ import { PerformanceMonitor } from '../../../../utils/performance-monitor.util';
     ...smsMessageProviders,
     ...userProviders,
     ...smsContactProviders,
-  ...smsGroupProviders,
-  ...smsTemplateProviders,
+    ...smsGroupProviders,
+    ...smsTemplateProviders,
     ...tariffsProviders,
-  SmsContactService,
-  BillingService,
+    ...contactProviders,
+    SmsContactService,
+    BillingService,
     PerformanceMonitor,
     SmsMessageService,
   ],

@@ -1,200 +1,228 @@
-// import {
-//   BadRequestException,
-//   Injectable,
-//   NotFoundException,
-// } from '@nestjs/common';
-// import { SmsMessageEntity } from '../entity/sms-message.entity';
-// import {
-//   SendToContactDto,
-//   SendToGroupDto,
-// } from '../frontend/v1/modules/messages/dto/messages.dto';
-// import { ContactTypeEnum } from '../utils/enum/contact.enum';
-// import { SingleResponse } from '../utils/dto/dto';
-// import { Repository } from 'typeorm';
-// import { Inject } from '@nestjs/common';
-// import { MODELS } from '../constants/constants';
-// import { SmsTemplateEntity } from '../entity/sms-template.entity';
-// import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
-// import { SmsContactService } from './sms-contact.service';
-// import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
-// import { TariffEntity } from '../entity/tariffs.entity';
-// import { SmsMessageService } from './sms-message.service';
-// import { BatchProcessor } from '../utils/batch-processor.util';
-// import { SmsContactEntity } from '../entity/sms-contact.entity';
-//
-// @Injectable()
-// export class MessagesService {
-//   constructor(
-//     private readonly smsMessageService: SmsMessageService,
-//     private readonly smsContactService: SmsContactService,
-//     @Inject(MODELS.SMS_TEMPLATE)
-//     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
-//     @Inject(MODELS.SMS_CONTACT)
-//     private readonly smsContactRepo: Repository<SmsContactEntity>,
-//   ) {}
-//
-//   async sendToContact(
-//     payload: SendToContactDto,
-//     user_id: number,
-//     balance?: ContactTypeEnum,
-//   ): Promise<SingleResponse<SmsMessageEntity>> {
-//     // 1) Template lookup
-//     const getTemplate = await this.smsTemplateRepo.findOne({
-//       where: {
-//         content: payload.message,
-//         status: TemplateStatusEnum.ACTIVE,
-//       },
-//     });
-//     if (!getTemplate)
-//       throw new NotFoundException('Template not found or inactive');
-//
-//     // 2) Phone validation
-//     const normalizedPhone: string = await this.smsContactService.normalizePhone(
-//       payload.phone,
-//     );
-//
-//     const status: SMSContactStatusEnum =
-//       await this.smsContactService.validatePhoneNumber(normalizedPhone);
-//
-//     if (status === SMSContactStatusEnum.INVALID_FORMAT)
-//       throw new BadRequestException('Invalid phone number format');
-//     if (status === SMSContactStatusEnum.BANNED_NUMBER)
-//       throw new BadRequestException('Banned phone number');
-//
-//     // 3) Tariff lookup
-//     const tariff: TariffEntity | null =
-//       await this.smsContactService.resolveTariffForPhone(normalizedPhone);
-//     if (!tariff)
-//       throw new NotFoundException('Tariff not found for this phone number');
-//
-//     // 4) Pricing calculation (unchanged)
-//     const partsCount: number = Math.max(
-//       1,
-//       Number(getTemplate.parts_count || 1),
-//     );
-//     const unitPrice: number = Number(tariff.price || 0);
-//     const totalCost: number = unitPrice * partsCount;
-//
-//     // 5) Create with billing
-//     const savedSmsMessage =
-//       await this.smsMessageService.createSmsMessageWithBilling(
-//         {
-//           user_id,
-//           phone: payload.phone,
-//           message: payload.message,
-//           operator: tariff.operator,
-//           sms_template_id: getTemplate.id,
-//           cost: totalCost,
-//           price_provider_sms: tariff.price_provider_sms,
-//         },
-//         getTemplate,
-//         balance,
-//         totalCost,
-//       );
-//
-//     return { result: savedSmsMessage };
-//   }
-//
-//   async sendToGroup(
-//     payload: SendToGroupDto,
-//     user_id: number,
-//     balance?: ContactTypeEnum,
-//   ): Promise<SingleResponse<SmsMessageEntity[]>> {
-//     // 1) Template lookup
-//     const getTemplate = await this.smsTemplateRepo.findOne({
-//       where: { content: payload.message },
-//     });
-//     if (!getTemplate) throw new NotFoundException('Template not found');
-//
-//     // 2) Group existence check
-//     const contact = await this.smsContactRepo.findOne({
-//       where: { group_id: payload.group_id },
-//     });
-//     const hasAny = !!contact;
-//     if (!hasAny) throw new NotFoundException('No contacts found for group');
-//
-//     // 3) Valid contacts with tariffs
-//     const data = await this.smsContactService.getValidContactsWithTariffs(
-//       payload.group_id,
-//     );
-//
-//     type ContactWithTariff = {
-//       phone: string;
-//       tariff: TariffEntity;
-//       unitPrice: number;
-//     };
-//
-//     const items: ContactWithTariff[] = data.map((d) => ({
-//       phone: d.contact.phone,
-//       tariff: d.tariff,
-//       unitPrice: Number(d.tariff.price || 0),
-//     }));
-//     if (items.length === 0)
-//       throw new NotFoundException(
-//         'No valid contacts with tariffs in the group',
-//       );
-//
-//     // 4) Pricing total
-//     const partsCount: number = Math.max(
-//       1,
-//       Number(getTemplate.parts_count || 1),
-//     );
-//     const totalCost = items.reduce(
-//       (sum, it) => sum + it.unitPrice * partsCount,
-//       0,
-//     );
-//
-//     // 5) Optimized batch processing for very large groups
-//     const BATCH_SIZE = 500; // Increased from 100 to 500
-//     if (items.length > BATCH_SIZE) {
-//       const messages = await BatchProcessor.processParallelBatches(
-//         items,
-//         BATCH_SIZE,
-//         5, // 5 parallel batches instead of sequential
-//         async (batch) => {
-//           const batchSmsData = batch.map((it) => ({
-//             user_id,
-//             phone: it.phone,
-//             message: payload.message,
-//             operator: it.tariff.operator,
-//             sms_template_id: getTemplate.id,
-//             cost: it.unitPrice * partsCount,
-//             price_provider_sms: it.tariff.price_provider_sms,
-//             group_id: payload.group_id,
-//           }));
-//
-//           return await this.smsMessageService.createBulkSmsMessagesWithBilling(
-//             batchSmsData,
-//             getTemplate,
-//             balance,
-//             batch.reduce((sum, it) => sum + it.unitPrice * partsCount, 0),
-//           );
-//         },
-//       );
-//
-//       return { result: messages.flat() };
-//     }
-//
-//     // 6) Regular bulk processing
-//     const smsDataArray = items.map((it) => ({
-//       user_id,
-//       phone: it.phone,
-//       message: payload.message,
-//       operator: it.tariff.operator,
-//       sms_template_id: getTemplate.id,
-//       cost: it.unitPrice * partsCount,
-//       price_provider_sms: it.tariff.price_provider_sms,
-//       group_id: payload.group_id,
-//     }));
-//
-//     const messages =
-//       await this.smsMessageService.createBulkSmsMessagesWithBilling(
-//         smsDataArray,
-//         getTemplate,
-//         balance,
-//         totalCost,
-//       );
-//
-//     return { result: messages };
-//   }
-// }
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { MODELS } from '../constants/constants';
+import { SmsContactEntity } from '../entity/sms-contact.entity';
+import { ContactEntity } from '../entity/contact.entity';
+import { SmsTemplateEntity } from '../entity/sms-template.entity';
+import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
+import { ContactStatusEnum, ContactTypeEnum } from '../utils/enum/contact.enum';
+import { SmsContactService } from './sms-contact.service';
+import { analyzeSmsContent } from '../utils/sms-counter.util';
+import {
+  CanSendContactDto,
+  CanSendGroupDto,
+} from '../frontend/v1/modules/messages/dto/messages.dto';
+
+@Injectable()
+export class MessagesService {
+  constructor(
+    @Inject(MODELS.SMS_CONTACT)
+    private readonly smsContactRepo: Repository<SmsContactEntity>,
+    @Inject(MODELS.CONTACT)
+    private readonly contactRepo: Repository<ContactEntity>,
+    @Inject(MODELS.SMS_TEMPLATE)
+    private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
+    private readonly smsContactService: SmsContactService,
+  ) {}
+
+  private async getBalanceByType(
+    user_id: number,
+    balanceType?: ContactTypeEnum | string,
+  ): Promise<number> {
+    const type: ContactTypeEnum =
+      (balanceType as ContactTypeEnum) || ContactTypeEnum.INDIVIDUAL;
+
+    const raw = await this.contactRepo
+      .createQueryBuilder('c')
+      .select('COALESCE(MAX(c.balance), 0)', 'max')
+      .where('c.user_id = :user_id', { user_id })
+      .andWhere('c.type = :type', { type })
+      .andWhere('c.status = :status', { status: ContactStatusEnum.ACTIVE })
+      .getRawOne<{ max: string }>();
+
+    return Number(raw?.max || 0);
+  }
+
+  private async resolvePartsCount(
+    message?: string,
+    sms_template_id?: number,
+  ): Promise<number> {
+    if (message && message.length > 0) {
+      return analyzeSmsContent(message).parts;
+    }
+    if (sms_template_id) {
+      const tpl = await this.smsTemplateRepo.findOne({
+        where: { id: sms_template_id },
+      });
+      if (!tpl) throw new BadRequestException('Shablon topilmadi');
+      if (tpl.content && tpl.content.length > 0) {
+        return analyzeSmsContent(tpl.content).parts;
+      }
+    }
+    return 1;
+  }
+
+  async estimateCanSendContact(
+    user_id: number,
+    body: CanSendContactDto,
+    balanceType?: ContactTypeEnum,
+  ): Promise<{
+    can_send: boolean;
+    current_balance: number;
+    required_cost: number;
+    deficit: number;
+    breakdown_by_operator: Array<{
+      operator: string;
+      unit_price: number;
+      parts_count: number;
+      count: number;
+      subtotal: number;
+    }>;
+  }> {
+    if (!body.phone && !body.contact_id)
+      throw new BadRequestException('phone yoki contact_id talab qilinadi');
+    if (!body.message && !body.sms_template_id)
+      throw new BadRequestException(
+        'message yoki sms_template_id talab qilinadi',
+      );
+
+    const current_balance = await this.getBalanceByType(user_id, balanceType);
+
+    // Resolve phone
+    let phone = body.phone || '';
+    if (!phone && body.contact_id) {
+      const contact = await this.smsContactRepo.findOne({
+        where: { id: body.contact_id },
+      });
+      if (!contact) throw new BadRequestException('Kontakt topilmadi');
+      phone = contact.phone;
+    }
+
+    const normalized = await this.smsContactService.normalizePhone(phone);
+    const status = await this.smsContactService.validatePhoneNumber(
+      normalized,
+    );
+    if (status !== SMSContactStatusEnum.ACTIVE)
+      throw new BadRequestException('Telefon raqami yaroqsiz yoki taqiqlangan');
+
+    // Tariff and unit price
+    const tariff = await this.smsContactService.resolveTariffForPhone(
+      normalized,
+    );
+    if (!tariff) throw new BadRequestException('Tarif topilmadi');
+    const unit_price = Number(tariff.price || 0);
+
+    // Parts count
+    const parts_count = await this.resolvePartsCount(
+      body.message,
+      body.sms_template_id,
+    );
+
+    const required_cost = unit_price * parts_count;
+    const can_send = current_balance >= required_cost;
+    const deficit = can_send ? 0 : Math.max(0, required_cost - current_balance);
+
+    return {
+      can_send,
+      current_balance,
+      required_cost,
+      deficit,
+      breakdown_by_operator: [
+        {
+          operator: tariff.operator,
+          unit_price,
+          parts_count,
+          count: 1,
+          subtotal: required_cost,
+        },
+      ],
+    };
+  }
+
+  async estimateCanSendGroup(
+    user_id: number,
+    body: CanSendGroupDto,
+    balanceType?: ContactTypeEnum,
+  ): Promise<{
+    can_send: boolean;
+    current_balance: number;
+    required_cost: number;
+    deficit: number;
+    total_contacts: number;
+    valid_contacts: number;
+    invalid_contacts: number;
+    parts_count: number;
+    breakdown_by_operator: Array<{
+      operator: string;
+      unit_price: number;
+      count: number;
+      subtotal: number;
+    }>;
+  }> {
+    if (!body?.group_id)
+      throw new BadRequestException('group_id talab qilinadi');
+    if (!body.message && !body.sms_template_id)
+      throw new BadRequestException(
+        'message yoki sms_template_id talab qilinadi',
+      );
+
+    const current_balance = await this.getBalanceByType(user_id, balanceType);
+
+    // parts count
+    const parts_count = await this.resolvePartsCount(
+      body.message,
+      body.sms_template_id,
+    );
+
+    // Get valid contacts with tariffs
+    const items = await this.smsContactService.getValidContactsWithTariffs(
+      body.group_id,
+    );
+
+    const total_contacts = await this.smsContactRepo.count({
+      where: { group_id: body.group_id },
+    });
+    const valid_contacts = items.length;
+    const invalid_contacts = Math.max(0, total_contacts - valid_contacts);
+
+    // Aggregate by operator
+    type Row = {
+      operator: string;
+      unit_price: number;
+      count: number;
+      subtotal: number;
+    };
+    const map = new Map<string, Row>();
+    let required_cost = 0;
+    for (const it of items) {
+      const op = it.tariff.operator;
+      const unit_price = Number(it.tariff.price || 0);
+      const subtotal = unit_price * parts_count;
+      required_cost += subtotal;
+      const row = map.get(op) || {
+        operator: op,
+        unit_price,
+        count: 0,
+        subtotal: 0,
+      };
+      row.count += 1;
+      row.subtotal += subtotal;
+      map.set(op, row);
+    }
+
+    const can_send = current_balance >= required_cost;
+    const deficit = can_send ? 0 : Math.max(0, required_cost - current_balance);
+
+    return {
+      can_send,
+      current_balance,
+      required_cost,
+      deficit,
+      total_contacts,
+      valid_contacts,
+      invalid_contacts,
+      parts_count,
+      breakdown_by_operator: Array.from(map.values()),
+    };
+  }
+}

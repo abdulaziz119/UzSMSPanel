@@ -1,4 +1,10 @@
-import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { SmsMessageEntity } from '../entity/sms-message.entity';
@@ -15,6 +21,11 @@ import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
 import { BillingService } from './billing.service';
 import { PerformanceMonitor } from '../utils/performance-monitor.util';
+import { SmsContactService } from './sms-contact.service';
+import { analyzeSmsContent } from '../utils/sms-counter.util';
+import { SmsContactEntity } from '../entity/sms-contact.entity';
+import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
+import { ContactEntity } from '../entity/contact.entity';
 
 @Injectable()
 export class SmsMessageService {
@@ -25,8 +36,13 @@ export class SmsMessageService {
     private readonly userRepo: Repository<UserEntity>,
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
+  @Inject(MODELS.SMS_CONTACT)
+  private readonly smsContactRepo: Repository<SmsContactEntity>,
+  @Inject(MODELS.CONTACT)
+  private readonly contactRepo: Repository<ContactEntity>,
     private readonly billingService: BillingService,
     private readonly performanceMonitor: PerformanceMonitor,
+    private readonly smsContactService: SmsContactService,
   ) {}
 
   // Create a single SMS message with billing in transaction
@@ -109,7 +125,8 @@ export class SmsMessageService {
       async () => {
         return await this.messageRepo.manager.transaction(async (em) => {
           // Deduct total from contact or user balance
-          const billingTimer = this.performanceMonitor.startTimer('billing_deduction');
+          const billingTimer =
+            this.performanceMonitor.startTimer('billing_deduction');
           if (balance) {
             await this.billingService.deductContactBalanceTransactional(
               em,
@@ -129,11 +146,11 @@ export class SmsMessageService {
           // Optimized bulk insert
           const insertTimer = this.performanceMonitor.startTimer('bulk_insert');
           const repo = em.getRepository(SmsMessageEntity);
-          
+
           // Create entities in batches to avoid memory issues
           const CHUNK_SIZE = 1000;
           const savedMessages: SmsMessageEntity[] = [];
-          
+
           for (let i = 0; i < smsDataArray.length; i += CHUNK_SIZE) {
             const chunk = smsDataArray.slice(i, i + CHUNK_SIZE);
             const toSave = chunk.map((smsData) =>
@@ -157,7 +174,8 @@ export class SmsMessageService {
           insertTimer();
 
           // Update template usage with single query
-          const templateTimer = this.performanceMonitor.startTimer('template_update');
+          const templateTimer =
+            this.performanceMonitor.startTimer('template_update');
           await em.getRepository(SmsTemplateEntity).update(
             { id: template.id },
             {
@@ -169,7 +187,7 @@ export class SmsMessageService {
 
           return savedMessages;
         });
-      }
+      },
     );
   }
 
@@ -500,6 +518,7 @@ export class SmsMessageService {
   //     );
   //   }
   // }
+
   //
   // async getMessageStatistics(
   //   filters: MessageStatsDto,
