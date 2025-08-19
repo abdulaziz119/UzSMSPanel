@@ -13,6 +13,11 @@ import { SmsMessageModule } from './sms-message/sms-message.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { TariffsFrontendModule } from './tariffs/tariffs.module';
 import { MessagesModule } from './messages/messages.module';
+import { EmailSmtpModule } from './email-smtp/email-smtp.module';
+import { EmailGroupModule } from './email-group/email-group.module';
+import { EmailContactModule } from './email-contact/email-contact.module';
+import { EmailTemplateModule } from './email-template/email-template.module';
+import { EmailMessageModule } from './email-message/email-message.module';
 
 @Module({
   imports: [
@@ -30,6 +35,11 @@ import { MessagesModule } from './messages/messages.module';
     SmsMessageModule,
     TransactionModule,
     TariffsFrontendModule,
+    EmailSmtpModule,
+    EmailGroupModule,
+    EmailContactModule,
+    EmailTemplateModule,
+    EmailMessageModule,
   ],
 })
 export class ModulesFrontendModule {}
