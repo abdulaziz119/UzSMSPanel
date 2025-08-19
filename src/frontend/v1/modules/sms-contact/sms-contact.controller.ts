@@ -9,6 +9,7 @@ import {
   FileTypeValidator,
   MaxFileSizeValidator,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,6 +18,7 @@ import {
   ApiConsumes,
   ApiBody,
   ApiResponse,
+  ApiOperation,
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
@@ -36,6 +38,7 @@ import { Response } from 'express';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
+import { FileUploadResponseDto } from '../../../../utils/dto/file.dto';
 
 @ApiBearerAuth()
 @ApiTags('sms-contact')
@@ -87,55 +90,54 @@ export class SmsContactController {
 
   @Post('/import-excel')
   @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Contact lar ni excel da yuklash (multipart/form-data)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description:
-      'Excel import (xlsx/xls/csv) with a single group id for all rows',
+    description: 'File upload',
     required: true,
     schema: {
       type: 'object',
       properties: {
-        file: { type: 'string', format: 'binary' },
+        file: {
+          format: 'binary',
+        },
         default_group_id: { type: 'number', example: 1 },
       },
       required: ['file', 'default_group_id'],
     },
   })
-  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @ApiResponse({
+    status: 201,
+    description: 'File uploaded successfully',
+    type: FileUploadResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid file type or size',
+  })
+  @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async importExcel(
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new FileTypeValidator({
-            fileType:
-              /(application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application\/vnd\.ms-excel|text\/csv)$/i,
-          }),
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|svg|webp)' }),
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }),
         ],
       }),
     )
     file: Express.Multer.File,
     @Body() body: { default_group_id: number },
-  ): Promise<{ result: { jobId: string; message: string } }> {
-    const payload = {
-      buffer: file?.buffer ? file.buffer.toString('base64') : '',
-      defaults: { default_group_id: Number(body?.default_group_id) },
-      meta: {
-        originalname: file?.originalname,
-        mimetype: file?.mimetype,
-        size: file?.size ?? 0,
-      },
-    };
-
-    const job = await this.smsContactQueue.add('import-excel', payload);
-
-    return {
-      result: {
-        jobId: job.id.toString(),
-        message: 'Import job has been queued successfully',
-      },
-    };
+  ) {
+    if (!file || !body) {
+      throw new BadRequestException('File is missing.');
+    }
+    await this.smsContactService.create({
+      file,
+      body,
+    });
   }
 
   @Post('/download-template')
