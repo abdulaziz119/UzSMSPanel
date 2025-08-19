@@ -12,6 +12,8 @@ import { SmsContactService } from '../service/sms-contact.service';
 import { Repository } from 'typeorm';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
+import { UserEntity } from '../entity/user.entity';
+import { ContactEntity } from '../entity/contact.entity';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { TariffEntity } from '../entity/tariffs.entity';
@@ -43,11 +45,33 @@ export class MessagesQueue {
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,
+  @Inject(MODELS.USER)
+  private readonly userRepo: Repository<UserEntity>,
+  @Inject(MODELS.CONTACT)
+  private readonly contactRepo: Repository<ContactEntity>,
     @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
   ) {
     this.logger.log(
       `Messages Queue processor initialized for queue: ${SMS_MESSAGE_QUEUE}`,
     );
+  }
+
+  private async getAvailableBudget(
+    user_id: number,
+    balance?: ContactTypeEnum,
+  ): Promise<number> {
+    if (balance) {
+      const row = await this.contactRepo
+        .createQueryBuilder('c')
+        .select('COALESCE(SUM(c.balance), 0)', 'sum')
+        .where('c.user_id = :user_id', { user_id })
+        .andWhere('c.type = :type', { type: balance })
+        .andWhere('c.status = :status', { status: 'active' })
+        .getRawOne<{ sum: string }>();
+      return Number(row?.sum || 0);
+    }
+    const user = await this.userRepo.findOne({ where: { id: user_id } });
+    return Number(user?.balance || 0);
   }
 
   @Process({ name: 'send-to-contact', concurrency: 3 })
@@ -140,8 +164,8 @@ export class MessagesQueue {
       const hasAny = !!contact;
       if (!hasAny) throw new NotFoundException('No contacts found for group');
 
-      // 3) Valid contacts with tariffs
-      const data = await this.smsContactService.getValidContactsWithTariffs(payload.group_id);
+  // 3) Valid contacts with tariffs (optimized)
+  const data = await this.smsContactService.getValidContactsWithTariffsOptimized(payload.group_id);
 
       type ContactWithTariff = { phone: string; tariff: TariffEntity; unitPrice: number };
       const items: ContactWithTariff[] = data.map((d) => ({
@@ -155,41 +179,25 @@ export class MessagesQueue {
       // 4) Pricing
       const partsCount: number = Math.max(1, Number(getTemplate.parts_count || 1));
 
-      // 5) Optimized batch processing for very large groups
-      const BATCH_SIZE = 500;
-      if (items.length > BATCH_SIZE) {
-        const messages = await BatchProcessor.processParallelBatches(
-          items,
-          BATCH_SIZE,
-          5,
-          async (batch) => {
-            const batchSmsData = batch.map((it) => ({
-              user_id,
-              phone: it.phone,
-              message: payload.message,
-              operator: it.tariff.operator,
-              sms_template_id: getTemplate.id,
-              cost: it.unitPrice * partsCount,
-              price_provider_sms: it.tariff.price_provider_sms,
-              group_id: payload.group_id,
-            }));
-
-            return await this.smsMessageService.createBulkSmsMessagesWithBilling(
-              batchSmsData,
-              getTemplate,
-              balance,
-              batch.reduce((sum, it) => sum + it.unitPrice * partsCount, 0),
-            );
-          },
-        );
-
-        await job.progress(100);
-        this.logger.log(`Successfully sent messages to group ${payload.group_id}: ${messages.flat().length} messages`);
-        return { success: true, messageCount: messages.flat().length };
+      // 5) Compute available budget by header balance type or user balance
+      const availableBudget = await this.getAvailableBudget(user_id, balance);
+      // Sort by unit price ascending to maximize count within budget
+      const sorted = items.slice().sort((a, b) => a.unitPrice - b.unitPrice);
+      const picked: typeof items = [];
+      let acc = 0;
+      for (const it of sorted) {
+        const cost = it.unitPrice * partsCount;
+        if (acc + cost > availableBudget) break;
+        acc += cost;
+        picked.push(it);
       }
 
-      // 6) Regular bulk processing
-      const smsDataArray = items.map((it) => ({
+      if (picked.length === 0) {
+        throw new BadRequestException('Insufficient contact balance');
+      }
+
+      // 6) Single transactional bulk create with internal chunking
+      const smsDataArray = picked.map((it) => ({
         user_id,
         phone: it.phone,
         message: payload.message,
@@ -204,12 +212,12 @@ export class MessagesQueue {
         smsDataArray,
         getTemplate,
         balance,
-        items.reduce((sum, it) => sum + it.unitPrice * partsCount, 0),
+        acc,
       );
 
       await job.progress(100);
       
-      this.logger.log(`Successfully sent messages to group ${payload.group_id}: ${messages.length} messages`);
+  this.logger.log(`Successfully sent messages to group ${payload.group_id}: ${messages.length} messages within budget`);
       return { success: true, messageCount: messages.length };
     } catch (error: any) {
       this.logger.error(`Failed to send messages to group: ${error.message}`, error.stack);
