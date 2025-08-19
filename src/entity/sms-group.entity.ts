@@ -3,6 +3,7 @@ import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { SmsContactEntity } from './sms-contact.entity';
+import { TransactionEntity } from './transaction.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_groups' })
 export class SmsGroupEntity extends BaseEntity {
@@ -29,4 +30,7 @@ export class SmsGroupEntity extends BaseEntity {
     cascadeUpdateRelationOptions,
   )
   smsContact: SmsContactEntity[];
+
+  @OneToMany(() => TransactionEntity, (t) => t.smsGroup, cascadeUpdateRelationOptions)
+  transactions: TransactionEntity[];
 }

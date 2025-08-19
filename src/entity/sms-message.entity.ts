@@ -1,9 +1,10 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { SmsGroupEntity } from './sms-group.entity';
 import { SmsTemplateEntity } from './sms-template.entity';
+import { TransactionEntity } from './transaction.entity';
 import {
   MessageStatusEnum,
   MessageTypeEnum,
@@ -74,4 +75,7 @@ export class SmsMessageEntity extends BaseEntity {
 
   @Column({ type: 'json', nullable: true })
   delivery_report: any | null;
+
+  @OneToMany(() => TransactionEntity, (t) => t.smsMessage, cascadeUpdateRelationOptions)
+  transactions: TransactionEntity[];
 }

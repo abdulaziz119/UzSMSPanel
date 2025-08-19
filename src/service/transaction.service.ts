@@ -192,6 +192,7 @@ export class TransactionService {
     amount: number,
     description: string,
     reference_id?: string,
+  sms_message_id?: number,
   ): Promise<TransactionEntity> {
     try {
       const transaction = this.transactionRepo.create({
@@ -203,6 +204,7 @@ export class TransactionService {
         balance_before: 0, // Bu yerda haqiqiy balansni olish kerak
         balance_after: 0, // Bu yerda yangi balansni hisoblash kerak
         description,
+    sms_message_id: sms_message_id ?? null,
       });
 
       return await this.transactionRepo.save(transaction);
