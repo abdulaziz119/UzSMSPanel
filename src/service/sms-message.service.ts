@@ -14,7 +14,6 @@ import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { ContactStatusEnum, ContactTypeEnum } from '../utils/enum/contact.enum';
 import { BillingService } from './billing.service';
 import { PerformanceMonitor } from '../utils/performance-monitor.util';
-import { SmsContactEntity } from '../entity/sms-contact.entity';
 import { ContactEntity } from '../entity/contact.entity';
 import { TransactionEntity } from '../entity/transaction.entity';
 import {
@@ -27,9 +26,6 @@ export class SmsMessageService {
   constructor(
     @Inject(MODELS.SMS_MESSAGE)
     private readonly messageRepo: Repository<SmsMessageEntity>,
-    @Inject(MODELS.SMS_CONTACT)
-    private readonly smsContactRepo: Repository<SmsContactEntity>,
-    @Inject(MODELS.CONTACT)
     private readonly billingService: BillingService,
     private readonly performanceMonitor: PerformanceMonitor,
   ) {}
