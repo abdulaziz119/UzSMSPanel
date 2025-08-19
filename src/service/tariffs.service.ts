@@ -18,15 +18,12 @@ import {
   TariffFilterDto,
   UpdateTariffDto,
 } from '../utils/dto/tariffs.dto';
-import { CountryEntity } from '../entity/country.entity';
 
 @Injectable()
 export class TariffService {
   constructor(
     @Inject(MODELS.TARIFFS)
     private readonly tariffRepo: Repository<TariffEntity>,
-    @Inject(MODELS.COUNTRY)
-    private readonly countryRepo: Repository<CountryEntity>,
   ) {}
 
   async getPublicTariffs(
@@ -83,7 +80,7 @@ export class TariffService {
 
       queryBuilder.orderBy('tariff.price', 'ASC');
 
-      const total = await queryBuilder.getCount();
+      const total: number = await queryBuilder.getCount();
 
       if (filters.page && filters.limit) {
         queryBuilder
@@ -91,7 +88,7 @@ export class TariffService {
           .take(filters.limit);
       }
 
-      const tariffs = await queryBuilder.getMany();
+      const tariffs: TariffEntity[] = await queryBuilder.getMany();
 
       return getPaginationResponse(
         tariffs,

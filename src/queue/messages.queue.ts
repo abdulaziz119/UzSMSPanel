@@ -1,11 +1,21 @@
-import { InjectQueue, OnQueueCompleted, OnQueueFailed, OnQueueProgress, OnQueueStalled, Process, Processor } from '@nestjs/bull';
+import {
+  InjectQueue,
+  OnQueueCompleted,
+  OnQueueFailed,
+  OnQueueProgress,
+  OnQueueStalled,
+  Process,
+  Processor,
+} from '@nestjs/bull';
 import { Job, Queue } from 'bull';
-import { BadRequestException, Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Inject,
+} from '@nestjs/common';
 import { SMS_MESSAGE_QUEUE, MODELS } from '../constants/constants';
-import { 
-  SendToContactDto, 
-  SendToGroupDto 
-} from '../frontend/v1/modules/messages/dto/messages.dto';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
 import { SmsMessageService } from '../service/sms-message.service';
 import { SmsContactService } from '../service/sms-contact.service';
@@ -17,21 +27,11 @@ import { ContactEntity } from '../entity/contact.entity';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { TariffEntity } from '../entity/tariffs.entity';
-import { BatchProcessor } from '../utils/batch-processor.util';
-
-export interface SendToContactJobData {
-  payload: SendToContactDto;
-  user_id: number;
-  balance?: ContactTypeEnum;
-  meta?: Record<string, any>;
-}
-
-export interface SendToGroupJobData {
-  payload: SendToGroupDto;
-  user_id: number;
-  balance?: ContactTypeEnum;
-  meta?: Record<string, any>;
-}
+import {
+  SendToContactJobData,
+  SendToGroupJobData,
+} from '../utils/interfaces/messages.interfaces';
+import { SmsMessageEntity } from '../entity/sms-message.entity';
 
 @Processor(SMS_MESSAGE_QUEUE)
 @Injectable()
@@ -45,10 +45,10 @@ export class MessagesQueue {
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,
-  @Inject(MODELS.USER)
-  private readonly userRepo: Repository<UserEntity>,
-  @Inject(MODELS.CONTACT)
-  private readonly contactRepo: Repository<ContactEntity>,
+    @Inject(MODELS.USER)
+    private readonly userRepo: Repository<UserEntity>,
+    @Inject(MODELS.CONTACT)
+    private readonly contactRepo: Repository<ContactEntity>,
     @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
   ) {
     this.logger.log(
@@ -81,7 +81,9 @@ export class MessagesQueue {
     error?: string;
   }> {
     try {
-      this.logger.log(`Processing send-to-contact job ${job.id} for user ${job.data.user_id}`);
+      this.logger.log(
+        `Processing send-to-contact job ${job.id} for user ${job.data.user_id}`,
+      );
       const { payload, user_id, balance } = job.data;
 
       // 1) Template lookup
@@ -93,21 +95,26 @@ export class MessagesQueue {
       }
 
       // 2) Phone validation
-      const normalizedPhone: string = await this.smsContactService.normalizePhone(
-        payload.phone,
-      );
-      const status: SMSContactStatusEnum = await this.smsContactService.validatePhoneNumber(normalizedPhone);
+      const normalizedPhone: string =
+        await this.smsContactService.normalizePhone(payload.phone);
+      const status: SMSContactStatusEnum =
+        await this.smsContactService.validatePhoneNumber(normalizedPhone);
       if (status === SMSContactStatusEnum.INVALID_FORMAT)
         throw new BadRequestException('Invalid phone number format');
       if (status === SMSContactStatusEnum.BANNED_NUMBER)
         throw new BadRequestException('Banned phone number');
 
       // 3) Tariff lookup
-      const tariff: TariffEntity | null = await this.smsContactService.resolveTariffForPhone(normalizedPhone);
-      if (!tariff) throw new NotFoundException('Tariff not found for this phone number');
+      const tariff: TariffEntity | null =
+        await this.smsContactService.resolveTariffForPhone(normalizedPhone);
+      if (!tariff)
+        throw new NotFoundException('Tariff not found for this phone number');
 
       // 4) Pricing calculation
-      const partsCount: number = Math.max(1, Number(getTemplate.parts_count || 1));
+      const partsCount: number = Math.max(
+        1,
+        Number(getTemplate.parts_count || 1),
+      );
       const unitPrice: number = Number(tariff.price || 0);
       const totalCost: number = unitPrice * partsCount;
 
@@ -128,16 +135,19 @@ export class MessagesQueue {
       );
 
       await job.progress(100);
-      
+
       this.logger.log(`Successfully sent message to contact: ${payload.phone}`);
-      
+
       return {
         success: true,
         messageId: saved.id,
       };
     } catch (error: any) {
-      this.logger.error(`Failed to send message to contact: ${error.message}`, error.stack);
-      
+      this.logger.error(
+        `Failed to send message to contact: ${error.message}`,
+        error.stack,
+      );
+
       return {
         success: false,
         error: error.message || 'Failed to send message',
@@ -152,41 +162,64 @@ export class MessagesQueue {
     error?: string;
   }> {
     try {
-      this.logger.log(`Processing send-to-group job ${job.id} for user ${job.data.user_id}, group ${job.data.payload.group_id}`);
+      this.logger.log(
+        `Processing send-to-group job ${job.id} for user ${job.data.user_id}, group ${job.data.payload.group_id}`,
+      );
       const { payload, user_id, balance } = job.data;
 
       // 1) Template lookup
-      const getTemplate = await this.smsTemplateRepo.findOne({ where: { content: payload.message } });
+      const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
+        {
+          where: { content: payload.message },
+        },
+      );
       if (!getTemplate) throw new NotFoundException('Template not found');
 
       // 2) Group existence check
-      const contact = await this.smsContactRepo.findOne({ where: { group_id: payload.group_id } });
-      const hasAny = !!contact;
+      const contact: SmsContactEntity = await this.smsContactRepo.findOne({
+        where: { group_id: payload.group_id },
+      });
+      const hasAny: boolean = !!contact;
       if (!hasAny) throw new NotFoundException('No contacts found for group');
 
-  // 3) Valid contacts with tariffs (optimized)
-  const data = await this.smsContactService.getValidContactsWithTariffsOptimized(payload.group_id);
+      // 3) Valid contacts with tariffs (optimized)
+      const data =
+        await this.smsContactService.getValidContactsWithTariffsOptimized(
+          payload.group_id,
+        );
 
-      type ContactWithTariff = { phone: string; tariff: TariffEntity; unitPrice: number };
+      type ContactWithTariff = {
+        phone: string;
+        tariff: TariffEntity;
+        unitPrice: number;
+      };
       const items: ContactWithTariff[] = data.map((d) => ({
         phone: d.contact.phone,
         tariff: d.tariff,
         unitPrice: Number(d.tariff.price || 0),
       }));
       if (items.length === 0)
-        throw new NotFoundException('No valid contacts with tariffs in the group');
+        throw new NotFoundException(
+          'No valid contacts with tariffs in the group',
+        );
 
       // 4) Pricing
-      const partsCount: number = Math.max(1, Number(getTemplate.parts_count || 1));
+      const partsCount: number = Math.max(
+        1,
+        Number(getTemplate.parts_count || 1),
+      );
 
       // 5) Compute available budget by header balance type or user balance
-      const availableBudget = await this.getAvailableBudget(user_id, balance);
+      const availableBudget: number = await this.getAvailableBudget(
+        user_id,
+        balance,
+      );
       // Sort by unit price ascending to maximize count within budget
       const sorted = items.slice().sort((a, b) => a.unitPrice - b.unitPrice);
       const picked: typeof items = [];
-      let acc = 0;
+      let acc: number = 0;
       for (const it of sorted) {
-        const cost = it.unitPrice * partsCount;
+        const cost: number = it.unitPrice * partsCount;
         if (acc + cost > availableBudget) break;
         acc += cost;
         picked.push(it);
@@ -208,20 +241,21 @@ export class MessagesQueue {
         group_id: payload.group_id,
       }));
 
-      const messages = await this.smsMessageService.createBulkSmsMessagesWithBilling(
-        smsDataArray,
-        getTemplate,
-        balance,
-        acc,
-      );
+      const messages: SmsMessageEntity[] =
+        await this.smsMessageService.createBulkSmsMessagesWithBilling(
+          smsDataArray,
+          getTemplate,
+          balance,
+          acc,
+        );
 
       await job.progress(100);
-      
-  this.logger.log(`Successfully sent messages to group ${payload.group_id}: ${messages.length} messages within budget`);
+
+      this.logger.log(
+        `Successfully sent messages to group ${payload.group_id}: ${messages.length} messages within budget`,
+      );
       return { success: true, messageCount: messages.length };
     } catch (error: any) {
-      this.logger.error(`Failed to send messages to group: ${error.message}`, error.stack);
-      
       return {
         success: false,
         error: error.message || 'Failed to send messages to group',
@@ -230,28 +264,32 @@ export class MessagesQueue {
   }
 
   @Process({ name: 'bulk-send', concurrency: 1 })
-  async bulkSendMessages(job: Job<{
-    contacts: Array<{ phone: string; message: string }>;
-    user_id: number;
-    meta?: Record<string, any>;
-  }>): Promise<{
+  async bulkSendMessages(
+    job: Job<{
+      contacts: Array<{ phone: string; message: string }>;
+      user_id: number;
+      meta?: Record<string, any>;
+    }>,
+  ): Promise<{
     success: boolean;
     processed: number;
     failed: number;
     errors: Array<{ phone: string; error: string }>;
   }> {
     try {
-      this.logger.log(`Processing bulk-send job ${job.id} with ${job.data.contacts.length} contacts`);
-      
-      let processed = 0;
-      let failed = 0;
+      this.logger.log(
+        `Processing bulk-send job ${job.id} with ${job.data.contacts.length} contacts`,
+      );
+
+      let processed: number = 0;
+      let failed: number = 0;
       const errors: Array<{ phone: string; error: string }> = [];
-      
-      const totalContacts = job.data.contacts.length;
-      
-      for (let i = 0; i < job.data.contacts.length; i++) {
+
+      const totalContacts: number = job.data.contacts.length;
+
+      for (let i: number = 0; i < job.data.contacts.length; i++) {
         const contact = job.data.contacts[i];
-        
+
         try {
           await this.sendMessageToContact({
             id: `${job.id}-contact-${i}`,
@@ -261,7 +299,7 @@ export class MessagesQueue {
             },
             progress: async () => {},
           } as any);
-          
+
           processed++;
         } catch (error: any) {
           failed++;
@@ -270,14 +308,16 @@ export class MessagesQueue {
             error: error.message || 'Failed to send',
           });
         }
-        
+
         // Update progress
-        const progress = Math.round(((i + 1) / totalContacts) * 100);
+        const progress: number = Math.round(((i + 1) / totalContacts) * 100);
         await job.progress(progress);
       }
-      
-      this.logger.log(`Bulk send completed: ${processed} processed, ${failed} failed`);
-      
+
+      this.logger.log(
+        `Bulk send completed: ${processed} processed, ${failed} failed`,
+      );
+
       return {
         success: true,
         processed,
@@ -286,12 +326,14 @@ export class MessagesQueue {
       };
     } catch (error: any) {
       this.logger.error(`Bulk send job failed: ${error.message}`, error.stack);
-      
+
       return {
         success: false,
         processed: 0,
         failed: job.data.contacts.length,
-        errors: [{ phone: 'all', error: error.message || 'Bulk operation failed' }],
+        errors: [
+          { phone: 'all', error: error.message || 'Bulk operation failed' },
+        ],
       };
     }
   }
@@ -303,7 +345,9 @@ export class MessagesQueue {
       this.logger.log(`Completed messages job ${job.id} of type ${job.name}`);
       // Optionally inspect counts
       const counts = await this.messageQueue.getJobCounts();
-      this.logger.debug(`Queue counts -> waiting: ${counts.waiting}, active: ${counts.active}, delayed: ${counts.delayed}`);
+      this.logger.debug(
+        `Queue counts -> waiting: ${counts.waiting}, active: ${counts.active}, delayed: ${counts.delayed}`,
+      );
       // Example pause logic (disabled by default):
       // if (!(counts.waiting || counts.active || counts.delayed)) {
       //   await this.messageQueue.pause();
@@ -315,12 +359,16 @@ export class MessagesQueue {
 
   @OnQueueFailed()
   onFailed(job: Job, err: any) {
-    this.logger.error(`Failed messages job ${job.id} (${job.name}): ${err?.message || err}`);
+    this.logger.error(
+      `Failed messages job ${job.id} (${job.name}): ${err?.message || err}`,
+    );
   }
 
   @OnQueueProgress()
   onProgress(job: Job, progress: number) {
-    this.logger.verbose(`Progress messages job ${job.id} (${job.name}): ${progress}%`);
+    this.logger.verbose(
+      `Progress messages job ${job.id} (${job.name}): ${progress}%`,
+    );
   }
 
   @OnQueueStalled()

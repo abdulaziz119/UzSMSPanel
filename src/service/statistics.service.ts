@@ -29,27 +29,27 @@ export class StatisticsService {
   ): Promise<SingleResponse<any>> {
     try {
       // Asosiy statistikalar
-      const totalUsers = await this.userRepo.count();
-      const clientUsers = await this.userRepo.count({
+      const totalUsers: number = await this.userRepo.count();
+      const clientUsers: number = await this.userRepo.count({
         where: { role: UserRoleEnum.CLIENT },
       });
-      const activeUsers = await this.userRepo.count({
+      const activeUsers: number = await this.userRepo.count({
         where: { block: false },
       });
 
       // SMS statistikalari
-      const totalSmsCount = await this.messageRepo.count();
-      const deliveredSmsCount = await this.messageRepo.count({
+      const totalSmsCount: number = await this.messageRepo.count();
+      const deliveredSmsCount: number = await this.messageRepo.count({
         where: { status: MessageStatusEnum.DELIVERED },
       });
-      const failedSmsCount = await this.messageRepo.count({
+      const failedSmsCount: number = await this.messageRepo.count({
         where: { status: MessageStatusEnum.FAILED },
       });
 
-  // Kampaniya statistikalari (hozircha kampaniya modul mavjud emas, 0 qaytaramiz)
-  const totalCampaigns = 0;
-  const activeCampaigns = 0;
-  const completedCampaigns = 0;
+      // Kampaniya statistikalari (hozircha kampaniya modul mavjud emas, 0 qaytaramiz)
+      const totalCampaigns = 0;
+      const activeCampaigns = 0;
+      const completedCampaigns = 0;
 
       // Moliyaviy statistikalar
       const totalRevenue = await this.transactionRepo
@@ -69,7 +69,7 @@ export class StatisticsService {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const todayUsers = await this.userRepo
+      const todayUsers: number = await this.userRepo
         .createQueryBuilder('user')
         .where('user.created_at >= :today', { today })
         .andWhere('user.created_at < :tomorrow', { tomorrow })
@@ -143,7 +143,7 @@ export class StatisticsService {
     filters?: DashboardStatsFilterDto,
   ): Promise<SingleResponse<any>> {
     try {
-      let dateCondition = '';
+      let dateCondition: string = '';
       const params: any = {};
 
       if (filters?.date_from && filters?.date_to) {
@@ -213,7 +213,7 @@ export class StatisticsService {
     filters?: DashboardStatsFilterDto,
   ): Promise<SingleResponse<any>> {
     try {
-      let dateCondition = '';
+      let dateCondition: string = '';
       const params: any = {};
 
       if (filters?.date_from && filters?.date_to) {
@@ -293,7 +293,7 @@ export class StatisticsService {
   }
 
   private async getWeeklyStatistics(fromDate: Date) {
-    const weeklyUsers = await this.userRepo
+    const weeklyUsers: number = await this.userRepo
       .createQueryBuilder('user')
       .where('user.created_at >= :fromDate', { fromDate })
       .getCount();
@@ -324,7 +324,7 @@ export class StatisticsService {
 
   private getPeriodCondition(period: string) {
     const now = new Date();
-    let condition = '';
+    let condition: string = '';
     let param = {};
 
     switch (period) {

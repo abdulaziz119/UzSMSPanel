@@ -200,7 +200,7 @@ export class AuthService {
         user.role,
       );
 
-      const newRefreshToken = this.generateRefreshToken();
+      const newRefreshToken: string = this.generateRefreshToken();
       const newRefreshTokenExpiresAt = new Date(
         Date.now() + this.REFRESH_TOKEN_EXPIRY,
       );

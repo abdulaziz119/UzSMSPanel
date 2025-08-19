@@ -38,7 +38,7 @@ export class TransactionService {
     user_id: number,
   ): Promise<SingleResponse<{ balance: number }>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: user_id },
         select: ['balance'],
       });
@@ -61,7 +61,9 @@ export class TransactionService {
     user_id: number,
   ): Promise<SingleResponse<{ transaction_id: number; new_balance: number }>> {
     try {
-      const user = await this.userRepo.findOne({ where: { id: user_id } });
+      const user: UserEntity = await this.userRepo.findOne({
+        where: { id: user_id },
+      });
       if (!user) {
         throw new NotFoundException('User not found');
       }
@@ -71,7 +73,7 @@ export class TransactionService {
       }
 
       // Tranzaktsiya yaratish
-      const transaction = this.transactionRepo.create({
+      const transaction: TransactionEntity = this.transactionRepo.create({
         user_id,
         transaction_id: this.generateExternalTransactionId(),
         type: TransactionTypeEnum.DEPOSIT,
@@ -84,14 +86,15 @@ export class TransactionService {
         external_transaction_id: this.generateExternalTransactionId(),
       });
 
-      const savedTransaction = await this.transactionRepo.save(transaction);
+      const savedTransaction: TransactionEntity =
+        await this.transactionRepo.save(transaction);
 
       // Bu yerda to'lov tizimi bilan integratsiya bo'lishi kerak
       // Hozircha simulyatsiya qilamiz
       await this.processPayment(savedTransaction);
 
       // Balansni yangilash (to'lov muvaffaqiyatli bo'lsa)
-      const newBalance = user.balance + payload.amount;
+      const newBalance: number = user.balance + payload.amount;
       await this.userRepo.update(user_id, { balance: newBalance });
 
       // Tranzaktsiya statusini yangilash
@@ -118,7 +121,7 @@ export class TransactionService {
     user_id?: number,
   ): Promise<PaginationResponse<TransactionEntity[]>> {
     const { page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    const skip: number = (page - 1) * limit;
 
     try {
       const queryBuilder = this.transactionRepo
@@ -175,8 +178,11 @@ export class TransactionService {
         );
       }
 
-      const total = await queryBuilder.getCount();
-      const transactions = await queryBuilder.skip(skip).take(limit).getMany();
+      const total: number = await queryBuilder.getCount();
+      const transactions: TransactionEntity[] = await queryBuilder
+        .skip(skip)
+        .take(limit)
+        .getMany();
 
       return getPaginationResponse(transactions, total, page, limit);
     } catch (error) {
@@ -187,44 +193,17 @@ export class TransactionService {
     }
   }
 
-  async createSmsTransaction(
-    user_id: number,
-    amount: number,
-    description: string,
-    reference_id?: string,
-    sms_message_id?: number,
-  ): Promise<TransactionEntity> {
-    try {
-      const transaction = this.transactionRepo.create({
-        user_id,
-        transaction_id: this.generateExternalTransactionId(),
-        type: TransactionTypeEnum.SMS_PAYMENT,
-        amount: -Math.abs(amount), // Manfiy qiymat (xarajat)
-        status: TransactionStatusEnum.COMPLETED,
-        balance_before: 0, // Bu yerda haqiqiy balansni olish kerak
-        balance_after: 0, // Bu yerda yangi balansni hisoblash kerak
-        description,
-        sms_message_id: sms_message_id ?? null,
-      });
-
-      return await this.transactionRepo.save(transaction);
-    } catch (error) {
-      throw new HttpException(
-        { message: 'Error creating SMS transaction', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
   // Dashboard-specific methods
   async getTransactionDetails(
     id: number,
   ): Promise<SingleResponse<TransactionEntity>> {
     try {
-      const transaction = await this.transactionRepo.findOne({
-        where: { id },
-        relations: ['user'],
-      });
+      const transaction: TransactionEntity = await this.transactionRepo.findOne(
+        {
+          where: { id },
+          relations: ['user'],
+        },
+      );
 
       if (!transaction) {
         throw new NotFoundException('Transaction not found');
@@ -325,14 +304,16 @@ export class TransactionService {
     data: AdminTopUpDto,
   ): Promise<SingleResponse<{ message: string; new_balance: number }>> {
     try {
-      const user = await this.userRepo.findOne({ where: { id: data.user_id } });
+      const user: UserEntity = await this.userRepo.findOne({
+        where: { id: data.user_id },
+      });
 
       if (!user) {
         throw new NotFoundException('User not found');
       }
 
       // Create transaction record
-      const transaction = this.transactionRepo.create({
+      const transaction: TransactionEntity = this.transactionRepo.create({
         user_id: data.user_id,
         external_transaction_id: this.generateExternalTransactionId(),
         amount: data.amount,
@@ -346,7 +327,7 @@ export class TransactionService {
       await this.transactionRepo.save(transaction);
 
       // Update user balance
-      const new_balance = user.balance + data.amount;
+      const new_balance: number = user.balance + data.amount;
       await this.userRepo.update(data.user_id, { balance: new_balance });
 
       return {
@@ -417,7 +398,7 @@ export class TransactionService {
         (sum, item) => sum + parseFloat(item.expenses),
         0,
       );
-      const netRevenue = totalRevenue - totalExpenses;
+      const netRevenue: number = totalRevenue - totalExpenses;
 
       const result = {
         revenue_data: revenueData,

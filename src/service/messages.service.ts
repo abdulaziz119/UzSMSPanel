@@ -12,6 +12,7 @@ import {
   CanSendContactDto,
   CanSendGroupDto,
 } from '../frontend/v1/modules/messages/dto/messages.dto';
+import { TariffEntity } from '../entity/tariffs.entity';
 
 @Injectable()
 export class MessagesService {
@@ -51,7 +52,7 @@ export class MessagesService {
       return analyzeSmsContent(message).parts;
     }
     if (sms_template_id) {
-      const tpl = await this.smsTemplateRepo.findOne({
+      const tpl: SmsTemplateEntity = await this.smsTemplateRepo.findOne({
         where: { id: sms_template_id },
       });
       if (!tpl) throw new BadRequestException('Shablon topilmadi');
@@ -86,41 +87,44 @@ export class MessagesService {
         'message yoki sms_template_id talab qilinadi',
       );
 
-    const current_balance = await this.getBalanceByType(user_id, balanceType);
+    const current_balance: number = await this.getBalanceByType(
+      user_id,
+      balanceType,
+    );
 
     // Resolve phone
-    let phone = body.phone || '';
+    let phone: string = body.phone || '';
     if (!phone && body.contact_id) {
-      const contact = await this.smsContactRepo.findOne({
+      const contact: SmsContactEntity = await this.smsContactRepo.findOne({
         where: { id: body.contact_id },
       });
       if (!contact) throw new BadRequestException('Kontakt topilmadi');
       phone = contact.phone;
     }
 
-    const normalized = await this.smsContactService.normalizePhone(phone);
-    const status = await this.smsContactService.validatePhoneNumber(
-      normalized,
-    );
+    const normalized: string =
+      await this.smsContactService.normalizePhone(phone);
+    const status = await this.smsContactService.validatePhoneNumber(normalized);
     if (status !== SMSContactStatusEnum.ACTIVE)
       throw new BadRequestException('Telefon raqami yaroqsiz yoki taqiqlangan');
 
     // Tariff and unit price
-    const tariff = await this.smsContactService.resolveTariffForPhone(
-      normalized,
-    );
+    const tariff: TariffEntity =
+      await this.smsContactService.resolveTariffForPhone(normalized);
     if (!tariff) throw new BadRequestException('Tarif topilmadi');
-    const unit_price = Number(tariff.price || 0);
+    const unit_price: number = Number(tariff.price || 0);
 
     // Parts count
-    const parts_count = await this.resolvePartsCount(
+    const parts_count: number = await this.resolvePartsCount(
       body.message,
       body.sms_template_id,
     );
 
-    const required_cost = unit_price * parts_count;
-    const can_send = current_balance >= required_cost;
-    const deficit = can_send ? 0 : Math.max(0, required_cost - current_balance);
+    const required_cost: number = unit_price * parts_count;
+    const can_send: boolean = current_balance >= required_cost;
+    const deficit: number = can_send
+      ? 0
+      : Math.max(0, required_cost - current_balance);
 
     return {
       can_send,
@@ -166,25 +170,32 @@ export class MessagesService {
         'message yoki sms_template_id talab qilinadi',
       );
 
-    const current_balance = await this.getBalanceByType(user_id, balanceType);
+    const current_balance: number = await this.getBalanceByType(
+      user_id,
+      balanceType,
+    );
 
     // parts count
-    const parts_count = await this.resolvePartsCount(
+    const parts_count: number = await this.resolvePartsCount(
       body.message,
       body.sms_template_id,
     );
 
     // Get valid contacts with tariffs
     // Use optimized bulk tariff resolver to minimize DB roundtrips
-    const items = await this.smsContactService.getValidContactsWithTariffsOptimized(
-      body.group_id,
-    );
+    const items =
+      await this.smsContactService.getValidContactsWithTariffsOptimized(
+        body.group_id,
+      );
 
-    const total_contacts = await this.smsContactRepo.count({
+    const total_contacts: number = await this.smsContactRepo.count({
       where: { group_id: body.group_id },
     });
-    const valid_contacts = items.length;
-    const invalid_contacts = Math.max(0, total_contacts - valid_contacts);
+    const valid_contacts: number = items.length;
+    const invalid_contacts: number = Math.max(
+      0,
+      total_contacts - valid_contacts,
+    );
 
     // Aggregate by operator
     type Row = {
@@ -194,11 +205,11 @@ export class MessagesService {
       subtotal: number;
     };
     const map = new Map<string, Row>();
-    let required_cost = 0;
+    let required_cost: number = 0;
     for (const it of items) {
-      const op = it.tariff.operator;
-      const unit_price = Number(it.tariff.price || 0);
-      const subtotal = unit_price * parts_count;
+      const op: string = it.tariff.operator;
+      const unit_price: number = Number(it.tariff.price || 0);
+      const subtotal: number = unit_price * parts_count;
       required_cost += subtotal;
       const row = map.get(op) || {
         operator: op,
@@ -211,8 +222,10 @@ export class MessagesService {
       map.set(op, row);
     }
 
-    const can_send = current_balance >= required_cost;
-    const deficit = can_send ? 0 : Math.max(0, required_cost - current_balance);
+    const can_send: boolean = current_balance >= required_cost;
+    const deficit: number = can_send
+      ? 0
+      : Math.max(0, required_cost - current_balance);
 
     return {
       can_send,

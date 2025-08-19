@@ -47,7 +47,7 @@ export class SmsMessageService {
   ): Promise<SmsMessageEntity> {
     return await this.messageRepo.manager.transaction(async (em) => {
       // Capture balance_before
-      let balanceBefore = 0;
+      let balanceBefore: number = 0;
       if (balance) {
         const row = await em
           .getRepository(ContactEntity)
@@ -59,7 +59,7 @@ export class SmsMessageService {
           .getRawOne<{ sum: string }>();
         balanceBefore = Number(row?.sum || 0);
       } else {
-        const user = await em.getRepository(UserEntity).findOne({
+        const user: UserEntity = await em.getRepository(UserEntity).findOne({
           where: { id: smsData.user_id },
           select: ['balance'],
         });
@@ -83,7 +83,7 @@ export class SmsMessageService {
       }
 
       // Create SMS message
-      const msg = em.getRepository(SmsMessageEntity).create({
+      const msg: SmsMessageEntity = em.getRepository(SmsMessageEntity).create({
         user_id: smsData.user_id,
         phone: smsData.phone,
         message: smsData.message,
@@ -94,32 +94,36 @@ export class SmsMessageService {
         cost: smsData.cost,
         price_provider_sms: smsData.price_provider_sms,
       });
-      const saved = await em.getRepository(SmsMessageEntity).save(msg);
+      const saved: SmsMessageEntity = await em
+        .getRepository(SmsMessageEntity)
+        .save(msg);
 
       // Update template usage
       await em.getRepository(SmsTemplateEntity).update(
         { id: template.id },
         {
-          usage_count: () => 'usage_count + 1',
+          usage_count: (): string => 'usage_count + 1',
           last_used_at: saved.created_at,
         },
       );
 
       // Create Transaction record linked to this single message
-      const amount = Number(totalCost || smsData.cost || 0);
-      const balanceAfter = Math.max(0, balanceBefore - amount);
-      const trx = em.getRepository(TransactionEntity).create({
-        user_id: smsData.user_id,
-        transaction_id: this.generateExternalTransactionId(),
-        type: TransactionTypeEnum.SMS_PAYMENT,
-        status: TransactionStatusEnum.COMPLETED,
-        amount: -Math.abs(amount),
-        balance_before: balanceBefore,
-        balance_after: balanceAfter,
-        description: `Single SMS send to ${smsData.phone}`,
-        sms_message_id: saved.id,
-        group_id: null,
-      });
+      const amount: number = Number(totalCost || smsData.cost || 0);
+      const balanceAfter: number = Math.max(0, balanceBefore - amount);
+      const trx: TransactionEntity = em
+        .getRepository(TransactionEntity)
+        .create({
+          user_id: smsData.user_id,
+          transaction_id: this.generateExternalTransactionId(),
+          type: TransactionTypeEnum.SMS_PAYMENT,
+          status: TransactionStatusEnum.COMPLETED,
+          amount: -Math.abs(amount),
+          balance_before: balanceBefore,
+          balance_after: balanceAfter,
+          description: `Single SMS send to ${smsData.phone}`,
+          sms_message_id: saved.id,
+          group_id: null,
+        });
       await em.getRepository(TransactionEntity).save(trx);
 
       return saved;
@@ -147,8 +151,8 @@ export class SmsMessageService {
       async () => {
         return await this.messageRepo.manager.transaction(async (em) => {
           // Capture balance_before
-          const user_id = smsDataArray[0].user_id;
-          let balanceBefore = 0;
+          const user_id: number = smsDataArray[0].user_id;
+          let balanceBefore: number = 0;
           if (balance) {
             const row = await em
               .getRepository(ContactEntity)
@@ -162,10 +166,12 @@ export class SmsMessageService {
               .getRawOne<{ sum: string }>();
             balanceBefore = Number(row?.sum || 0);
           } else {
-            const user = await em.getRepository(UserEntity).findOne({
-              where: { id: user_id },
-              select: ['balance'],
-            });
+            const user: UserEntity = await em
+              .getRepository(UserEntity)
+              .findOne({
+                where: { id: user_id },
+                select: ['balance'],
+              });
             balanceBefore = Number(user?.balance || 0);
           }
 
@@ -196,9 +202,9 @@ export class SmsMessageService {
           const CHUNK_SIZE = 1000;
           const savedMessages: SmsMessageEntity[] = [];
 
-          for (let i = 0; i < smsDataArray.length; i += CHUNK_SIZE) {
+          for (let i: number = 0; i < smsDataArray.length; i += CHUNK_SIZE) {
             const chunk = smsDataArray.slice(i, i + CHUNK_SIZE);
-            const toSave = chunk.map((smsData) =>
+            const toSave: SmsMessageEntity[] = chunk.map((smsData) =>
               repo.create({
                 user_id: smsData.user_id,
                 phone: smsData.phone,
@@ -213,7 +219,9 @@ export class SmsMessageService {
               }),
             );
 
-            const chunkSaved = await repo.save(toSave, { chunk: 500 });
+            const chunkSaved: SmsMessageEntity[] = await repo.save(toSave, {
+              chunk: 500,
+            });
             savedMessages.push(...chunkSaved);
           }
           insertTimer();
@@ -224,28 +232,31 @@ export class SmsMessageService {
           await em.getRepository(SmsTemplateEntity).update(
             { id: template.id },
             {
-              usage_count: () => `usage_count + ${savedMessages.length}`,
+              usage_count: (): string =>
+                `usage_count + ${savedMessages.length}`,
               last_used_at: new Date(),
             },
           );
           templateTimer();
 
           // Create single aggregated Transaction for the group
-          const amount = Number(totalCost || 0);
-          const balanceAfter = Math.max(0, balanceBefore - amount);
-          const group_id = smsDataArray[0]?.group_id ?? null;
-          const trx = em.getRepository(TransactionEntity).create({
-            user_id,
-            transaction_id: this.generateExternalTransactionId(),
-            type: TransactionTypeEnum.SMS_PAYMENT,
-            status: TransactionStatusEnum.COMPLETED,
-            amount: -Math.abs(amount),
-            balance_before: balanceBefore,
-            balance_after: balanceAfter,
-            description: `Group SMS send (group_id=${group_id}) x${savedMessages.length}`,
-            group_id,
-            sms_message_id: null,
-          });
+          const amount: number = Number(totalCost || 0);
+          const balanceAfter: number = Math.max(0, balanceBefore - amount);
+          const group_id: number = smsDataArray[0]?.group_id ?? null;
+          const trx: TransactionEntity = em
+            .getRepository(TransactionEntity)
+            .create({
+              user_id,
+              transaction_id: this.generateExternalTransactionId(),
+              type: TransactionTypeEnum.SMS_PAYMENT,
+              status: TransactionStatusEnum.COMPLETED,
+              amount: -Math.abs(amount),
+              balance_before: balanceBefore,
+              balance_after: balanceAfter,
+              description: `Group SMS send (group_id=${group_id}) x${savedMessages.length}`,
+              group_id,
+              sms_message_id: null,
+            });
           await em.getRepository(TransactionEntity).save(trx);
 
           return savedMessages;
@@ -260,7 +271,7 @@ export class SmsMessageService {
     isDashboard: boolean,
   ): Promise<PaginationResponse<SmsMessageEntity[]>> {
     const { page = 1, limit = 20 } = filters;
-    const skip = (page - 1) * limit;
+    const skip: number = (page - 1) * limit;
 
     try {
       const queryBuilder = this.messageRepo

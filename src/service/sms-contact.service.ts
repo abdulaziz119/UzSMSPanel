@@ -20,7 +20,6 @@ import {
 } from '../utils/dto/sms-contact.dto';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
 import { SmsGroupEntity } from '../entity/sms-group.entity';
-import { BatchProcessor } from '../utils/batch-processor.util';
 const XLSX = require('xlsx');
 import { ParsedContactRow } from '../utils/sms.contact.excel.service';
 
@@ -91,59 +90,6 @@ export class SmsContactService {
     }
   }
 
-  async getValidContactsWithTariffs(
-    group_id: number,
-  ): Promise<Array<{ contact: SmsContactEntity; tariff: TariffEntity }>> {
-    const contacts: SmsContactEntity[] = await this.smsContactRepo.find({
-      where: { group_id },
-    });
-
-    // For large contact groups, process in batches to avoid memory issues
-    if (contacts.length > 500) {
-      const results = await BatchProcessor.processBatch(
-        contacts,
-        100, // Process 100 contacts at a time
-        async (batch) => {
-          const batchResults: Array<{
-            contact: SmsContactEntity;
-            tariff: TariffEntity;
-          }> = [];
-
-          for (const contact of batch) {
-            const normalizedPhone: string = await this.normalizePhone(
-              contact.phone,
-            );
-            const status = await this.validatePhoneNumber(normalizedPhone);
-            if (status !== SMSContactStatusEnum.ACTIVE) continue;
-
-            const tariff: TariffEntity =
-              await this.resolveTariffForPhone(normalizedPhone);
-            if (!tariff) continue;
-
-            batchResults.push({ contact, tariff });
-          }
-
-          return batchResults;
-        },
-      );
-
-      return results.flat();
-    }
-
-    // For smaller groups, process normally
-    const out: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> = [];
-    for (const c of contacts) {
-      const normalizedPhone: string = await this.normalizePhone(c.phone);
-      const st = await this.validatePhoneNumber(normalizedPhone);
-      if (st !== SMSContactStatusEnum.ACTIVE) continue;
-      const tariff: TariffEntity =
-        await this.resolveTariffForPhone(normalizedPhone);
-      if (!tariff) continue;
-      out.push({ contact: c, tariff });
-    }
-    return out;
-  }
-
   /**
    * Optimized version: fetch contacts once, pre-resolve all needed tariff codes with a single query,
    * and build results without per-contact DB calls. Significantly faster for large groups.
@@ -180,7 +126,7 @@ export class SmsContactService {
     const codeSet = new Set<string>();
 
     for (const c of contacts) {
-      const normalized = await this.normalizePhone(c.phone);
+      const normalized: string = await this.normalizePhone(c.phone);
       try {
         const parsed =
           parsePhoneNumberFromString(normalized) ||
@@ -201,8 +147,8 @@ export class SmsContactService {
     if (!normalizedList.length) return [];
 
     // Fetch all tariffs for required codes in one query
-    const codesArr = Array.from(codeSet);
-    const tariffs = await this.tariffRepo.find({
+    const codesArr: string[] = Array.from(codeSet);
+    const tariffs: TariffEntity[] = await this.tariffRepo.find({
       where: { code: In(codesArr) },
     });
     const tariffByCode = new Map<string, TariffEntity>();
@@ -215,7 +161,7 @@ export class SmsContactService {
       [];
     for (const row of normalizedList) {
       const [c3, c2] = row.codes;
-      const tariff =
+      const tariff: TariffEntity =
         (c3 && tariffByCode.get(c3)) || (c2 && tariffByCode.get(c2));
       if (!tariff) continue;
       // Consider as ACTIVE when tariff exists (same semantics as previous path)
@@ -284,8 +230,8 @@ export class SmsContactService {
     if (!rows || rows.length === 0)
       return { result: true, created: 0, skipped: 0 };
 
-    let created = 0;
-    let skipped = 0;
+    let created: number = 0;
+    let skipped: number = 0;
 
     // Preload group data once
     const smsGroupData: SmsGroupEntity = await this.smsGroupRepo.findOne({
@@ -294,7 +240,7 @@ export class SmsContactService {
     if (!smsGroupData) throw new NotFoundException('SMS Group not found');
 
     const batchSize = 200;
-    for (let i = 0; i < rows.length; i += batchSize) {
+    for (let i: number = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
       const toSave: SmsContactEntity[] = [];
       for (const r of batch) {
@@ -304,7 +250,7 @@ export class SmsContactService {
           continue;
         }
         const status = await this.validatePhoneNumber(phoneNormalized);
-        const entity = this.smsContactRepo.create({
+        const entity: SmsContactEntity = this.smsContactRepo.create({
           name: (r.name ?? null) as any,
           phone: (phoneNormalized || r.phone || '').replace(/^\+/, ''),
           status,
@@ -314,7 +260,8 @@ export class SmsContactService {
         toSave.push(entity);
       }
       if (toSave.length) {
-        const saved = await this.smsContactRepo.save(toSave);
+        const saved: SmsContactEntity[] =
+          await this.smsContactRepo.save(toSave);
         created += saved.length;
       }
     }
@@ -323,7 +270,10 @@ export class SmsContactService {
       await this.smsGroupRepo
         .createQueryBuilder()
         .update(SmsGroupEntity)
-        .set({ contact_count: () => `COALESCE(contact_count, 0) + ${created}` })
+        .set({
+          contact_count: (): string =>
+            `COALESCE(contact_count, 0) + ${created}`,
+        })
         .where('id = :id', { id: default_group_id })
         .execute();
     }

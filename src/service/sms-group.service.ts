@@ -77,23 +77,11 @@ export class SmsGroupService {
     }
   }
 
-  async findOne(payload: ParamIdDto): Promise<SingleResponse<SmsGroupEntity>> {
-    const smsGroup: SmsGroupEntity = await this.smsGroupRepo.findOne({
-      where: { id: payload.id },
-    });
-
-    if (!smsGroup) {
-      throw new NotFoundException('Sms Group not found');
-    }
-
-    return { result: smsGroup };
-  }
-
   async update(
     updateData: UpdateSmsGroupDto,
     user_id: number,
   ): Promise<SingleResponse<SmsGroupEntity>> {
-    const smsGroup = await this.smsGroupRepo.findOne({
+    const smsGroup: SmsGroupEntity = await this.smsGroupRepo.findOne({
       where: { id: updateData.id, user_id: user_id },
     });
 
@@ -103,7 +91,7 @@ export class SmsGroupService {
 
     try {
       await this.smsGroupRepo.update(updateData.id, updateData);
-      const updatedSmsGroup = await this.smsGroupRepo.findOne({
+      const updatedSmsGroup: SmsGroupEntity = await this.smsGroupRepo.findOne({
         where: { id: updateData.id },
         relations: ['user'],
       });
@@ -160,7 +148,7 @@ export class SmsGroupService {
           .take(filters.limit);
       }
 
-      const groups = await queryBuilder.getMany();
+      const groups: SmsGroupEntity[] = await queryBuilder.getMany();
 
       return getPaginationResponse(
         groups,
@@ -178,7 +166,7 @@ export class SmsGroupService {
 
   async getGroupDetails(id: number): Promise<SingleResponse<SmsGroupEntity>> {
     try {
-      const group = await this.smsGroupRepo.findOne({
+      const group: SmsGroupEntity = await this.smsGroupRepo.findOne({
         where: { id },
         relations: ['user', 'contacts'],
       });
@@ -210,7 +198,7 @@ export class SmsGroupService {
         .getRawOne();
 
       // Get top groups by contact count
-      const topGroups = await this.smsGroupRepo
+      const topGroups: SmsGroupEntity[] = await this.smsGroupRepo
         .createQueryBuilder('group')
         .leftJoinAndSelect('group.user', 'user')
         .orderBy('group.contact_count', 'DESC')
@@ -235,7 +223,7 @@ export class SmsGroupService {
     user_id: number,
   ): Promise<SingleResponse<SmsGroupEntity[]>> {
     try {
-      const groups = await this.smsGroupRepo.find({
+      const groups: SmsGroupEntity[] = await this.smsGroupRepo.find({
         where: { user_id },
         order: { created_at: 'DESC' },
       });

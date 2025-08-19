@@ -90,7 +90,7 @@ export class CountryService {
 
   async findOne(param: ParamIdDto): Promise<SingleResponse<CountryEntity>> {
     try {
-      const country = await this.countryRepo.findOne({
+      const country: CountryEntity = await this.countryRepo.findOne({
         where: { id: param.id },
         relations: ['tariffs'],
       });
@@ -114,7 +114,7 @@ export class CountryService {
     payload: UpdateCountryDto,
   ): Promise<SingleResponse<CountryEntity>> {
     try {
-      const country = await this.countryRepo.findOne({
+      const country: CountryEntity = await this.countryRepo.findOne({
         where: { id: payload.id },
       });
 
@@ -123,7 +123,8 @@ export class CountryService {
       }
 
       Object.assign(country, payload);
-      const updatedCountry = await this.countryRepo.save(country);
+      const updatedCountry: CountryEntity =
+        await this.countryRepo.save(country);
 
       return {
         result: updatedCountry,
@@ -138,7 +139,7 @@ export class CountryService {
 
   async delete(param: ParamIdDto): Promise<{ result: true }> {
     try {
-      const country = await this.countryRepo.findOne({
+      const country: CountryEntity = await this.countryRepo.findOne({
         where: { id: param.id },
       });
 

@@ -115,7 +115,7 @@ export class UserService {
     payload: BlockUserDto,
   ): Promise<SingleResponse<{ message: string }>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: payload.user_id },
       });
 
@@ -144,7 +144,7 @@ export class UserService {
     payload: BlockUserDto,
   ): Promise<SingleResponse<{ message: string }>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: payload.user_id },
       });
 
@@ -173,7 +173,7 @@ export class UserService {
     payload: UpdateUserBalanceDto,
   ): Promise<SingleResponse<{ new_balance: number }>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: payload.user_id },
       });
 
@@ -215,17 +215,17 @@ export class UserService {
 
   async getUserStatistics(): Promise<SingleResponse<any>> {
     try {
-      const totalUsers = await this.userRepo.count();
+      const totalUsers: number = await this.userRepo.count();
 
-      const clientUsers = await this.userRepo.count({
+      const clientUsers: number = await this.userRepo.count({
         where: { role: UserRoleEnum.CLIENT },
       });
 
-      const blockedUsers = await this.userRepo.count({
+      const blockedUsers: number = await this.userRepo.count({
         where: { block: true },
       });
 
-      const activeUsers = await this.userRepo.count({
+      const activeUsers: number = await this.userRepo.count({
         where: { block: false },
       });
 
@@ -257,7 +257,7 @@ export class UserService {
 
   async getUserDetails(user_id: number): Promise<SingleResponse<UserEntity>> {
     try {
-      const user = await this.userRepo.findOne({
+      const user: UserEntity = await this.userRepo.findOne({
         where: { id: user_id },
         relations: ['contacts', 'smsGroup'],
       });

@@ -29,11 +29,11 @@ import {
 } from './dto/messages.dto';
 import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
+import { MessagesService } from '../../../../service/messages.service';
 import {
   SendToContactJobData,
   SendToGroupJobData,
-} from '../../../../queue/messages.queue';
-import { MessagesService } from '../../../../service/messages.service';
+} from '../../../../utils/interfaces/messages.interfaces';
 
 @ApiBearerAuth()
 @ApiTags('messages')

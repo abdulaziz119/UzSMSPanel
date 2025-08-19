@@ -28,14 +28,14 @@ export class SmsSenderService {
     user_id: number,
   ): Promise<SingleResponse<SmsSenderEntity>> {
     try {
-      const entity = this.smsSenderRepo.create({
+      const entity: SmsSenderEntity = this.smsSenderRepo.create({
         user_id,
         name: payload.name,
         description: payload.description ?? null,
         links: payload.links ?? null,
         sender_price_id: payload.sender_price_id,
       });
-      const saved = await this.smsSenderRepo.save(entity);
+      const saved: SmsSenderEntity = await this.smsSenderRepo.save(entity);
       return { result: saved };
     } catch (error) {
       throw new HttpException(
@@ -65,10 +65,12 @@ export class SmsSenderService {
   async update(
     body: UpdateSmsSenderDto,
   ): Promise<SingleResponse<SmsSenderEntity>> {
-    const found = await this.smsSenderRepo.findOne({ where: { id: body.id } });
+    const found: SmsSenderEntity = await this.smsSenderRepo.findOne({
+      where: { id: body.id },
+    });
     if (!found) throw new NotFoundException('Sender not found');
     await this.smsSenderRepo.update(body.id, body);
-    const updated = await this.smsSenderRepo.findOne({
+    const updated: SmsSenderEntity = await this.smsSenderRepo.findOne({
       where: { id: body.id },
       relations: ['senderPrice'],
     });

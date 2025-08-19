@@ -30,9 +30,10 @@ export class SenderPriceService {
   ): Promise<SingleResponse<SenderPriceEntity>> {
     try {
       // Operator kodi unique ekanligini tekshirish
-      const existingOperator = await this.senderPriceRepo.findOne({
-        where: { operator: payload.operator },
-      });
+      const existingOperator: SenderPriceEntity =
+        await this.senderPriceRepo.findOne({
+          where: { operator: payload.operator },
+        });
 
       if (existingOperator) {
         throw new ConflictException(
@@ -40,7 +41,7 @@ export class SenderPriceService {
         );
       }
 
-      const entity = this.senderPriceRepo.create({
+      const entity: SenderPriceEntity = this.senderPriceRepo.create({
         operator: payload.operator,
         operator_name: payload.operator_name,
         monthly_fee: payload.monthly_fee,
@@ -49,7 +50,7 @@ export class SenderPriceService {
         description: payload.description ?? null,
       });
 
-      const saved = await this.senderPriceRepo.save(entity);
+      const saved: SenderPriceEntity = await this.senderPriceRepo.save(entity);
       return { result: saved };
     } catch (error) {
       throw new HttpException(
@@ -116,7 +117,7 @@ export class SenderPriceService {
   async findOne(
     params: ParamIdDto,
   ): Promise<SingleResponse<SenderPriceEntity>> {
-    const found = await this.senderPriceRepo.findOne({
+    const found: SenderPriceEntity = await this.senderPriceRepo.findOne({
       where: { id: params.id },
       relations: ['smsSenders'],
     });
@@ -131,7 +132,7 @@ export class SenderPriceService {
   async update(
     body: UpdateSenderPriceDto,
   ): Promise<SingleResponse<SenderPriceEntity>> {
-    const found = await this.senderPriceRepo.findOne({
+    const found: SenderPriceEntity = await this.senderPriceRepo.findOne({
       where: { id: body.id },
     });
 
@@ -141,9 +142,10 @@ export class SenderPriceService {
 
     // Agar operator kodi o'zgartirilayotgan bo'lsa, unique ekanligini tekshirish
     if (body.operator && body.operator !== found.operator) {
-      const existingOperator = await this.senderPriceRepo.findOne({
-        where: { operator: body.operator },
-      });
+      const existingOperator: SenderPriceEntity =
+        await this.senderPriceRepo.findOne({
+          where: { operator: body.operator },
+        });
 
       if (existingOperator) {
         throw new ConflictException(
@@ -161,7 +163,7 @@ export class SenderPriceService {
       description: body.description,
     });
 
-    const updated = await this.senderPriceRepo.findOne({
+    const updated: SenderPriceEntity = await this.senderPriceRepo.findOne({
       where: { id: body.id },
       relations: ['smsSenders'],
     });
@@ -170,7 +172,7 @@ export class SenderPriceService {
   }
 
   async delete(params: ParamIdDto): Promise<SingleResponse<boolean>> {
-    const found = await this.senderPriceRepo.findOne({
+    const found: SenderPriceEntity = await this.senderPriceRepo.findOne({
       where: { id: params.id },
       relations: ['smsSenders'],
     });
@@ -192,7 +194,7 @@ export class SenderPriceService {
 
   // Barcha faol sender price'larni olish (dropdown uchun)
   async getActivePrices(): Promise<SingleResponse<SenderPriceEntity[]>> {
-    const prices = await this.senderPriceRepo.find({
+    const prices: SenderPriceEntity[] = await this.senderPriceRepo.find({
       where: { active: true },
       order: { operator_name: 'ASC' },
     });
