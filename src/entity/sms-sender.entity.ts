@@ -2,11 +2,13 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
+import { SenderPriceEntity } from './sender-price.entity';
 import { SenderStatusEnum } from '../utils/enum/sms-sender.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_senders' })
 @Index(['user_id', 'name'], { unique: true })
 @Index(['status'])
+@Index(['sender_price_id'])
 export class SmsSenderEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
@@ -36,10 +38,14 @@ export class SmsSenderEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   links: string | null;
 
-  // Pricing info per screenshot (operator subscription or one-time)
-  @Column({ type: 'varchar', length: 100, nullable: false })
-  operator: string;
+  @Column({ type: 'integer' })
+  sender_price_id: number;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
-  monthly_price: number;
+  @ManyToOne(
+    () => SenderPriceEntity,
+    (senderPrice) => senderPrice.smsSenders,
+    cascadeUpdateRelationOptions,
+  )
+  @JoinColumn({ name: 'sender_price_id' })
+  senderPrice: SenderPriceEntity;
 }
