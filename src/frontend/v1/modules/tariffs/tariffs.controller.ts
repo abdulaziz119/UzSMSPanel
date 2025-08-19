@@ -20,7 +20,7 @@ export class TariffsController {
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(201)
   @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
+  @Auth(true)
   async getPublicTariffs(
     @Body() filters: TariffFilterDto,
   ): Promise<PaginationResponse<TariffEntity[]>> {

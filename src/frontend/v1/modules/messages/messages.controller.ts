@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, Post, Headers, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  Headers,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import {
@@ -13,7 +21,12 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { User } from '../auth/decorators/user.decorator';
-import { SendToContactDto, SendToGroupDto, CanSendContactDto, CanSendGroupDto } from './dto/messages.dto';
+import {
+  SendToContactDto,
+  SendToGroupDto,
+  CanSendContactDto,
+  CanSendGroupDto,
+} from './dto/messages.dto';
 import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
 import {
@@ -28,7 +41,7 @@ import { MessagesService } from '../../../../service/messages.service';
 export class MessagesController {
   constructor(
     @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
-  private readonly messagesService: MessagesService,
+    private readonly messagesService: MessagesService,
   ) {}
 
   @Post('/send-contact')
@@ -90,7 +103,6 @@ export class MessagesController {
     };
   }
 
-  // --- Estimator: Contact ---
   @Post('/can-send-contact')
   @HttpCode(200)
   @Roles(UserRoleEnum.CLIENT)
@@ -98,19 +110,19 @@ export class MessagesController {
   @ApiHeader({
     name: 'balance_type',
     required: false,
-    description: 'Balance manbai: individual yoki company (default: individual)',
+    description:
+      'Balance manbai: individual yoki company (default: individual)',
     schema: { type: 'string', enum: Object.values(ContactTypeEnum) },
     example: 'individual',
   })
   async canSendContact(
-  @Body() body: CanSendContactDto,
+    @Body() body: CanSendContactDto,
     @User('id') user_id: number,
-  @Headers('balance_type') balance: ContactTypeEnum,
+    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<any> {
-  return this.messagesService.estimateCanSendContact(user_id, body, balance);
+    return this.messagesService.estimateCanSendContact(user_id, body, balance);
   }
 
-  // --- Estimator: Group ---
   @Post('/can-send-group')
   @HttpCode(200)
   @Roles(UserRoleEnum.CLIENT)
@@ -118,15 +130,16 @@ export class MessagesController {
   @ApiHeader({
     name: 'balance_type',
     required: false,
-    description: 'Balance manbai: individual yoki company (default: individual)',
+    description:
+      'Balance manbai: individual yoki company (default: individual)',
     schema: { type: 'string', enum: Object.values(ContactTypeEnum) },
     example: 'company',
   })
   async canSendGroup(
-  @Body() body: CanSendGroupDto,
+    @Body() body: CanSendGroupDto,
     @User('id') user_id: number,
-  @Headers('balance_type') balance: ContactTypeEnum,
+    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<any> {
-  return this.messagesService.estimateCanSendGroup(user_id, body, balance);
+    return this.messagesService.estimateCanSendGroup(user_id, body, balance);
   }
 }

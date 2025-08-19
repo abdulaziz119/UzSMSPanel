@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
@@ -13,6 +13,7 @@ import {
   TopUpBalanceDto,
   TransactionFilterDto,
 } from '../../../../utils/dto/transaction.dto';
+import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 
 @ApiBearerAuth()
 @ApiTags('transaction')
@@ -20,9 +21,6 @@ import {
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
-  /**
-   * Mijoz balansini olish
-   */
   @Post('/balance')
   @HttpCode(200)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -45,6 +43,7 @@ export class TransactionController {
   async topUpBalance(
     @Body() body: TopUpBalanceDto,
     @User('id') user_id: number,
+    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SingleResponse<{ transaction_id: number; new_balance: number }>> {
     return await this.transactionService.topUpBalance(body, user_id);
   }
