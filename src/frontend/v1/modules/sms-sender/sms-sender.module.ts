@@ -8,6 +8,5 @@ import { smsSenderProviders } from '../../../../providers/sms-sender.providers';
   imports: [DatabaseModule],
   controllers: [SmsSenderController],
   providers: [SmsSenderService, ...smsSenderProviders],
-  exports: [SmsSenderService],
 })
 export class SmsSenderModule {}

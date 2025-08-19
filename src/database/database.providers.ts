@@ -35,7 +35,7 @@ export const databaseProviders = [
         username: DB_USER,
         password: DB_PASS,
         database: DB_DB,
-        synchronize: DB_SYNCHRONIZE,
+        synchronize: true,
         logging: false,
         schema: DB_SCHEMA,
         entities: [

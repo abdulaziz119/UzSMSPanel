@@ -33,8 +33,7 @@ export class SmsSenderService {
         name: payload.name,
         description: payload.description ?? null,
         links: payload.links ?? null,
-        operator: payload.operator ?? null,
-        monthly_price: payload.monthly_price ?? 0,
+        sender_price_id: payload.sender_price_id,
       });
       const saved = await this.smsSenderRepo.save(entity);
       return { result: saved };
@@ -53,6 +52,7 @@ export class SmsSenderService {
     const skip: number = (page - 1) * limit;
     const qb = this.smsSenderRepo
       .createQueryBuilder('sms_senders')
+      .leftJoinAndSelect('sms_senders.senderPrice', 'sender_price')
       .where('sms_senders.id is not null');
     const [items, total] = await qb
       .skip(skip)
@@ -70,6 +70,7 @@ export class SmsSenderService {
     await this.smsSenderRepo.update(body.id, body);
     const updated = await this.smsSenderRepo.findOne({
       where: { id: body.id },
+      relations: ['senderPrice'],
     });
     return { result: updated };
   }

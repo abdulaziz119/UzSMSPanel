@@ -31,18 +31,13 @@ export class CreateSmsSenderDto {
   @IsOptional()
   links?: string;
 
-  @ApiPropertyOptional({
-    example: 'BLLINE',
+  @ApiProperty({
+    example: 1,
+    description: 'Sender price ID (SenderPriceEntity dan)',
   })
-  @IsOptional()
-  operator?: string;
-
-  @ApiPropertyOptional({
-    example: 250000,
-    description: "Oylik abon to'lov (so'm)",
-  })
-  @IsOptional()
-  monthly_price?: number;
+  @IsNumber()
+  @IsDefined()
+  sender_price_id: number;
 }
 
 export class UpdateSmsSenderDto {
@@ -72,11 +67,11 @@ export class UpdateSmsSenderDto {
   @IsOptional()
   links?: string;
 
-  @ApiPropertyOptional({ example: 'BLLINE' })
+  @ApiPropertyOptional({ 
+    example: 1,
+    description: 'Sender price ID (SenderPriceEntity dan)'
+  })
+  @IsNumber()
   @IsOptional()
-  operator?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  monthly_price?: number;
+  sender_price_id?: number;
 }

@@ -8,6 +8,7 @@ import { SmsMessageDashboardModule } from './sms-message/sms-message.module';
 import { TransactionDashboardModule } from './transaction/transaction.module';
 import { TariffsDashboardModule } from './tariffs/tariffs.module';
 import { CountryDashboardModule } from './country/country.module';
+import { SenderPriceModule } from './sender-price/sender-price.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CountryDashboardModule } from './country/country.module';
     TransactionDashboardModule,
     TariffsDashboardModule,
     CountryDashboardModule,
+    SenderPriceModule,
   ],
 })
 export class ModulesDashboardModule {}
