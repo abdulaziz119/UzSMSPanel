@@ -18,6 +18,5 @@ import { DatabaseModule } from '../../../../database/database.module';
   ],
   controllers: [EmailMessageController],
   providers: [EmailMessageService, ...emailMessageProviders],
-  exports: [EmailMessageService],
 })
 export class EmailMessageModule {}
