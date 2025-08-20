@@ -15,6 +15,8 @@ import {
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { EmailGroupService } from './email-group.service';
 import { MODELS } from '../constants/constants';
+import { SingleResponse } from '../utils/dto/dto';
+import { PaginationResponse } from '../utils/pagination.response';
 
 @Injectable()
 export class EmailContactService {
@@ -27,32 +29,34 @@ export class EmailContactService {
   async create(
     userId: number,
     createDto: CreateEmailContactDto,
-  ): Promise<EmailContactEntity> {
+  ): Promise<SingleResponse<EmailContactEntity>> {
     // Verify that group belongs to user
     await this.emailGroupService.findOne(userId, createDto.group_id);
 
     // Check if email already exists in this group
-    const existingContact = await this.emailContactRepository.findOne({
-      where: {
-        email: createDto.email,
-        group_id: createDto.group_id,
-      },
-    });
+    const existingContact: EmailContactEntity =
+      await this.emailContactRepository.findOne({
+        where: {
+          email: createDto.email,
+          group_id: createDto.group_id,
+        },
+      });
 
     if (existingContact) {
       throw new BadRequestException('Email already exists in this group');
     }
 
-    const contact = this.emailContactRepository.create({
+    const contact: EmailContactEntity = this.emailContactRepository.create({
       ...createDto,
     });
 
-    const savedContact = await this.emailContactRepository.save(contact);
+    const savedContact: EmailContactEntity =
+      await this.emailContactRepository.save(contact);
 
     // Update group contact count
     await this.emailGroupService.updateContactCount(createDto.group_id);
 
-    return savedContact;
+    return { result: savedContact };
   }
 
   async createBulk(
@@ -78,7 +82,10 @@ export class EmailContactService {
     return results;
   }
 
-  async findAll(userId: number, query: EmailContactQueryDto) {
+  async findAll(
+    userId: number,
+    query: EmailContactQueryDto,
+  ): Promise<PaginationResponse<EmailContactEntity[]>> {
     const queryBuilder = this.emailContactRepository
       .createQueryBuilder('contact')
       .leftJoinAndSelect('contact.emailGroup', 'group')
@@ -131,13 +138,10 @@ export class EmailContactService {
     userId: number,
     id: number,
     updateDto: UpdateEmailContactDto,
-  ): Promise<EmailContactEntity> {
+  ): Promise<SingleResponse<EmailContactEntity>> {
     const contact = await this.findOne(userId, id);
 
-    if (
-      updateDto.group_id &&
-      updateDto.group_id !== contact.group_id
-    ) {
+    if (updateDto.group_id && updateDto.group_id !== contact.group_id) {
       // Verify new group belongs to user
       await this.emailGroupService.findOne(userId, updateDto.group_id);
 
@@ -166,7 +170,7 @@ export class EmailContactService {
       await this.emailGroupService.updateContactCount(oldGroupId);
     }
 
-    return savedContact;
+    return { result: savedContact };
   }
 
   async remove(userId: number, id: number): Promise<void> {
@@ -190,5 +194,4 @@ export class EmailContactService {
       },
     });
   }
-
 }

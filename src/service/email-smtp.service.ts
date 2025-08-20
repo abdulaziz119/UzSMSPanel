@@ -13,28 +13,40 @@ import {
 } from '../utils/dto/email-smtp.dto';
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { MODELS } from '../constants/constants';
+import { SingleResponse } from '../utils/dto/dto';
+import { PaginationResponse } from '../utils/pagination.response';
 
 @Injectable()
 export class EmailSmtpService {
   constructor(
     @Inject(MODELS.EMAIL_SMTP)
-    private emailSmtpRepository: Repository<EmailSmtpEntity>,
+    private readonly emailSmtpRepo: Repository<EmailSmtpEntity>,
   ) {}
 
   async create(
     userId: number,
     createDto: CreateEmailSmtpDto,
-  ): Promise<EmailSmtpEntity> {
-    const emailSmtp = this.emailSmtpRepository.create({
+  ): Promise<SingleResponse<EmailSmtpEntity>> {
+    const emailData: EmailSmtpEntity = await this.emailSmtpRepo.findOne({
+      where: { user_id: userId },
+    });
+    if (emailData) {
+      throw new BadRequestException('SMTP configuration already exists');
+    }
+    const emailSmtp: EmailSmtpEntity = this.emailSmtpRepo.create({
       ...createDto,
       user_id: userId,
     });
 
-    return this.emailSmtpRepository.save(emailSmtp);
+    const result: EmailSmtpEntity = await this.emailSmtpRepo.save(emailSmtp);
+    return { result: result };
   }
 
-  async findAll(userId: number, query: EmailSmtpQueryDto) {
-    const queryBuilder = this.emailSmtpRepository
+  async findAll(
+    userId: number,
+    query: EmailSmtpQueryDto,
+  ): Promise<PaginationResponse<EmailSmtpEntity[]>> {
+    const queryBuilder = this.emailSmtpRepo
       .createQueryBuilder('smtp')
       .where('smtp.user_id = :userId', { userId });
 
@@ -55,7 +67,7 @@ export class EmailSmtpService {
   }
 
   async findOne(userId: number, id: number): Promise<EmailSmtpEntity> {
-    const smtp = await this.emailSmtpRepository.findOne({
+    const smtp = await this.emailSmtpRepo.findOne({
       where: { id, user_id: userId },
     });
 
@@ -70,19 +82,20 @@ export class EmailSmtpService {
     userId: number,
     id: number,
     updateDto: UpdateEmailSmtpDto,
-  ): Promise<EmailSmtpEntity> {
-    const smtp = await this.findOne(userId, id);
+  ): Promise<SingleResponse<EmailSmtpEntity>> {
+    const smtp: EmailSmtpEntity = await this.findOne(userId, id);
     Object.assign(smtp, updateDto);
-    return this.emailSmtpRepository.save(smtp);
+    const result: EmailSmtpEntity = await this.emailSmtpRepo.save(smtp);
+    return { result: result };
   }
 
   async remove(userId: number, id: number): Promise<void> {
-    const smtp = await this.findOne(userId, id);
-    await this.emailSmtpRepository.remove(smtp);
+    const smtp: EmailSmtpEntity = await this.findOne(userId, id);
+    await this.emailSmtpRepo.remove(smtp);
   }
 
   async getActiveSmtp(userId: number): Promise<EmailSmtpEntity> {
-    const smtp = await this.emailSmtpRepository
+    const smtp = await this.emailSmtpRepo
       .createQueryBuilder('smtp')
       .addSelect('smtp.password')
       .where('smtp.user_id = :userId', { userId })

@@ -1,19 +1,23 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailGroupService } from '../../../../service/email-group.service';
-import { CreateEmailGroupDto, UpdateEmailGroupDto, EmailGroupQueryDto } from '../../../../utils/dto/email-group.dto';
+import {
+  CreateEmailGroupDto,
+  UpdateEmailGroupDto,
+  EmailGroupQueryDto,
+} from '../../../../utils/dto/email-group.dto';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { User } from '../auth/decorators/user.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { ParamIdDto, PaginationParams, SingleResponse } from '../../../../utils/dto/dto';
+import {
+  ParamIdDto,
+  PaginationParams,
+  SingleResponse,
+} from '../../../../utils/dto/dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
+import { EmailGroupEntity } from '../../../../entity/email-group.entity';
 
 @ApiBearerAuth()
 @ApiTags('email-group')
@@ -29,9 +33,8 @@ export class EmailGroupController {
   async create(
     @Body() body: CreateEmailGroupDto,
     @User('id') user_id: number,
-  ): Promise<SingleResponse<any>> {
-    const result = await this.emailGroupService.create(user_id, body);
-    return { result };
+  ): Promise<SingleResponse<EmailGroupEntity>> {
+    return await this.emailGroupService.create(user_id, body);
   }
 
   @Post('/findAll')
@@ -41,7 +44,7 @@ export class EmailGroupController {
   async findAll(
     @Body() query: EmailGroupQueryDto,
     @User('id') user_id: number,
-  ): Promise<PaginationResponse<any[]>> {
+  ): Promise<PaginationResponse<EmailGroupEntity[]>> {
     return await this.emailGroupService.findAll(user_id, query);
   }
 
@@ -52,9 +55,8 @@ export class EmailGroupController {
   async update(
     @Body() body: UpdateEmailGroupDto & { id: number },
     @User('id') user_id: number,
-  ): Promise<SingleResponse<any>> {
-    const result = await this.emailGroupService.update(user_id, body.id, body);
-    return { result };
+  ): Promise<SingleResponse<EmailGroupEntity>> {
+    return await this.emailGroupService.update(user_id, body.id, body);
   }
 
   @Post('/delete')

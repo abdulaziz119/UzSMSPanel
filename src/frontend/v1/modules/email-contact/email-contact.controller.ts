@@ -1,12 +1,12 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailContactService } from '../../../../service/email-contact.service';
-import { CreateEmailContactDto, CreateBulkEmailContactDto, UpdateEmailContactDto, EmailContactQueryDto } from '../../../../utils/dto/email-contact.dto';
+import {
+  CreateEmailContactDto,
+  CreateBulkEmailContactDto,
+  UpdateEmailContactDto,
+  EmailContactQueryDto,
+} from '../../../../utils/dto/email-contact.dto';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Auth } from '../auth/decorators/auth.decorator';
@@ -14,6 +14,7 @@ import { User } from '../auth/decorators/user.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
+import { EmailContactEntity } from '../../../../entity/email-contact.entity';
 
 @ApiBearerAuth()
 @ApiTags('email-contact')
@@ -29,9 +30,8 @@ export class EmailContactController {
   async create(
     @Body() body: CreateEmailContactDto,
     @User('id') user_id: number,
-  ): Promise<SingleResponse<any>> {
-    const result = await this.emailContactService.create(user_id, body);
-    return { result };
+  ): Promise<SingleResponse<EmailContactEntity>> {
+    return await this.emailContactService.create(user_id, body);
   }
 
   @Post('/bulk')
@@ -53,7 +53,7 @@ export class EmailContactController {
   async findAll(
     @Body() query: EmailContactQueryDto,
     @User('id') user_id: number,
-  ): Promise<PaginationResponse<any[]>> {
+  ): Promise<PaginationResponse<EmailContactEntity[]>> {
     return await this.emailContactService.findAll(user_id, query);
   }
 
@@ -64,9 +64,8 @@ export class EmailContactController {
   async update(
     @Body() body: UpdateEmailContactDto & { id: number },
     @User('id') user_id: number,
-  ): Promise<SingleResponse<any>> {
-    const result = await this.emailContactService.update(user_id, body.id, body);
-    return { result };
+  ): Promise<SingleResponse<EmailContactEntity>> {
+    return await this.emailContactService.update(user_id, body.id, body);
   }
 
   @Post('/delete')

@@ -1,13 +1,11 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Param,
-  HttpCode,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailSmtpService } from '../../../../service/email-smtp.service';
-import { CreateEmailSmtpDto, UpdateEmailSmtpDto, EmailSmtpQueryDto } from '../../../../utils/dto/email-smtp.dto';
+import {
+  CreateEmailSmtpDto,
+  UpdateEmailSmtpDto,
+  EmailSmtpQueryDto,
+} from '../../../../utils/dto/email-smtp.dto';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Auth } from '../auth/decorators/auth.decorator';
@@ -15,6 +13,7 @@ import { User } from '../auth/decorators/user.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
+import { EmailSmtpEntity } from '../../../../entity/email-smtp.entity';
 
 @ApiBearerAuth()
 @ApiTags('email-smtp')
@@ -30,9 +29,8 @@ export class EmailSmtpController {
   async create(
     @Body() body: CreateEmailSmtpDto,
     @User('id') user_id: number,
-  ): Promise<SingleResponse<any>> {
-    const result = await this.emailSmtpService.create(user_id, body);
-    return { result };
+  ): Promise<SingleResponse<EmailSmtpEntity>> {
+    return await this.emailSmtpService.create(user_id, body);
   }
 
   @Post('/findAll')
@@ -42,7 +40,7 @@ export class EmailSmtpController {
   async findAll(
     @Body() query: EmailSmtpQueryDto,
     @User('id') user_id: number,
-  ): Promise<PaginationResponse<any[]>> {
+  ): Promise<PaginationResponse<EmailSmtpEntity[]>> {
     return await this.emailSmtpService.findAll(user_id, query);
   }
 
@@ -53,9 +51,8 @@ export class EmailSmtpController {
   async update(
     @Body() body: UpdateEmailSmtpDto & { id: number },
     @User('id') user_id: number,
-  ): Promise<SingleResponse<any>> {
-    const result = await this.emailSmtpService.update(user_id, body.id, body);
-    return { result };
+  ): Promise<SingleResponse<EmailSmtpEntity>> {
+    return await this.emailSmtpService.update(user_id, body.id, body);
   }
 
   @Post('/delete')
@@ -73,9 +70,7 @@ export class EmailSmtpController {
   @Post('/active/list')
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
-  async getActiveSmtp(
-    @User('id') user_id: number,
-  ) {
+  async getActiveSmtp(@User('id') user_id: number) {
     return this.emailSmtpService.getActiveSmtp(user_id);
   }
 }

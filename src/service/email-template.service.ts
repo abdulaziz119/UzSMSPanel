@@ -10,6 +10,8 @@ import { EmailTemplateStatusEnum } from '../utils/enum/email-smtp.enum';
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { MODELS } from '../constants/constants';
 import { DEFAULT_EMAIL_TEMPLATES } from '../utils/email-templates/default-templates';
+import { SingleResponse } from '../utils/dto/dto';
+import { PaginationResponse } from '../utils/pagination.response';
 
 @Injectable()
 export class EmailTemplateService {
@@ -18,8 +20,11 @@ export class EmailTemplateService {
     private emailTemplateRepository: Repository<EmailTemplateEntity>,
   ) {}
 
-  async create(userId: number, createEmailTemplateDto: CreateEmailTemplateDto): Promise<EmailTemplateEntity> {
-    const template = this.emailTemplateRepository.create({
+  async create(
+    userId: number,
+    createEmailTemplateDto: CreateEmailTemplateDto,
+  ): Promise<SingleResponse<EmailTemplateEntity>> {
+    const template: EmailTemplateEntity = this.emailTemplateRepository.create({
       user_id: userId,
       name: createEmailTemplateDto.name,
       subject: createEmailTemplateDto.subject,
@@ -32,23 +37,30 @@ export class EmailTemplateService {
       status: EmailTemplateStatusEnum.ACTIVE,
     });
 
-    return this.emailTemplateRepository.save(template);
+    const result: EmailTemplateEntity =
+      await this.emailTemplateRepository.save(template);
+    return { result: result };
   }
 
-  async findAll(userId: number, query: EmailTemplateQueryDto) {
+  async findAll(
+    userId: number,
+    query: EmailTemplateQueryDto,
+  ): Promise<PaginationResponse<EmailTemplateEntity[]>> {
     const queryBuilder = this.emailTemplateRepository
       .createQueryBuilder('template')
       .leftJoinAndSelect('template.file', 'file')
       .where('template.user_id = :userId', { userId });
 
     if (query.status) {
-      queryBuilder.andWhere('template.status = :status', { status: query.status });
+      queryBuilder.andWhere('template.status = :status', {
+        status: query.status,
+      });
     }
 
     if (query.search) {
       queryBuilder.andWhere(
         '(template.name ILIKE :search OR template.subject ILIKE :search)',
-        { search: `%${query.search}%` }
+        { search: `%${query.search}%` },
       );
     }
 
@@ -76,14 +88,20 @@ export class EmailTemplateService {
     return template;
   }
 
-  async update(userId: number, id: number, updateDto: UpdateEmailTemplateDto): Promise<EmailTemplateEntity> {
-    const template = await this.findOne(userId, id);
+  async update(
+    userId: number,
+    id: number,
+    updateDto: UpdateEmailTemplateDto,
+  ): Promise<SingleResponse<EmailTemplateEntity>> {
+    const template: EmailTemplateEntity = await this.findOne(userId, id);
     Object.assign(template, updateDto);
-    return this.emailTemplateRepository.save(template);
+    const result: EmailTemplateEntity =
+      await this.emailTemplateRepository.save(template);
+    return { result: result };
   }
 
   async remove(userId: number, id: number): Promise<void> {
-    const template = await this.findOne(userId, id);
+    const template: EmailTemplateEntity = await this.findOne(userId, id);
     await this.emailTemplateRepository.remove(template);
   }
 
@@ -110,7 +128,10 @@ export class EmailTemplateService {
     });
   }
 
-  async processTemplate(template: EmailTemplateEntity, variables: Record<string, any> = {}): Promise<{ subject: string; html_content: string; text_content?: string }> {
+  async processTemplate(
+    template: EmailTemplateEntity,
+    variables: Record<string, any> = {},
+  ): Promise<{ subject: string; html_content: string; text_content?: string }> {
     let processedSubject = template.subject;
     let processedHtml = template.html_content;
     let processedText = template.text_content;
@@ -118,10 +139,19 @@ export class EmailTemplateService {
     // Replace variables in template
     for (const [key, value] of Object.entries(variables)) {
       const placeholder = `{{${key}}}`;
-      processedSubject = processedSubject.replace(new RegExp(placeholder, 'g'), String(value));
-      processedHtml = processedHtml.replace(new RegExp(placeholder, 'g'), String(value));
+      processedSubject = processedSubject.replace(
+        new RegExp(placeholder, 'g'),
+        String(value),
+      );
+      processedHtml = processedHtml.replace(
+        new RegExp(placeholder, 'g'),
+        String(value),
+      );
       if (processedText) {
-        processedText = processedText.replace(new RegExp(placeholder, 'g'), String(value));
+        processedText = processedText.replace(
+          new RegExp(placeholder, 'g'),
+          String(value),
+        );
       }
     }
 
@@ -132,7 +162,10 @@ export class EmailTemplateService {
     };
   }
 
-  async uploadTemplateImage(userId: number, file: Express.Multer.File): Promise<{ file_id: number; url: string }> {
+  async uploadTemplateImage(
+    userId: number,
+    file: Express.Multer.File,
+  ): Promise<{ file_id: number; url: string }> {
     if (!file) {
       throw new NotFoundException('No file uploaded');
     }
@@ -141,7 +174,7 @@ export class EmailTemplateService {
     // 1. Save file to storage (local, S3, etc.)
     // 2. Create FileEntity record
     // 3. Return file info
-    
+
     // For now, returning mock data
     return {
       file_id: 1, // This would be the actual file ID from FileEntity
@@ -149,9 +182,15 @@ export class EmailTemplateService {
     };
   }
 
-  async uploadTemplateImages(userId: number, files: Express.Multer.File[]): Promise<{ uploaded: number; files: Array<{ file_id: number; url: string }> }> {
+  async uploadTemplateImages(
+    userId: number,
+    files: Express.Multer.File[],
+  ): Promise<{
+    uploaded: number;
+    files: Array<{ file_id: number; url: string }>;
+  }> {
     const uploadedFiles = [];
-    
+
     for (const file of files) {
       const result = await this.uploadTemplateImage(userId, file);
       uploadedFiles.push(result);
@@ -165,7 +204,7 @@ export class EmailTemplateService {
 
   async previewTemplate(id: number): Promise<string> {
     const template = await this.emailTemplateRepository.findOne({
-      where: { id }
+      where: { id },
     });
 
     if (!template) {
@@ -184,9 +223,12 @@ export class EmailTemplateService {
     return htmlContent;
   }
 
-  async createFromDefault(userId: number, templateKey: string): Promise<EmailTemplateEntity> {
+  async createFromDefault(
+    userId: number,
+    templateKey: string,
+  ): Promise<SingleResponse<EmailTemplateEntity>> {
     const defaultTemplate = DEFAULT_EMAIL_TEMPLATES[templateKey];
-    
+
     if (!defaultTemplate) {
       throw new NotFoundException('Default template not found');
     }
@@ -200,7 +242,8 @@ export class EmailTemplateService {
       template_type: 'html',
     };
 
-    return this.create(userId, templateData);
+    const result = await this.create(userId, templateData);
+    return { result: result.result };
   }
 
   async getDefaultTemplates(): Promise<any[]> {
@@ -213,7 +256,10 @@ export class EmailTemplateService {
     }));
   }
 
-  async saveBuilderTemplate(userId: number, builderData: any): Promise<EmailTemplateEntity> {
+  async saveBuilderTemplate(
+    userId: number,
+    builderData: any,
+  ): Promise<EmailTemplateEntity> {
     const template = this.emailTemplateRepository.create({
       user_id: userId,
       name: builderData.name || 'Builder Template',
@@ -239,7 +285,10 @@ export class EmailTemplateService {
     });
   }
 
-  async getTemplateWithFile(userId: number, id: number): Promise<EmailTemplateEntity> {
+  async getTemplateWithFile(
+    userId: number,
+    id: number,
+  ): Promise<EmailTemplateEntity> {
     const template = await this.emailTemplateRepository.findOne({
       where: { id, user_id: userId },
       relations: ['file'],

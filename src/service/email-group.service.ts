@@ -6,9 +6,10 @@ import {
   UpdateEmailGroupDto,
   EmailGroupQueryDto,
 } from '../utils/dto/email-group.dto';
-import { EmailGroupStatusEnum } from '../utils/enum/email-smtp.enum';
 import { PaginationBuilder } from '../utils/pagination.builder';
 import { MODELS } from '../constants/constants';
+import { SingleResponse } from '../utils/dto/dto';
+import { PaginationResponse } from '../utils/pagination.response';
 
 @Injectable()
 export class EmailGroupService {
@@ -20,16 +21,21 @@ export class EmailGroupService {
   async create(
     userId: number,
     createDto: CreateEmailGroupDto,
-  ): Promise<EmailGroupEntity> {
-    const emailGroup = this.emailGroupRepository.create({
+  ): Promise<SingleResponse<EmailGroupEntity>> {
+    const emailGroup: EmailGroupEntity = this.emailGroupRepository.create({
       ...createDto,
       user_id: userId,
     });
 
-    return this.emailGroupRepository.save(emailGroup);
+    const result: EmailGroupEntity =
+      await this.emailGroupRepository.save(emailGroup);
+    return { result: result };
   }
 
-  async findAll(userId: number, query: EmailGroupQueryDto) {
+  async findAll(
+    userId: number,
+    query: EmailGroupQueryDto,
+  ): Promise<PaginationResponse<EmailGroupEntity[]>> {
     const queryBuilder = this.emailGroupRepository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.emailContacts', 'contacts')
@@ -69,14 +75,16 @@ export class EmailGroupService {
     userId: number,
     id: number,
     updateDto: UpdateEmailGroupDto,
-  ): Promise<EmailGroupEntity> {
-    const group = await this.findOne(userId, id);
+  ): Promise<SingleResponse<EmailGroupEntity>> {
+    const group: EmailGroupEntity = await this.findOne(userId, id);
     Object.assign(group, updateDto);
-    return this.emailGroupRepository.save(group);
+    const result: EmailGroupEntity =
+      await this.emailGroupRepository.save(group);
+    return { result: result };
   }
 
   async remove(userId: number, id: number): Promise<void> {
-    const group = await this.findOne(userId, id);
+    const group: EmailGroupEntity = await this.findOne(userId, id);
     await this.emailGroupRepository.remove(group);
   }
 
