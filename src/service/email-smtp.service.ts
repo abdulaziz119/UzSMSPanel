@@ -40,7 +40,7 @@ export class EmailSmtpService {
 
     if (query.search) {
       queryBuilder.andWhere(
-        '(smtp.name ILIKE :search OR smtp.host ILIKE :search OR smtp.from_email ILIKE :search)',
+        '(smtp.host ILIKE :search OR smtp.from_email ILIKE :search OR smtp.username ILIKE :search)',
         { search: `%${query.search}%` },
       );
     }
@@ -82,12 +82,12 @@ export class EmailSmtpService {
   }
 
   async getActiveSmtp(userId: number): Promise<EmailSmtpEntity> {
-    const smtp = await this.emailSmtpRepository.findOne({
-      where: {
-        user_id: userId,
-      },
-      order: { created_at: 'ASC' },
-    });
+    const smtp = await this.emailSmtpRepository
+      .createQueryBuilder('smtp')
+      .addSelect('smtp.password')
+      .where('smtp.user_id = :userId', { userId })
+      .orderBy('smtp.created_at', 'ASC')
+      .getOne();
 
     if (!smtp) {
       throw new NotFoundException('No active SMTP configuration found');

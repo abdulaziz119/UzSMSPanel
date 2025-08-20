@@ -5,6 +5,8 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
@@ -81,22 +83,36 @@ export class EmailTemplateEntity extends BaseEntity {
   @Column({ type: 'json', nullable: true })
   styles: Record<string, any> | null; // CSS styles
 
+  // Attachment files - stores array of file IDs
   @Column({ type: 'json', nullable: true })
-  attachments: Array<{
-    filename: string;
-    path: string;
-    contentType: string;
-    size: number;
-  }> | null;
+  attachment_file_ids: number[] | null;
 
+  @ManyToMany(() => FileEntity)
+  @JoinTable({
+    name: 'email_template_attachments',
+    joinColumn: { name: 'template_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'file_id', referencedColumnName: 'id' },
+  })
+  attachmentFiles: FileEntity[];
+
+  // Image files - stores array of objects with file ID and settings
   @Column({ type: 'json', nullable: true })
-  images: Array<{
-    filename: string;
-    path: string;
+  image_files: Array<{
+    file_id: number;
     cid: string; // Content ID for inline images
     alt_text?: string;
+    position?: 'inline' | 'attachment';
   }> | null;
 
+  @ManyToMany(() => FileEntity)
+  @JoinTable({
+    name: 'email_template_images',
+    joinColumn: { name: 'template_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'file_id', referencedColumnName: 'id' },
+  })
+  imageFiles: FileEntity[];
+
+  // Design settings with file references
   @Column({ type: 'json', nullable: true })
   design_settings: {
     background_color?: string;
@@ -105,10 +121,26 @@ export class EmailTemplateEntity extends BaseEntity {
     font_size?: string;
     button_color?: string;
     button_text_color?: string;
-    logo_url?: string;
-    header_image?: string;
+    logo_file_id?: number; // Reference to FileEntity
+    header_image_file_id?: number; // Reference to FileEntity
     footer_text?: string;
   } | null;
+
+  // Logo file relation
+  @ManyToOne(() => FileEntity, { nullable: true })
+  @JoinColumn({ name: 'logo_file_id' })
+  logoFile: FileEntity;
+
+  @Column({ type: 'integer', nullable: true })
+  logo_file_id: number | null;
+
+  // Header image file relation
+  @ManyToOne(() => FileEntity, { nullable: true })
+  @JoinColumn({ name: 'header_image_file_id' })
+  headerImageFile: FileEntity;
+
+  @Column({ type: 'integer', nullable: true })
+  header_image_file_id: number | null;
 
   @Column({ type: 'boolean', default: false })
   is_responsive: boolean;

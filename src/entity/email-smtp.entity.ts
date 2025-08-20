@@ -27,9 +27,6 @@ export class EmailSmtpEntity extends BaseEntity {
   user: UserEntity;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
-  name: string;
-
-  @Column({ type: 'varchar', length: 255, nullable: false })
   host: string;
 
   @Column({ type: 'integer', nullable: false })

@@ -17,50 +17,22 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmailTemplateStatusEnum } from '../enum/email-smtp.enum';
 import { PaginationParams } from './dto';
 
-class AttachmentDto {
+class FileAttachmentDto {
   @ApiProperty({
-    description: 'Name of the attachment file',
-    example: 'document.pdf'
-  })
-  @IsString()
-  filename: string;
-
-  @ApiProperty({
-    description: 'Path to the attachment file',
-    example: '/uploads/documents/document.pdf'
-  })
-  @IsString()
-  path: string;
-
-  @ApiProperty({
-    description: 'MIME type of the attachment',
-    example: 'application/pdf'
-  })
-  @IsString()
-  contentType: string;
-
-  @ApiProperty({
-    description: 'Size of the attachment in bytes',
-    example: 1024000
+    description: 'File ID from files table',
+    example: 1
   })
   @IsInt()
-  size: number;
+  file_id: number;
 }
 
-class ImageDto {
+class FileImageDto {
   @ApiProperty({
-    description: 'Name of the image file',
-    example: 'logo.png'
+    description: 'File ID from files table',
+    example: 2
   })
-  @IsString()
-  filename: string;
-
-  @ApiProperty({
-    description: 'Path to the image file',
-    example: '/uploads/images/logo.png'
-  })
-  @IsString()
-  path: string;
+  @IsInt()
+  file_id: number;
 
   @ApiProperty({
     description: 'Content ID for embedding in email',
@@ -76,6 +48,15 @@ class ImageDto {
   @IsOptional()
   @IsString()
   alt_text?: string;
+
+  @ApiPropertyOptional({
+    description: 'Image position in email',
+    example: 'inline',
+    enum: ['inline', 'attachment']
+  })
+  @IsOptional()
+  @IsString()
+  position?: 'inline' | 'attachment';
 }
 
 class DesignSettingsDto {
@@ -128,20 +109,20 @@ class DesignSettingsDto {
   button_text_color?: string;
 
   @ApiPropertyOptional({
-    description: 'URL to the logo image',
-    example: 'https://example.com/logo.png'
+    description: 'Logo file ID from files table',
+    example: 3
   })
   @IsOptional()
-  @IsUrl()
-  logo_url?: string;
+  @IsInt()
+  logo_file_id?: number;
 
   @ApiPropertyOptional({
-    description: 'Header image for the email',
-    example: 'header_image.jpg'
+    description: 'Header image file ID from files table',
+    example: 4
   })
   @IsOptional()
-  @IsString()
-  header_image?: string;
+  @IsInt()
+  header_image_file_id?: number;
 
   @ApiPropertyOptional({
     description: 'Footer text for the email',
@@ -195,24 +176,40 @@ export class CreateEmailTemplateDto {
   variables?: Record<string, any>;
 
   @ApiPropertyOptional({
-    description: 'Attachments for the email template',
-    type: [AttachmentDto]
+    description: 'Attachment file IDs from files table',
+    type: [Number],
+    example: [1, 2, 3]
   })
   @IsOptional()
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => AttachmentDto)
-  attachments?: AttachmentDto[];
+  @IsInt({ each: true })
+  attachment_file_ids?: number[];
 
   @ApiPropertyOptional({
-    description: 'Images used in the email template',
-    type: [ImageDto]
+    description: 'Image files configuration',
+    type: [FileImageDto]
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ImageDto)
-  images?: ImageDto[];
+  @Type(() => FileImageDto)
+  image_files?: FileImageDto[];
+
+  @ApiPropertyOptional({
+    description: 'Logo file ID from files table',
+    example: 5
+  })
+  @IsOptional()
+  @IsInt()
+  logo_file_id?: number;
+
+  @ApiPropertyOptional({
+    description: 'Header image file ID from files table',
+    example: 6
+  })
+  @IsOptional()
+  @IsInt()
+  header_image_file_id?: number;
 
   @ApiPropertyOptional({
     description: 'Type of the email template',
@@ -345,24 +342,40 @@ export class UpdateEmailTemplateDto {
   variables?: Record<string, any>;
 
   @ApiPropertyOptional({
-    description: 'Attachments for the email template',
-    type: [AttachmentDto]
+    description: 'Attachment file IDs from files table',
+    type: [Number],
+    example: [1, 2, 3]
   })
   @IsOptional()
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => AttachmentDto)
-  attachments?: AttachmentDto[];
+  @IsInt({ each: true })
+  attachment_file_ids?: number[];
 
   @ApiPropertyOptional({
-    description: 'Images used in the email template',
-    type: [ImageDto]
+    description: 'Image files configuration',
+    type: [FileImageDto]
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ImageDto)
-  images?: ImageDto[];
+  @Type(() => FileImageDto)
+  image_files?: FileImageDto[];
+
+  @ApiPropertyOptional({
+    description: 'Logo file ID from files table',
+    example: 5
+  })
+  @IsOptional()
+  @IsInt()
+  logo_file_id?: number;
+
+  @ApiPropertyOptional({
+    description: 'Header image file ID from files table',
+    example: 6
+  })
+  @IsOptional()
+  @IsInt()
+  header_image_file_id?: number;
 
   @ApiPropertyOptional({
     description: 'Type of the email template',
