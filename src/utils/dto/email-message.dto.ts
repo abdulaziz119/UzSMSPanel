@@ -31,7 +31,7 @@ export class SendEmailDto {
   })
   @IsOptional()
   @IsInt()
-  email_group_id?: number;
+  group_id?: number;
 
   @ApiPropertyOptional({
     description: 'ID of the SMTP configuration to use',
@@ -98,7 +98,7 @@ export class EmailMessageQueryDto extends PaginationParams {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  email_group_id?: number;
+  group_id?: number;
 
   @ApiPropertyOptional({
     description: 'Filter by email template ID',

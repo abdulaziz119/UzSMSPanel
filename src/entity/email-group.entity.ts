@@ -8,8 +8,8 @@ import { EmailMessageEntity } from './email-message.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'email_groups' })
 export class EmailGroupEntity extends BaseEntity {
-  @Column({ type: 'varchar', nullable: false })
-  title: string;
+  @Column({ type: 'varchar', nullable: true })
+  title: string | null;
 
   @Column({ type: 'integer', nullable: true, default: 0 })
   contact_count: number | null;

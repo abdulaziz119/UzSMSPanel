@@ -49,7 +49,7 @@ export class CreateEmailContactDto {
     type: 'integer'
   })
   @IsInt()
-  email_group_id: number;
+  group_id: number;
 }
 
 export class CreateBulkEmailContactDto {
@@ -61,13 +61,13 @@ export class CreateBulkEmailContactDto {
         email: 'user1@example.com',
         first_name: 'John',
         last_name: 'Doe',
-        email_group_id: 1
+        group_id: 1
       },
       {
         email: 'user2@example.com',
         first_name: 'Jane',
         last_name: 'Smith',
-        email_group_id: 1
+        group_id: 1
       }
     ]
   })
@@ -123,7 +123,7 @@ export class UpdateEmailContactDto {
   })
   @IsOptional()
   @IsInt()
-  email_group_id?: number;
+  group_id?: number;
 }
 
 export class EmailContactQueryDto extends PaginationParams {
@@ -135,7 +135,7 @@ export class EmailContactQueryDto extends PaginationParams {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  email_group_id?: number;
+  group_id?: number;
 
   @ApiPropertyOptional({
     description: 'Filter by active status',

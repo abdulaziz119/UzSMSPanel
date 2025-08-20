@@ -29,13 +29,13 @@ export class EmailContactService {
     createDto: CreateEmailContactDto,
   ): Promise<EmailContactEntity> {
     // Verify that group belongs to user
-    await this.emailGroupService.findOne(userId, createDto.email_group_id);
+    await this.emailGroupService.findOne(userId, createDto.group_id);
 
     // Check if email already exists in this group
     const existingContact = await this.emailContactRepository.findOne({
       where: {
         email: createDto.email,
-        email_group_id: createDto.email_group_id,
+        group_id: createDto.group_id,
       },
     });
 
@@ -45,13 +45,12 @@ export class EmailContactService {
 
     const contact = this.emailContactRepository.create({
       ...createDto,
-      user_id: userId,
     });
 
     const savedContact = await this.emailContactRepository.save(contact);
 
     // Update group contact count
-    await this.emailGroupService.updateContactCount(createDto.email_group_id);
+    await this.emailGroupService.updateContactCount(createDto.group_id);
 
     return savedContact;
   }
@@ -85,9 +84,9 @@ export class EmailContactService {
       .leftJoinAndSelect('contact.emailGroup', 'group')
       .where('contact.user_id = :userId', { userId });
 
-    if (query.email_group_id) {
-      queryBuilder.andWhere('contact.email_group_id = :groupId', {
-        groupId: query.email_group_id,
+    if (query.group_id) {
+      queryBuilder.andWhere('contact.group_id = :groupId', {
+        groupId: query.group_id,
       });
     }
 
@@ -117,7 +116,7 @@ export class EmailContactService {
 
   async findOne(userId: number, id: number): Promise<EmailContactEntity> {
     const contact = await this.emailContactRepository.findOne({
-      where: { id, user_id: userId },
+      where: { id },
       relations: ['emailGroup'],
     });
 
@@ -136,17 +135,17 @@ export class EmailContactService {
     const contact = await this.findOne(userId, id);
 
     if (
-      updateDto.email_group_id &&
-      updateDto.email_group_id !== contact.email_group_id
+      updateDto.group_id &&
+      updateDto.group_id !== contact.group_id
     ) {
       // Verify new group belongs to user
-      await this.emailGroupService.findOne(userId, updateDto.email_group_id);
+      await this.emailGroupService.findOne(userId, updateDto.group_id);
 
       // Check if email already exists in new group
       const existingContact = await this.emailContactRepository.findOne({
         where: {
           email: updateDto.email || contact.email,
-          email_group_id: updateDto.email_group_id,
+          group_id: updateDto.group_id,
         },
       });
 
@@ -157,13 +156,13 @@ export class EmailContactService {
       }
     }
 
-    const oldGroupId = contact.email_group_id;
+    const oldGroupId = contact.group_id;
     Object.assign(contact, updateDto);
     const savedContact = await this.emailContactRepository.save(contact);
 
     // Update contact counts for affected groups
-    await this.emailGroupService.updateContactCount(contact.email_group_id);
-    if (oldGroupId !== contact.email_group_id) {
+    await this.emailGroupService.updateContactCount(contact.group_id);
+    if (oldGroupId !== contact.group_id) {
       await this.emailGroupService.updateContactCount(oldGroupId);
     }
 
@@ -172,7 +171,7 @@ export class EmailContactService {
 
   async remove(userId: number, id: number): Promise<void> {
     const contact = await this.findOne(userId, id);
-    const groupId = contact.email_group_id;
+    const groupId = contact.group_id;
 
     await this.emailContactRepository.remove(contact);
 
@@ -184,39 +183,12 @@ export class EmailContactService {
     userId: number,
     groupId: number,
   ): Promise<EmailContactEntity[]> {
-    // Verify group belongs to user
-    await this.emailGroupService.findOne(userId, groupId);
-
     return this.emailContactRepository.find({
       where: {
-        user_id: userId,
-        email_group_id: groupId,
+        group_id: groupId,
         is_active: true,
       },
-      order: { email: 'ASC' },
     });
   }
 
-  async updateEmailStats(contactId: number): Promise<void> {
-    const contact = await this.emailContactRepository.findOne({
-      where: { id: contactId },
-    });
-
-    if (contact) {
-      contact.total_emails_sent += 1;
-      contact.last_email_sent_at = new Date();
-      await this.emailContactRepository.save(contact);
-    }
-  }
-
-  async updateBounceCount(contactId: number): Promise<void> {
-    const contact = await this.emailContactRepository.findOne({
-      where: { id: contactId },
-    });
-
-    if (contact) {
-      contact.bounced_count += 1;
-      await this.emailContactRepository.save(contact);
-    }
-  }
 }

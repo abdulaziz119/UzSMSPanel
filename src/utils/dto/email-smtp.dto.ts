@@ -3,7 +3,6 @@ import {
   IsInt,
   IsBoolean,
   IsEmail,
-  IsEnum,
   IsOptional,
   IsNumber,
   Min,
@@ -12,7 +11,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SmtpStatusEnum } from '../enum/email-smtp.enum';
 import { PaginationParams } from './dto';
 
 export class CreateEmailSmtpDto {
@@ -98,16 +96,6 @@ export class CreateEmailSmtpDto {
   @IsOptional()
   @IsBoolean()
   use_tls?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Daily email sending limit',
-    example: 1000,
-    minimum: 0
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  daily_limit?: number;
 }
 
 export class UpdateEmailSmtpDto {
@@ -197,37 +185,9 @@ export class UpdateEmailSmtpDto {
   @IsOptional()
   @IsBoolean()
   use_tls?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'SMTP configuration status',
-    enum: SmtpStatusEnum,
-    example: SmtpStatusEnum.ACTIVE
-  })
-  @IsOptional()
-  @IsEnum(SmtpStatusEnum)
-  status?: SmtpStatusEnum;
-
-  @ApiPropertyOptional({
-    description: 'Daily email sending limit',
-    example: 1000,
-    minimum: 0
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  daily_limit?: number;
 }
 
 export class EmailSmtpQueryDto extends PaginationParams {
-  @ApiPropertyOptional({
-    description: 'Filter by SMTP status',
-    enum: SmtpStatusEnum,
-    example: SmtpStatusEnum.ACTIVE
-  })
-  @IsOptional()
-  @IsEnum(SmtpStatusEnum)
-  status?: SmtpStatusEnum;
-
   @ApiPropertyOptional({
     description: 'Search by name, host, or from_email',
     example: 'gmail'

@@ -37,10 +37,10 @@ export class EmailMessageService {
     let recipients: string[] = [];
 
     // Get recipients from group if specified
-    if (sendDto.email_group_id) {
+    if (sendDto.group_id) {
       const contacts = await this.emailContactService.getContactsByGroup(
         userId,
-        sendDto.email_group_id,
+        sendDto.group_id,
       );
       recipients = contacts.map((contact) => contact.email);
     }
@@ -95,7 +95,7 @@ export class EmailMessageService {
         user_id: userId,
         email_smtp_id: smtp.id,
         email_template_id: sendDto.email_template_id,
-        email_group_id: sendDto.email_group_id,
+        group_id: sendDto.group_id,
         recipient_email: recipientEmail,
         subject: emailContent.subject,
         html_content: emailContent.html_content,
@@ -150,29 +150,10 @@ export class EmailMessageService {
         text: message.text_content,
       });
 
-      // Update message status
+            // Update message status
       message.status = EmailStatusEnum.SENT;
-      message.sent_at = new Date();
       message.message_id = info.messageId;
       await this.emailMessageRepository.save(message);
-
-      // Update SMTP usage stats
-      await this.emailSmtpService.updateUsageStats(smtp.id);
-
-      // Update contact stats if available
-      const contact = await this.emailMessageRepository
-        .createQueryBuilder('message')
-        .leftJoin('message.emailGroup', 'group')
-        .leftJoin('group.emailContacts', 'contact', 'contact.email = :email', {
-          email: message.recipient_email,
-        })
-        .select('contact.id')
-        .where('message.id = :messageId', { messageId: message.id })
-        .getRawOne();
-
-      if (contact && contact.id) {
-        await this.emailContactService.updateEmailStats(contact.id);
-      }
     } catch (error) {
       // Update message with error
       message.status = EmailStatusEnum.FAILED;
@@ -198,9 +179,9 @@ export class EmailMessageService {
       });
     }
 
-    if (query.email_group_id) {
-      queryBuilder.andWhere('message.email_group_id = :groupId', {
-        groupId: query.email_group_id,
+    if (query.group_id) {
+      queryBuilder.andWhere('message.group_id = :groupId', {
+        groupId: query.group_id,
       });
     }
 

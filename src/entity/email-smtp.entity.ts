@@ -12,7 +12,7 @@ import { UserEntity } from './user.entity';
 import { EmailMessageEntity } from './email-message.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'email_smtp' })
-@Index(['user_id', 'status'])
+@Index(['user_id'])
 @Index(['host', 'port'])
 export class EmailSmtpEntity extends BaseEntity {
   @Column({ type: 'integer' })
@@ -40,6 +40,12 @@ export class EmailSmtpEntity extends BaseEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: false, select: false })
   password: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: false })
+  from_email: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  from_name: string | null;
 
   @Column({ type: 'boolean', default: true })
   use_ssl: boolean;

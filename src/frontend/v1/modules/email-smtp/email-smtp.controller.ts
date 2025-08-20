@@ -70,16 +70,6 @@ export class EmailSmtpController {
     return { result: true };
   }
 
-  @Post('/test')
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
-  async testConnection(
-    @Body() param: ParamIdDto,
-  ): Promise<{ success: boolean; message: string }> {
-    const result = await this.emailSmtpService.testConnection(param.id);
-    return { success: result, message: 'SMTP connection successful' };
-  }
-
   @Post('/active/list')
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)

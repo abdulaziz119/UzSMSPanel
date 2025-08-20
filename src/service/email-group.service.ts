@@ -24,7 +24,6 @@ export class EmailGroupService {
     const emailGroup = this.emailGroupRepository.create({
       ...createDto,
       user_id: userId,
-      status: EmailGroupStatusEnum.ACTIVE,
     });
 
     return this.emailGroupRepository.save(emailGroup);
@@ -36,15 +35,10 @@ export class EmailGroupService {
       .leftJoinAndSelect('group.emailContacts', 'contacts')
       .where('group.user_id = :userId', { userId });
 
-    if (query.status) {
-      queryBuilder.andWhere('group.status = :status', { status: query.status });
-    }
-
     if (query.search) {
-      queryBuilder.andWhere(
-        '(group.title ILIKE :search OR group.description ILIKE :search)',
-        { search: `%${query.search}%` },
-      );
+      queryBuilder.andWhere('(group.title ILIKE :search)', {
+        search: `%${query.search}%`,
+      });
     }
 
     queryBuilder.orderBy('group.created_at', 'DESC');
@@ -96,16 +90,6 @@ export class EmailGroupService {
 
     await this.emailGroupRepository.update(groupId, {
       contact_count: parseInt(result.count) || 0,
-    });
-  }
-
-  async getActiveGroups(userId: number): Promise<EmailGroupEntity[]> {
-    return this.emailGroupRepository.find({
-      where: {
-        user_id: userId,
-        status: EmailGroupStatusEnum.ACTIVE,
-      },
-      order: { title: 'ASC' },
     });
   }
 }

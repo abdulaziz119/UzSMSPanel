@@ -123,16 +123,16 @@ export class UserEntity extends BaseEntity {
   emailGroups: EmailGroupEntity[];
 
   @OneToMany(
-    () => EmailContactEntity,
-    (entity) => entity.user,
-    cascadeUpdateRelationOptions,
-  )
-  emailContacts: EmailContactEntity[];
-
-  @OneToMany(
     () => EmailTemplateEntity,
     (entity) => entity.user,
     cascadeUpdateRelationOptions,
   )
   emailTemplates: EmailTemplateEntity[];
+
+  @OneToMany(
+    () => EmailMessageEntity,
+    (entity) => entity.user,
+    cascadeUpdateRelationOptions,
+  )
+  emailMessages: EmailMessageEntity[];
 }

@@ -8,12 +8,10 @@ import { EmailGroupEntity } from './email-group.entity';
 import { EmailStatusEnum } from '../utils/enum/email-smtp.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'email_messages' })
-@Index(['user_id', 'status'])
-@Index(['recipient_email'])
-@Index(['sent_at'])
+@Index(['user_id', 'status', 'created_at', 'recipient_email'])
 export class EmailMessageEntity extends BaseEntity {
   @Column({ type: 'integer' })
-  email_message_id: number;
+  user_id: number;
 
   @Column({ type: 'integer', nullable: true })
   email_smtp_id: number | null;
@@ -22,7 +20,7 @@ export class EmailMessageEntity extends BaseEntity {
   email_template_id: number | null;
 
   @Column({ type: 'integer', nullable: true })
-  email_group_id: number | null;
+  group_id: number | null;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   recipient_email: string;
@@ -46,20 +44,8 @@ export class EmailMessageEntity extends BaseEntity {
   })
   status: EmailStatusEnum;
 
-  @Column({ type: 'timestamp', nullable: true })
-  sent_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  delivered_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  opened_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  clicked_at: Date | null;
-
-  @Column({ type: 'timestamp', nullable: true })
-  bounced_at: Date | null;
+  @Column({ type: 'decimal', precision: 15, scale: 4, default: 0 })
+  cost: number;
 
   @Column({ type: 'text', nullable: true })
   error_message: string | null;
@@ -71,12 +57,12 @@ export class EmailMessageEntity extends BaseEntity {
   retry_count: number;
 
   @ManyToOne(
-    () => EmailMessageEntity,
-    (message) => message.emailMessage,
+    () => UserEntity,
+    (user) => user.emailMessages,
     cascadeUpdateRelationOptions,
   )
-  @JoinColumn({ name: 'email_message_id' })
-  emailMessage: EmailMessageEntity;
+  @JoinColumn({ name: 'user_id' })
+  user: UserEntity;
 
   @ManyToOne(
     () => EmailSmtpEntity,
@@ -94,11 +80,7 @@ export class EmailMessageEntity extends BaseEntity {
   @JoinColumn({ name: 'email_template_id' })
   emailTemplate: EmailTemplateEntity;
 
-  @ManyToOne(
-    () => EmailGroupEntity,
-    (group) => group.emailMessages,
-    cascadeUpdateRelationOptions,
-  )
-  @JoinColumn({ name: 'email_group_id' })
+  @ManyToOne(() => EmailGroupEntity, undefined, cascadeUpdateRelationOptions)
+  @JoinColumn({ name: 'group_id' })
   emailGroup: EmailGroupEntity;
 }
