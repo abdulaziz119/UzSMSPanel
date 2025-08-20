@@ -1,53 +1,76 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
   Param,
-  UseGuards,
-  Req,
-  Query,
-  HttpStatus,
   HttpCode,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailMessageService } from '../../../../service/email-message.service';
 import { SendEmailDto, EmailMessageQueryDto } from '../../../../utils/dto/email-message.dto';
-import { JwtAuthGuard } from '../../../../dashboard/v1/modules/auth/jwt.strategy';
+import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { User } from '../auth/decorators/user.decorator';
+import { UserRoleEnum } from '../../../../utils/enum/user.enum';
+import { ParamIdDto } from '../../../../utils/dto/dto';
+import { PaginationResponse } from '../../../../utils/pagination.response';
 
-@Controller('email-message')
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@ApiTags('email-message')
+@Controller({ path: '/frontend/email-message', version: '1' })
 export class EmailMessageController {
   constructor(private readonly emailMessageService: EmailMessageService) {}
 
-  @Post('send')
-  @HttpCode(HttpStatus.CREATED)
-  async sendEmail(@Req() req: any, @Body() sendDto: SendEmailDto) {
-    const userId = req.user.id;
-    return this.emailMessageService.sendEmail(userId, sendDto);
+  @Post('/send')
+  @HttpCode(201)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async sendEmail(
+    @Body() body: SendEmailDto,
+    @User('id') user_id: number,
+  ) {
+    return this.emailMessageService.sendEmail(user_id, body);
   }
 
-  @Get()
-  async findAll(@Req() req: any, @Query() query: EmailMessageQueryDto) {
-    const userId = req.user.id;
-    return this.emailMessageService.findAll(userId, query);
+  @Post('/findAll')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findAll(
+    @Body() query: EmailMessageQueryDto,
+    @User('id') user_id: number,
+  ): Promise<PaginationResponse<any[]>> {
+    return this.emailMessageService.findAll(user_id, query);
   }
 
-  @Get('stats')
-  async getEmailStats(@Req() req: any) {
-    const userId = req.user.id;
-    return this.emailMessageService.getEmailStats(userId);
+  @Post('/stats')
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async getEmailStats(
+    @User('id') user_id: number,
+  ) {
+    return this.emailMessageService.getEmailStats(user_id);
   }
 
-  @Get(':id')
-  async findOne(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    return this.emailMessageService.findOne(userId, +id);
+  @Post('/findOne')
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findOne(
+    @Body() param: ParamIdDto,
+    @User('id') user_id: number,
+  ) {
+    return this.emailMessageService.findOne(user_id, param.id);
   }
 
-  @Patch(':id/retry')
-  async retryFailedEmail(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    return this.emailMessageService.retryFailedEmail(userId, +id);
+  @Post('/retry')
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async retryFailedEmail(
+    @Body() param: ParamIdDto,
+    @User('id') user_id: number,
+  ) {
+    return this.emailMessageService.retryFailedEmail(user_id, param.id);
   }
 }

@@ -1,61 +1,71 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  Req,
-  Query,
-  HttpStatus,
   HttpCode,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailGroupService } from '../../../../service/email-group.service';
 import { CreateEmailGroupDto, UpdateEmailGroupDto, EmailGroupQueryDto } from '../../../../utils/dto/email-group.dto';
-import { JwtAuthGuard } from '../../../../dashboard/v1/modules/auth/jwt.strategy';
+import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { User } from '../auth/decorators/user.decorator';
+import { UserRoleEnum } from '../../../../utils/enum/user.enum';
+import { ParamIdDto, PaginationParams, SingleResponse } from '../../../../utils/dto/dto';
+import { PaginationResponse } from '../../../../utils/pagination.response';
 
-@Controller('email-group')
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@ApiTags('email-group')
+@Controller({ path: '/frontend/email-group', version: '1' })
 export class EmailGroupController {
   constructor(private readonly emailGroupService: EmailGroupService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Req() req: any, @Body() createDto: CreateEmailGroupDto) {
-    const userId = req.user.id;
-    return this.emailGroupService.create(userId, createDto);
+  @Post('/create')
+  @HttpCode(201)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async create(
+    @Body() body: CreateEmailGroupDto,
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailGroupService.create(user_id, body);
+    return { result };
   }
 
-  @Get()
-  async findAll(@Req() req: any, @Query() query: EmailGroupQueryDto) {
-    const userId = req.user.id;
-    return this.emailGroupService.findAll(userId, query);
+  @Post('/findAll')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findAll(
+    @Body() query: EmailGroupQueryDto,
+    @User('id') user_id: number,
+  ): Promise<PaginationResponse<any[]>> {
+    return await this.emailGroupService.findAll(user_id, query);
   }
 
-  @Get('active')
-  async getActiveGroups(@Req() req: any) {
-    const userId = req.user.id;
-    return this.emailGroupService.getActiveGroups(userId);
+  @Post('/update')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async update(
+    @Body() body: UpdateEmailGroupDto & { id: number },
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailGroupService.update(user_id, body.id, body);
+    return { result };
   }
 
-  @Get(':id')
-  async findOne(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    return this.emailGroupService.findOne(userId, +id);
-  }
-
-  @Patch(':id')
-  async update(@Req() req: any, @Param('id') id: string, @Body() updateDto: UpdateEmailGroupDto) {
-    const userId = req.user.id;
-    return this.emailGroupService.update(userId, +id, updateDto);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    await this.emailGroupService.remove(userId, +id);
+  @Post('/delete')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async delete(
+    @Body() param: ParamIdDto,
+    @User('id') user_id: number,
+  ): Promise<{ result: true }> {
+    await this.emailGroupService.remove(user_id, param.id);
+    return { result: true };
   }
 }

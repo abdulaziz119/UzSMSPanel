@@ -3,73 +3,89 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
-  UseGuards,
-  Req,
-  Query,
-  HttpStatus,
   HttpCode,
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailTemplateService } from '../../../../service/email-template.service';
 import { CreateEmailTemplateDto, UpdateEmailTemplateDto, EmailTemplateQueryDto } from '../../../../utils/dto/email-template.dto';
-import { JwtAuthGuard } from '../../../../dashboard/v1/modules/auth/jwt.strategy';
+import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { User } from '../auth/decorators/user.decorator';
+import { UserRoleEnum } from '../../../../utils/enum/user.enum';
+import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
+import { PaginationResponse } from '../../../../utils/pagination.response';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
-@Controller('email-template')
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@ApiTags('email-template')
+@Controller({ path: '/frontend/email-template', version: '1' })
 export class EmailTemplateController {
   constructor(private readonly emailTemplateService: EmailTemplateService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Req() req: any, @Body() createDto: CreateEmailTemplateDto) {
-    const userId = req.user.id;
-    return this.emailTemplateService.create(userId, createDto);
+  @Post('/create')
+  @HttpCode(201)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async create(
+    @Body() body: CreateEmailTemplateDto,
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailTemplateService.create(user_id, body);
+    return { result };
   }
 
-  @Get()
-  async findAll(@Req() req: any, @Query() query: EmailTemplateQueryDto) {
-    const userId = req.user.id;
-    return this.emailTemplateService.findAll(userId, query);
+  @Post('/findAll')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findAll(
+    @Body() query: EmailTemplateQueryDto,
+    @User('id') user_id: number,
+  ): Promise<PaginationResponse<any[]>> {
+    return this.emailTemplateService.findAll(user_id, query);
   }
 
-  @Get('active')
-  async getActiveTemplates(@Req() req: any) {
-    const userId = req.user.id;
-    return this.emailTemplateService.getActiveTemplates(userId);
+  @Post('/update')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async update(
+    @Body() body: UpdateEmailTemplateDto & { id: number },
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailTemplateService.update(user_id, body.id, body);
+    return { result };
   }
 
-  @Get(':id')
-  async findOne(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    return this.emailTemplateService.findOne(userId, +id);
-  }
-
-  @Patch(':id')
-  async update(@Req() req: any, @Param('id') id: string, @Body() updateDto: UpdateEmailTemplateDto) {
-    const userId = req.user.id;
-    return this.emailTemplateService.update(userId, +id, updateDto);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    await this.emailTemplateService.remove(userId, +id);
+  @Post('/delete')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async delete(
+    @Body() param: ParamIdDto,
+    @User('id') user_id: number,
+  ): Promise<{ result: true }> {
+    await this.emailTemplateService.remove(user_id, param.id);
+    return { result: true };
   }
 
   @Post('upload-images')
   @UseInterceptors(FilesInterceptor('images', 10))
-  async uploadImages(@Req() req: any, @UploadedFiles() files: Express.Multer.File[]) {
-    const userId = req.user.id;
-    return this.emailTemplateService.uploadTemplateImages(userId, files);
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async uploadImages(
+    @UploadedFiles() files: Express.Multer.File[],
+    @User('id') user_id: number,
+  ) {
+    return this.emailTemplateService.uploadTemplateImages(user_id, files);
   }
 
     @Get('default')
@@ -81,12 +97,14 @@ export class EmailTemplateController {
   }
 
   @Post('create-from-default/:templateKey')
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
   async createFromDefault(
-    @Req() req: any,
+    @User('id') user_id: number,
     @Param('templateKey') templateKey: string,
   ) {
     const template = await this.emailTemplateService.createFromDefault(
-      req.user.sub,
+      user_id,
       templateKey,
     );
 
@@ -97,26 +115,31 @@ export class EmailTemplateController {
     };
   }
 
-  @Get(':id/preview')
-  async previewTemplate(@Param('id') id: number) {
-    const htmlContent = await this.emailTemplateService.previewTemplate(id);
-    
-    return {
-      success: true,
-      data: { html_content: htmlContent },
-    };
+  @Post('preview')
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async previewTemplate(@Body() param: ParamIdDto) {
+    const htmlContent = await this.emailTemplateService.previewTemplate(param.id);
+    return { success: true, data: { html_content: htmlContent } };
   }
 
   @Post('builder/save')
-  async saveBuilderTemplate(@Req() req: any, @Body() builderData: any) {
-    const userId = req.user.id;
-    return this.emailTemplateService.saveBuilderTemplate(userId, builderData);
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async saveBuilderTemplate(
+    @User('id') user_id: number,
+    @Body() builderData: any,
+  ) {
+    return this.emailTemplateService.saveBuilderTemplate(user_id, builderData);
   }
 
   @Get('builder/templates')
-  async getBuilderTemplates(@Req() req: any) {
-    const userId = req.user.id;
-    return this.emailTemplateService.getBuilderTemplates(userId);
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async getBuilderTemplates(
+    @User('id') user_id: number,
+  ) {
+    return this.emailTemplateService.getBuilderTemplates(user_id);
   }
 
   @Post('upload-image')
@@ -142,8 +165,9 @@ export class EmailTemplateController {
       fileSize: 5 * 1024 * 1024, // 5MB
     },
   }))
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
   async uploadImage(
-    @Req() req: any,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {

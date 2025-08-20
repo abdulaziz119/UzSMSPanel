@@ -18,6 +18,7 @@ import {
   TariffFilterDto,
   UpdateTariffDto,
 } from '../utils/dto/tariffs.dto';
+import { TariffType } from '../utils/enum/tariff.enum';
 
 @Injectable()
 export class TariffService {
@@ -42,6 +43,7 @@ export class TariffService {
           'tariff.public',
           'tariff.operator',
           'tariff.country_id',
+          'tariff.type',
           'tariff.created_at',
           'tariff.updated_at',
         ]);
@@ -76,6 +78,12 @@ export class TariffService {
           '(tariff.name ILIKE :search OR tariff.operator ILIKE :search)',
           { search: `%${filters.search}%` },
         );
+      }
+
+      if (filters.type) {
+        queryBuilder.andWhere('tariff.type = :type', {
+          type: filters.type,
+        });
       }
 
       queryBuilder.orderBy('tariff.price', 'ASC');
@@ -225,6 +233,7 @@ export class TariffService {
         operator: data.operator,
         public: data.public ?? true,
         country_id: data.country_id,
+        type: data.type ?? TariffType.SMS,
       });
 
       const savedTariff: TariffEntity = await this.tariffRepo.save(tariff);

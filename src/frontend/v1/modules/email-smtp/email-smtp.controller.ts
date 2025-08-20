@@ -1,67 +1,91 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
   Param,
-  Delete,
-  UseGuards,
-  Req,
-  Query,
-  HttpStatus,
   HttpCode,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailSmtpService } from '../../../../service/email-smtp.service';
 import { CreateEmailSmtpDto, UpdateEmailSmtpDto, EmailSmtpQueryDto } from '../../../../utils/dto/email-smtp.dto';
-import { JwtAuthGuard } from '../../../../dashboard/v1/modules/auth/jwt.strategy';
+import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { User } from '../auth/decorators/user.decorator';
+import { UserRoleEnum } from '../../../../utils/enum/user.enum';
+import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
+import { PaginationResponse } from '../../../../utils/pagination.response';
 
-@Controller('email-smtp')
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@ApiTags('email-smtp')
+@Controller({ path: '/frontend/email-smtp', version: '1' })
 export class EmailSmtpController {
   constructor(private readonly emailSmtpService: EmailSmtpService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Req() req: any, @Body() createDto: CreateEmailSmtpDto) {
-    const userId = req.user.id;
-    return this.emailSmtpService.create(userId, createDto);
+  @Post('/create')
+  @HttpCode(201)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async create(
+    @Body() body: CreateEmailSmtpDto,
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailSmtpService.create(user_id, body);
+    return { result };
   }
 
-  @Get()
-  async findAll(@Req() req: any, @Query() query: EmailSmtpQueryDto) {
-    const userId = req.user.id;
-    return this.emailSmtpService.findAll(userId, query);
+  @Post('/findAll')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findAll(
+    @Body() query: EmailSmtpQueryDto,
+    @User('id') user_id: number,
+  ): Promise<PaginationResponse<any[]>> {
+    return await this.emailSmtpService.findAll(user_id, query);
   }
 
-  @Get(':id')
-  async findOne(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    return this.emailSmtpService.findOne(userId, +id);
+  @Post('/update')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async update(
+    @Body() body: UpdateEmailSmtpDto & { id: number },
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailSmtpService.update(user_id, body.id, body);
+    return { result };
   }
 
-  @Patch(':id')
-  async update(@Req() req: any, @Param('id') id: string, @Body() updateDto: UpdateEmailSmtpDto) {
-    const userId = req.user.id;
-    return this.emailSmtpService.update(userId, +id, updateDto);
+  @Post('/delete')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async delete(
+    @Body() param: ParamIdDto,
+    @User('id') user_id: number,
+  ): Promise<{ result: true }> {
+    await this.emailSmtpService.remove(user_id, param.id);
+    return { result: true };
   }
 
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    await this.emailSmtpService.remove(userId, +id);
-  }
-
-  @Post(':id/test')
-  async testConnection(@Req() req: any, @Param('id') id: string) {
-    const result = await this.emailSmtpService.testConnection(+id);
+  @Post('/test')
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async testConnection(
+    @Body() param: ParamIdDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const result = await this.emailSmtpService.testConnection(param.id);
     return { success: result, message: 'SMTP connection successful' };
   }
 
-  @Get('active/list')
-  async getActiveSmtp(@Req() req: any) {
-    const userId = req.user.id;
-    return this.emailSmtpService.getActiveSmtp(userId);
+  @Post('/active/list')
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async getActiveSmtp(
+    @User('id') user_id: number,
+  ) {
+    return this.emailSmtpService.getActiveSmtp(user_id);
   }
 }

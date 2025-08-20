@@ -1,68 +1,83 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  Req,
-  Query,
-  HttpStatus,
   HttpCode,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { EmailContactService } from '../../../../service/email-contact.service';
 import { CreateEmailContactDto, CreateBulkEmailContactDto, UpdateEmailContactDto, EmailContactQueryDto } from '../../../../utils/dto/email-contact.dto';
-import { JwtAuthGuard } from '../../../../dashboard/v1/modules/auth/jwt.strategy';
+import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { User } from '../auth/decorators/user.decorator';
+import { UserRoleEnum } from '../../../../utils/enum/user.enum';
+import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
+import { PaginationResponse } from '../../../../utils/pagination.response';
 
-@Controller('email-contact')
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@ApiTags('email-contact')
+@Controller({ path: '/frontend/email-contact', version: '1' })
 export class EmailContactController {
   constructor(private readonly emailContactService: EmailContactService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Req() req: any, @Body() createDto: CreateEmailContactDto) {
-    const userId = req.user.id;
-    return this.emailContactService.create(userId, createDto);
+  @Post('/create')
+  @HttpCode(201)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async create(
+    @Body() body: CreateEmailContactDto,
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailContactService.create(user_id, body);
+    return { result };
   }
 
-  @Post('bulk')
-  @HttpCode(HttpStatus.CREATED)
-  async createBulk(@Req() req: any, @Body() createBulkDto: CreateBulkEmailContactDto) {
-    const userId = req.user.id;
-    return this.emailContactService.createBulk(userId, createBulkDto);
+  @Post('/bulk')
+  @HttpCode(201)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async createBulk(
+    @Body() body: CreateBulkEmailContactDto,
+    @User('id') user_id: number,
+  ): Promise<any> {
+    return await this.emailContactService.createBulk(user_id, body);
   }
 
-  @Get()
-  async findAll(@Req() req: any, @Query() query: EmailContactQueryDto) {
-    const userId = req.user.id;
-    return this.emailContactService.findAll(userId, query);
+  @Post('/findAll')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async findAll(
+    @Body() query: EmailContactQueryDto,
+    @User('id') user_id: number,
+  ): Promise<PaginationResponse<any[]>> {
+    return await this.emailContactService.findAll(user_id, query);
   }
 
-  @Get('group/:groupId')
-  async getContactsByGroup(@Req() req: any, @Param('groupId') groupId: string) {
-    const userId = req.user.id;
-    return this.emailContactService.getContactsByGroup(userId, +groupId);
+  @Post('/update')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async update(
+    @Body() body: UpdateEmailContactDto & { id: number },
+    @User('id') user_id: number,
+  ): Promise<SingleResponse<any>> {
+    const result = await this.emailContactService.update(user_id, body.id, body);
+    return { result };
   }
 
-  @Get(':id')
-  async findOne(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    return this.emailContactService.findOne(userId, +id);
-  }
-
-  @Patch(':id')
-  async update(@Req() req: any, @Param('id') id: string, @Body() updateDto: UpdateEmailContactDto) {
-    const userId = req.user.id;
-    return this.emailContactService.update(userId, +id, updateDto);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Req() req: any, @Param('id') id: string) {
-    const userId = req.user.id;
-    await this.emailContactService.remove(userId, +id);
+  @Post('/delete')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async delete(
+    @Body() param: ParamIdDto,
+    @User('id') user_id: number,
+  ): Promise<{ result: true }> {
+    await this.emailContactService.remove(user_id, param.id);
+    return { result: true };
   }
 }
