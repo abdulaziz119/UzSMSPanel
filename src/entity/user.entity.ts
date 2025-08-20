@@ -135,11 +135,4 @@ export class UserEntity extends BaseEntity {
     cascadeUpdateRelationOptions,
   )
   emailTemplates: EmailTemplateEntity[];
-
-  @OneToMany(
-    () => EmailMessageEntity,
-    (entity) => entity.user,
-    cascadeUpdateRelationOptions,
-  )
-  emailMessages: EmailMessageEntity[];
 }

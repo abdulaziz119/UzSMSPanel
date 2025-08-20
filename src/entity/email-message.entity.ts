@@ -13,7 +13,7 @@ import { EmailStatusEnum } from '../utils/enum/email-smtp.enum';
 @Index(['sent_at'])
 export class EmailMessageEntity extends BaseEntity {
   @Column({ type: 'integer' })
-  user_id: number;
+  email_message_id: number;
 
   @Column({ type: 'integer', nullable: true })
   email_smtp_id: number | null;
@@ -70,19 +70,35 @@ export class EmailMessageEntity extends BaseEntity {
   @Column({ type: 'integer', default: 0 })
   retry_count: number;
 
-  @ManyToOne(() => UserEntity, (user) => user.emailMessages, cascadeUpdateRelationOptions)
-  @JoinColumn({ name: 'user_id' })
-  user: UserEntity;
+  @ManyToOne(
+    () => EmailMessageEntity,
+    (message) => message.emailMessage,
+    cascadeUpdateRelationOptions,
+  )
+  @JoinColumn({ name: 'email_message_id' })
+  emailMessage: EmailMessageEntity;
 
-  @ManyToOne(() => EmailSmtpEntity, (smtp) => smtp.emailMessages, cascadeUpdateRelationOptions)
+  @ManyToOne(
+    () => EmailSmtpEntity,
+    (smtp) => smtp.emailMessages,
+    cascadeUpdateRelationOptions,
+  )
   @JoinColumn({ name: 'email_smtp_id' })
   emailSmtp: EmailSmtpEntity;
 
-  @ManyToOne(() => EmailTemplateEntity, (template) => template.emailMessages, cascadeUpdateRelationOptions)
+  @ManyToOne(
+    () => EmailTemplateEntity,
+    (template) => template.emailMessages,
+    cascadeUpdateRelationOptions,
+  )
   @JoinColumn({ name: 'email_template_id' })
   emailTemplate: EmailTemplateEntity;
 
-  @ManyToOne(() => EmailGroupEntity, (group) => group.emailMessages, cascadeUpdateRelationOptions)
+  @ManyToOne(
+    () => EmailGroupEntity,
+    (group) => group.emailMessages,
+    cascadeUpdateRelationOptions,
+  )
   @JoinColumn({ name: 'email_group_id' })
   emailGroup: EmailGroupEntity;
 }

@@ -11,18 +11,8 @@ export class EmailGroupEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: false })
   title: string;
 
-  @Column({ type: 'text', nullable: true })
-  description: string | null;
-
   @Column({ type: 'integer', nullable: true, default: 0 })
   contact_count: number | null;
-
-  @Column({
-    type: 'enum',
-    enum: EmailGroupStatusEnum,
-    default: EmailGroupStatusEnum.ACTIVE,
-  })
-  status: EmailGroupStatusEnum;
 
   @Column({ type: 'integer' })
   user_id: number;
