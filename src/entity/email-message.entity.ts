@@ -25,18 +25,6 @@ export class EmailMessageEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false })
   recipient_email: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  recipient_name: string | null;
-
-  @Column({ type: 'varchar', length: 500, nullable: false })
-  subject: string;
-
-  @Column({ type: 'text', nullable: false })
-  html_content: string;
-
-  @Column({ type: 'text', nullable: true })
-  text_content: string | null;
-
   @Column({
     type: 'enum',
     enum: EmailStatusEnum,
@@ -49,12 +37,6 @@ export class EmailMessageEntity extends BaseEntity {
 
   @Column({ type: 'text', nullable: true })
   error_message: string | null;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  message_id: string | null;
-
-  @Column({ type: 'integer', default: 0 })
-  retry_count: number;
 
   @ManyToOne(
     () => UserEntity,

@@ -31,22 +31,6 @@ export class EmailContactService {
     userId: number,
     createDto: CreateEmailContactDto,
   ): Promise<SingleResponse<EmailContactEntity>> {
-    // Verify that group belongs to user
-    await this.emailGroupService.findOne(userId, createDto.group_id);
-
-    // Check if email already exists in this group
-    const existingContact: EmailContactEntity =
-      await this.emailContactRepository.findOne({
-        where: {
-          email: createDto.email,
-          group_id: createDto.group_id,
-        },
-      });
-
-    if (existingContact) {
-      throw new BadRequestException('Email already exists in this group');
-    }
-
     const contact: EmailContactEntity = this.emailContactRepository.create({
       ...createDto,
     });

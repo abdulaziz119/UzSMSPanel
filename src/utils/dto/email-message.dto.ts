@@ -5,6 +5,7 @@ import {
   IsInt,
   IsArray,
   IsEnum,
+  IsNotEmpty,
   Min,
   Max,
   Length,
@@ -20,9 +21,9 @@ export class SendEmailDto {
     example: 1,
     type: 'integer'
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsInt()
-  email_template_id?: number;
+  email_template_id: number;
 
   @ApiPropertyOptional({
     description: 'ID of the email group to send to',
@@ -52,32 +53,6 @@ export class SendEmailDto {
   @IsArray()
   @IsEmail({}, { each: true })
   recipient_emails?: string[];
-
-  @ApiPropertyOptional({
-    description: 'Subject of the email',
-    example: 'Welcome to our service!',
-    maxLength: 500
-  })
-  @IsOptional()
-  @IsString()
-  @Length(1, 500)
-  subject?: string;
-
-  @ApiPropertyOptional({
-    description: 'HTML content of the email',
-    example: '<h1>Welcome!</h1><p>Thank you for joining us.</p>'
-  })
-  @IsOptional()
-  @IsString()
-  html_content?: string;
-
-  @ApiPropertyOptional({
-    description: 'Plain text content of the email',
-    example: 'Welcome! Thank you for joining us.'
-  })
-  @IsOptional()
-  @IsString()
-  text_content?: string;
 }
 
 export class EmailMessageQueryDto extends PaginationParams {

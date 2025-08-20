@@ -83,10 +83,8 @@ export class EmailMessagesService {
   }> {
     if (!body.email && !body.contact_id)
       throw new BadRequestException('email yoki contact_id talab qilinadi');
-    if (!body.subject && !body.email_template_id)
-      throw new BadRequestException(
-        'subject yoki email_template_id talab qilinadi',
-      );
+    if (!body.email_template_id)
+      throw new BadRequestException('email_template_id talab qilinadi');
 
     const current_balance: number = await this.getBalanceByType(
       user_id,
@@ -108,6 +106,12 @@ export class EmailMessagesService {
     if (!emailRegex.test(email)) {
       throw new BadRequestException('Email manzil yaroqsiz');
     }
+
+    // Validate template exists
+    const template: EmailTemplateEntity = await this.emailTemplateRepo.findOne({
+      where: { id: body.email_template_id },
+    });
+    if (!template) throw new BadRequestException('Email shablon topilmadi');
 
     // Email cost (fixed cost per email - you can adjust this)
     const email_cost: number = 10; // 10 units per email
@@ -150,15 +154,19 @@ export class EmailMessagesService {
   }> {
     if (!body?.group_id)
       throw new BadRequestException('group_id talab qilinadi');
-    if (!body.subject && !body.email_template_id)
-      throw new BadRequestException(
-        'subject yoki email_template_id talab qilinadi',
-      );
+    if (!body.email_template_id)
+      throw new BadRequestException('email_template_id talab qilinadi');
 
     const current_balance: number = await this.getBalanceByType(
       user_id,
       balanceType,
     );
+
+    // Validate template exists
+    const template: EmailTemplateEntity = await this.emailTemplateRepo.findOne({
+      where: { id: body.email_template_id },
+    });
+    if (!template) throw new BadRequestException('Email shablon topilmadi');
 
     // Get valid contacts from group
     const contacts = await this.emailContactRepo.find({

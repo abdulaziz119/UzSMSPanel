@@ -34,9 +34,7 @@ export class EmailMessagesQueue {
       // Convert to SendEmailDto format
       const sendEmailDto = {
         recipient_emails: [payload.email],
-        subject: payload.subject,
-        html_content: payload.html_content,
-        text_content: payload.text_content,
+        email_template_id: payload.email_template_id,
       };
 
       const result = await this.emailMessageService.sendEmail(user_id, sendEmailDto);
@@ -59,9 +57,7 @@ export class EmailMessagesQueue {
       // Convert to SendEmailDto format
       const sendEmailDto = {
         group_id: payload.group_id,
-        subject: payload.subject,
-        html_content: payload.html_content,
-        text_content: payload.text_content,
+        email_template_id: payload.email_template_id,
       };
 
       const result = await this.emailMessageService.sendEmail(user_id, sendEmailDto);

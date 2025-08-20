@@ -57,31 +57,22 @@ export class EmailMessageService {
       throw new BadRequestException('No recipients specified');
     }
 
-    // Get email content
-    let emailContent: {
-      subject: string;
-      html_content: string;
-      text_content?: string;
-    };
-
-    if (sendDto.email_template_id) {
-      const template = await this.emailTemplateService.findOne(
-        userId,
-        sendDto.email_template_id,
-      );
-      emailContent = await this.emailTemplateService.processTemplate(template);
-      await this.emailTemplateService.updateUsageStats(template.id);
-    } else if (sendDto.subject && sendDto.html_content) {
-      emailContent = {
-        subject: sendDto.subject,
-        html_content: sendDto.html_content,
-        text_content: sendDto.text_content,
-      };
-    } else {
-      throw new BadRequestException(
-        'Either template_id or subject+html_content must be provided',
-      );
+    // Get email template (required)
+    if (!sendDto.email_template_id) {
+      throw new BadRequestException('email_template_id is required');
     }
+
+    const template = await this.emailTemplateService.findOne(
+      userId,
+      sendDto.email_template_id,
+    );
+
+    if (!template) {
+      throw new BadRequestException('Email template not found');
+    }
+
+    const emailContent = await this.emailTemplateService.processTemplate(template);
+    await this.emailTemplateService.updateUsageStats(template.id);
 
     // Get SMTP configuration
     const smtp = sendDto.email_smtp_id
@@ -97,9 +88,6 @@ export class EmailMessageService {
         email_template_id: sendDto.email_template_id,
         group_id: sendDto.group_id,
         recipient_email: recipientEmail,
-        subject: emailContent.subject,
-        html_content: emailContent.html_content,
-        text_content: emailContent.text_content,
         status: EmailStatusEnum.PENDING,
       });
 
@@ -111,7 +99,7 @@ export class EmailMessageService {
 
     // Process messages in background (for now, we'll process immediately)
     for (const message of savedMessages) {
-      this.processEmailMessage(message, smtp).catch((error) => {
+      this.processEmailMessage(message, smtp, emailContent).catch((error) => {
         console.error(`Failed to send email ${message.id}:`, error);
       });
     }
@@ -125,6 +113,7 @@ export class EmailMessageService {
   private async processEmailMessage(
     message: EmailMessageEntity,
     smtp: any,
+    emailContent: { subject: string; html_content: string; text_content?: string },
   ): Promise<void> {
     try {
       // Create SMTP transporter
@@ -145,20 +134,18 @@ export class EmailMessageService {
       const info = await transporter.sendMail({
         from: `${smtp.from_name || ''} <${smtp.from_email}>`,
         to: message.recipient_email,
-        subject: message.subject,
-        html: message.html_content,
-        text: message.text_content,
+        subject: emailContent.subject,
+        html: emailContent.html_content,
+        text: emailContent.text_content,
       });
 
-            // Update message status
+      // Update message status
       message.status = EmailStatusEnum.SENT;
-      message.message_id = info.messageId;
       await this.emailMessageRepository.save(message);
     } catch (error) {
       // Update message with error
       message.status = EmailStatusEnum.FAILED;
       message.error_message = error.message;
-      message.retry_count += 1;
       await this.emailMessageRepository.save(message);
 
       console.error(`Failed to send email ${message.id}:`, error);
@@ -248,12 +235,19 @@ export class EmailMessageService {
     message.error_message = null;
     const savedMessage = await this.emailMessageRepository.save(message);
 
+    // Get template content for retry
+    const template = await this.emailTemplateService.findOne(
+      userId,
+      message.email_template_id,
+    );
+    const emailContent = await this.emailTemplateService.processTemplate(template);
+
     // Retry sending
     const smtp = await this.emailSmtpService.findOne(
       userId,
       message.email_smtp_id,
     );
-    this.processEmailMessage(savedMessage, smtp).catch((error) => {
+    this.processEmailMessage(savedMessage, smtp, emailContent).catch((error) => {
       console.error(`Failed to retry email ${message.id}:`, error);
     });
 
@@ -366,12 +360,19 @@ export class EmailMessageService {
     message.error_message = null;
     const savedMessage = await this.emailMessageRepository.save(message);
 
+    // Get template content for retry
+    const template = await this.emailTemplateService.findOne(
+      message.user_id,
+      message.email_template_id,
+    );
+    const emailContent = await this.emailTemplateService.processTemplate(template);
+
     // Retry sending
     const smtp = await this.emailSmtpService.findOne(
       message.user_id,
       message.email_smtp_id,
     );
-    this.processEmailMessage(savedMessage, smtp).catch((error) => {
+    this.processEmailMessage(savedMessage, smtp, emailContent).catch((error) => {
       console.error(`Failed to retry email ${message.id}:`, error);
     });
 
