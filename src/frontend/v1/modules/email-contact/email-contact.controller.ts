@@ -1,5 +1,10 @@
-import { Controller, Post, Body, HttpCode } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpCode, Res } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiBadRequestResponse,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { EmailContactService } from '../../../../service/email-contact.service';
 import {
   CreateEmailContactDto,
@@ -15,6 +20,7 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { ParamIdDto, SingleResponse } from '../../../../utils/dto/dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
 import { EmailContactEntity } from '../../../../entity/email-contact.entity';
+import { Response } from 'express';
 
 @ApiBearerAuth()
 @ApiTags('email-contact')
@@ -78,5 +84,26 @@ export class EmailContactController {
   ): Promise<{ result: true }> {
     await this.emailContactService.remove(user_id, param.id);
     return { result: true };
+  }
+
+  @Post('/download-email-template')
+  @ApiResponse({
+    status: 200,
+    description: 'Excel template (xlsx) for contacts import',
+    schema: { type: 'string', format: 'binary' },
+  })
+  @Auth(false)
+  async downloadTemplate(@Res() res: Response) {
+    const buffer = this.emailContactService.generateEmailTemplate();
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="sms_contacts_template.xlsx"',
+    );
+    return res.send(buffer);
   }
 }

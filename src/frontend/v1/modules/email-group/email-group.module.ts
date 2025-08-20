@@ -8,5 +8,6 @@ import { DatabaseModule } from '../../../../database/database.module';
   imports: [DatabaseModule],
   controllers: [EmailGroupController],
   providers: [EmailGroupService, ...emailGroupProviders],
+  exports: [EmailGroupService],
 })
 export class EmailGroupModule {}

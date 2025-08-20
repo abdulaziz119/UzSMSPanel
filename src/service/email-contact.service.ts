@@ -17,6 +17,7 @@ import { EmailGroupService } from './email-group.service';
 import { MODELS } from '../constants/constants';
 import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
+import XLSX from 'xlsx';
 
 @Injectable()
 export class EmailContactService {
@@ -193,5 +194,27 @@ export class EmailContactService {
         is_active: true,
       },
     });
+  }
+
+  generateEmailTemplate(): Buffer {
+    const headers = ['name', 'email'];
+    const data = [
+      {
+        name: 'Ali Valiyev',
+        email: 'test@gmail.com',
+      },
+      {
+        name: 'Laylo Karimova',
+        email: 'laylo@gmail.com',
+      },
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(data, { header: headers });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'contacts');
+    const buffer: Buffer = XLSX.write(workbook, {
+      type: 'buffer',
+      bookType: 'xlsx',
+    }) as unknown as Buffer;
+    return buffer;
   }
 }
