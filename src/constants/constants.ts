@@ -23,3 +23,4 @@ export const MODELS = {
 
 export const SMS_CONTACT_QUEUE = 'smsContactNtfQueueGF';
 export const SMS_MESSAGE_QUEUE = 'smsMessageNtfQueueGF';
+export const EMAIL_MESSAGE_QUEUE = 'emailMessageNtfQueueGF';

@@ -273,4 +273,128 @@ export class EmailMessageService {
       return acc;
     }, {});
   }
+
+  async findAllForAdmin(query: EmailMessageQueryDto) {
+    const queryBuilder = this.emailMessageRepository
+      .createQueryBuilder('message')
+      .leftJoinAndSelect('message.emailSmtp', 'smtp')
+      .leftJoinAndSelect('message.emailTemplate', 'template')
+      .leftJoinAndSelect('message.emailGroup', 'group');
+
+    if (query.status) {
+      queryBuilder.andWhere('message.status = :status', {
+        status: query.status,
+      });
+    }
+
+    if (query.group_id) {
+      queryBuilder.andWhere('message.group_id = :groupId', {
+        groupId: query.group_id,
+      });
+    }
+
+    if (query.email_template_id) {
+      queryBuilder.andWhere('message.email_template_id = :templateId', {
+        templateId: query.email_template_id,
+      });
+    }
+
+    if (query.search) {
+      queryBuilder.andWhere(
+        '(message.recipient_email ILIKE :search OR message.subject ILIKE :search)',
+        { search: `%${query.search}%` },
+      );
+    }
+
+    if (query.date_from) {
+      queryBuilder.andWhere('message.created_at >= :dateFrom', {
+        dateFrom: query.date_from,
+      });
+    }
+
+    if (query.date_to) {
+      queryBuilder.andWhere('message.created_at <= :dateTo', {
+        dateTo: query.date_to,
+      });
+    }
+
+    queryBuilder.orderBy('message.created_at', 'DESC');
+
+    const total = await queryBuilder.getCount();
+    const data = await queryBuilder
+      .limit(query.limit)
+      .offset((query.page - 1) * query.limit)
+      .getMany();
+
+    return PaginationBuilder.build(data, query.page, query.limit, total);
+  }
+
+  async getGlobalEmailStats(): Promise<any> {
+    const stats = await this.emailMessageRepository
+      .createQueryBuilder('message')
+      .select(['message.status', 'COUNT(*) as count'])
+      .groupBy('message.status')
+      .getRawMany();
+
+    return stats.reduce((acc, stat) => {
+      acc[stat.status] = parseInt(stat.count);
+      return acc;
+    }, {});
+  }
+
+  async findOneForAdmin(id: number): Promise<EmailMessageEntity> {
+    const message = await this.emailMessageRepository.findOne({
+      where: { id },
+      relations: ['emailSmtp', 'emailTemplate', 'emailGroup'],
+    });
+
+    if (!message) {
+      throw new NotFoundException('Email message not found');
+    }
+
+    return message;
+  }
+
+  async retryFailedEmailForAdmin(id: number): Promise<EmailMessageEntity> {
+    const message = await this.findOneForAdmin(id);
+
+    if (message.status !== EmailStatusEnum.FAILED) {
+      throw new BadRequestException('Only failed emails can be retried');
+    }
+
+    message.status = EmailStatusEnum.PENDING;
+    message.error_message = null;
+    const savedMessage = await this.emailMessageRepository.save(message);
+
+    // Retry sending
+    const smtp = await this.emailSmtpService.findOne(
+      message.user_id,
+      message.email_smtp_id,
+    );
+    this.processEmailMessage(savedMessage, smtp).catch((error) => {
+      console.error(`Failed to retry email ${message.id}:`, error);
+    });
+
+    return savedMessage;
+  }
+
+  async bulkRetryFailedEmails(messageIds: number[]): Promise<{ retried: number }> {
+    let retriedCount = 0;
+
+    for (const messageId of messageIds) {
+      try {
+        await this.retryFailedEmailForAdmin(messageId);
+        retriedCount++;
+      } catch (error) {
+        console.error(`Failed to retry email ${messageId}:`, error);
+      }
+    }
+
+    return { retried: retriedCount };
+  }
+
+  async deleteEmailMessage(id: number): Promise<{ deleted: boolean }> {
+    const result = await this.emailMessageRepository.delete(id);
+    return { deleted: result.affected > 0 };
+  }
 }

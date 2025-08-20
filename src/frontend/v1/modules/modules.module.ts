@@ -18,6 +18,7 @@ import { EmailGroupModule } from './email-group/email-group.module';
 import { EmailContactModule } from './email-contact/email-contact.module';
 import { EmailTemplateModule } from './email-template/email-template.module';
 import { EmailMessageModule } from './email-message/email-message.module';
+import { EmailMessagesModule } from './email-messages/email-messages.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { EmailMessageModule } from './email-message/email-message.module';
     EmailContactModule,
     EmailTemplateModule,
     EmailMessageModule,
+    EmailMessagesModule,
   ],
 })
 export class ModulesFrontendModule {}
