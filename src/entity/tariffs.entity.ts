@@ -2,7 +2,7 @@ import { Column, Entity, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { CountryEntity } from './country.entity';
-import { TariffType } from '../utils/enum/tariff.enum';
+import { TariffType } from 'src/utils/enum/tariff.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'tariffs' })
 @Index(['country_id', 'phone_ext', 'type'])
@@ -24,10 +24,10 @@ export class TariffEntity extends BaseEntity {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   price_provider_sms: number; //provider dan olingan asil nar
 
-  @Column({ 
-    type: 'enum', 
+  @Column({
+    type: 'enum',
     enum: TariffType,
-    default: TariffType.SMS
+    default: TariffType.SMS,
   })
   type: TariffType; // SMS yoki EMAIL
 

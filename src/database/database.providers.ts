@@ -23,11 +23,6 @@ import { FileEntity } from '../entity/file.entity';
 import { SmsSenderEntity } from '../entity/sms-sender.entity';
 import { SenderPriceEntity } from '../entity/sender-price.entity';
 import { CountryEntity } from '../entity/country.entity';
-import { EmailTemplateEntity } from '../entity/email-template.entity';
-import { EmailSmtpEntity } from '../entity/email-smtp.entity';
-import { EmailMessageEntity } from '../entity/email-message.entity';
-import { EmailGroupEntity } from '../entity/email-group.entity';
-import { EmailContactEntity } from '../entity/email-contact.entity';
 
 export const databaseProviders = [
   {
@@ -57,11 +52,6 @@ export const databaseProviders = [
           CountryEntity,
           UserEntity,
           FileEntity,
-          EmailTemplateEntity,
-          EmailSmtpEntity,
-          EmailMessageEntity,
-          EmailGroupEntity,
-          EmailContactEntity,
         ],
         // extra: {
         //   timezone: 'UTC',

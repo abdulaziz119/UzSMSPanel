@@ -9,8 +9,6 @@ import { TransactionDashboardModule } from './transaction/transaction.module';
 import { TariffsDashboardModule } from './tariffs/tariffs.module';
 import { CountryDashboardModule } from './country/country.module';
 import { SenderPriceModule } from './sender-price/sender-price.module';
-import { EmailTemplateModule } from './email-template/email-template.module';
-import { EmailMessageDashboardModule } from './email-message/email-message.module';
 
 @Module({
   imports: [
@@ -24,8 +22,6 @@ import { EmailMessageDashboardModule } from './email-message/email-message.modul
     TariffsDashboardModule,
     CountryDashboardModule,
     SenderPriceModule,
-    EmailTemplateModule,
-    EmailMessageDashboardModule,
   ],
 })
 export class ModulesDashboardModule {}

@@ -8,11 +8,6 @@ import { SmsTemplateEntity } from './sms-template.entity';
 import { SmsSenderEntity } from './sms-sender.entity';
 import { SmsMessageEntity } from './sms-message.entity';
 import { TransactionEntity } from './transaction.entity';
-import { EmailSmtpEntity } from './email-smtp.entity';
-import { EmailGroupEntity } from './email-group.entity';
-import { EmailContactEntity } from './email-contact.entity';
-import { EmailTemplateEntity } from './email-template.entity';
-import { EmailMessageEntity } from './email-message.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'users' })
 @Unique(['login'])
@@ -107,32 +102,4 @@ export class UserEntity extends BaseEntity {
     cascadeUpdateRelationOptions,
   )
   transactions: TransactionEntity[];
-
-  @OneToMany(
-    () => EmailSmtpEntity,
-    (entity) => entity.user,
-    cascadeUpdateRelationOptions,
-  )
-  emailSmtps: EmailSmtpEntity[];
-
-  @OneToMany(
-    () => EmailGroupEntity,
-    (entity) => entity.user,
-    cascadeUpdateRelationOptions,
-  )
-  emailGroups: EmailGroupEntity[];
-
-  @OneToMany(
-    () => EmailTemplateEntity,
-    (entity) => entity.user,
-    cascadeUpdateRelationOptions,
-  )
-  emailTemplates: EmailTemplateEntity[];
-
-  @OneToMany(
-    () => EmailMessageEntity,
-    (entity) => entity.user,
-    cascadeUpdateRelationOptions,
-  )
-  emailMessages: EmailMessageEntity[];
 }
