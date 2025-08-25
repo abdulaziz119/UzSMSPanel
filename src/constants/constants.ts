@@ -14,7 +14,13 @@ export const MODELS = {
   TARIFFS: 'TARIFFS',
   COUNTRY: 'COUNTRY',
   FILE: 'FILE',
+  EMAIL_CONTACT: 'EMAIL_CONTACT',
+  EMAIL_GROUP: 'EMAIL_GROUP',
+  EMAIL_MESSAGE: 'EMAIL_MESSAGE',
+  EMAIL_SMTP: 'EMAIL_SMTP',
+  EMAIL_TEMPLATE: 'EMAIL_TEMPLATE',
 };
 
 export const SMS_CONTACT_QUEUE = 'smsContactNtfQueueGF';
 export const SMS_MESSAGE_QUEUE = 'smsMessageNtfQueueGF';
+export const EMAIL_MESSAGE_QUEUE = 'emailMessageNtfQueueGF';

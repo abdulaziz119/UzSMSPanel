@@ -6,8 +6,10 @@ import {
   IsNumber,
   IsBoolean,
   IsIn,
+  IsEnum,
 } from 'class-validator';
 import { PaginationParams } from './dto';
+import { TariffType } from '../enum/tariff.enum';
 
 export class CreateTariffDto {
   @ApiProperty({
@@ -72,6 +74,16 @@ export class CreateTariffDto {
   @IsNumber()
   @IsNotEmpty()
   country_id: number;
+
+  @ApiProperty({
+    example: TariffType.SMS,
+    description: 'Tarif turi - SMS yoki EMAIL',
+    enum: TariffType,
+    default: TariffType.SMS,
+  })
+  @IsOptional()
+  @IsEnum(TariffType)
+  type?: TariffType;
 }
 
 export class UpdateTariffDto {
@@ -121,6 +133,16 @@ export class UpdateTariffDto {
   @IsOptional()
   @IsNumber()
   country_id?: number;
+
+  @ApiProperty({
+    example: TariffType.SMS,
+    description: 'Tarif turi - SMS yoki EMAIL',
+    enum: TariffType,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(TariffType)
+  type?: TariffType;
 }
 
 export class TariffFilterDto extends PaginationParams {
@@ -170,6 +192,16 @@ export class TariffFilterDto extends PaginationParams {
   @IsOptional()
   @IsNumber()
   country_id?: number;
+
+  @ApiProperty({
+    example: TariffType.SMS,
+    description: 'Tarif turi boyicha filter - SMS yoki EMAIL',
+    enum: TariffType,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(TariffType)
+  type?: TariffType;
 }
 
 export class BulkUpdateTariffPricesDto {

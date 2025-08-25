@@ -2,10 +2,12 @@ import { Column, Entity, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { CountryEntity } from './country.entity';
+import { TariffType } from '../utils/enum/tariff.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'tariffs' })
-@Index(['country_id', 'phone_ext'])
-@Index(['country_id', 'code'])
+@Index(['country_id', 'phone_ext', 'type'])
+@Index(['country_id', 'code', 'type'])
+@Index(['type'])
 export class TariffEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 10, nullable: true })
   code: string | null; // Operator kodi (masalan: "90", "91", "93")
@@ -21,6 +23,13 @@ export class TariffEntity extends BaseEntity {
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   price_provider_sms: number; //provider dan olingan asil nar
+
+  @Column({ 
+    type: 'enum', 
+    enum: TariffType,
+    default: TariffType.SMS
+  })
+  type: TariffType; // SMS yoki EMAIL
 
   @Column({ type: 'boolean', default: true })
   public: boolean; // Ommaviy foydalanish uchun ruxsat
