@@ -4,6 +4,8 @@ import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { SmsContactEntity } from './sms-contact.entity';
 import { TransactionEntity } from './transaction.entity';
+import { TariffType } from '../utils/enum/tariff.enum';
+import { SmsGroupEnum } from '../utils/enum/sms-group.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_groups' })
 export class SmsGroupEntity extends BaseEntity {
@@ -24,6 +26,13 @@ export class SmsGroupEntity extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
+  @Column({
+    type: 'enum',
+    enum: SmsGroupEnum,
+    default: SmsGroupEnum.SMS,
+  })
+  type: SmsGroupEnum; // SMS yoki EMAIL
+
   @OneToMany(
     () => SmsContactEntity,
     (entity) => entity.smsGroup,
@@ -31,6 +40,10 @@ export class SmsGroupEntity extends BaseEntity {
   )
   smsContact: SmsContactEntity[];
 
-  @OneToMany(() => TransactionEntity, (t) => t.smsGroup, cascadeUpdateRelationOptions)
+  @OneToMany(
+    () => TransactionEntity,
+    (t) => t.smsGroup,
+    cascadeUpdateRelationOptions,
+  )
   transactions: TransactionEntity[];
 }

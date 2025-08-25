@@ -3,3 +3,8 @@ export enum SMSContactStatusEnum {
   INVALID_FORMAT = 'invalid_format',
   BANNED_NUMBER = 'banned_number',
 }
+
+export enum SmsContactTyeEnum {
+  SMS = 'sms',
+  EMAIL = 'email',
+}
