@@ -9,6 +9,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
 import { otpProviders } from '../../../../providers/otp.providers';
 import { AuthService } from '../../../../service/auth.service';
+import { contactProviders } from '../../../../providers/contact.providers';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AuthService } from '../../../../service/auth.service';
   providers: [
     ...userProviders,
     ...otpProviders,
+    ...contactProviders,
     JwtStrategy,
     AuthService,
     AuthorizationService,

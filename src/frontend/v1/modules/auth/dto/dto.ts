@@ -22,6 +22,33 @@ export class AuthLoginDto {
   @IsDefined()
   @Length(1, 5)
   phone_ext: string;
+
+  @ApiProperty({ example: 'test' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
+export class AuthSendOtpDto {
+  @ApiProperty({
+    example: '901234567',
+    description: 'Phone number without country code',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Length(7, 15)
+  phone: string;
+
+  @ApiPropertyOptional({ example: '998', description: 'Country phone code' })
+  @IsString()
+  @IsDefined()
+  @Length(1, 5)
+  phone_ext: string;
+
+  @ApiProperty({ example: 'test' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 }
 
 export class AuthVerifyDto {

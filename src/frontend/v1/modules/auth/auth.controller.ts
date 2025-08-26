@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post, Req } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -14,6 +14,7 @@ import { Roles } from './decorators/roles.decorator';
 import {
   AuthLoginDto,
   AuthResendOtpDto,
+  AuthSendOtpDto,
   AuthVerifyDto,
   RefreshTokenDto,
 } from './dto/dto';
@@ -29,10 +30,29 @@ export class AuthController {
   @Post('/login')
   @ApiBadRequestResponse({ type: ErrorResourceDto })
   @HttpCode(200)
-  async login(
-    @Body() body: AuthLoginDto,
+  async login(@Body() body: AuthLoginDto): Promise<
+    SingleResponse<{
+      token: string;
+      user: {
+        id: number;
+        phone: string;
+        role: string;
+        language: string;
+        block: boolean;
+      };
+    }>
+  > {
+    return await this.authService.loginFrontend(body);
+  }
+
+  @ApiResponse({ type: ErrorResourceDto, status: 401 })
+  @Post('/send-otp')
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @HttpCode(200)
+  async sendOtp(
+    @Body() body: AuthSendOtpDto,
   ): Promise<SingleResponse<{ expiresIn: number }>> {
-    return await this.authService.login(body);
+    return await this.authService.sendOtp(body);
   }
 
   /**

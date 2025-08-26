@@ -14,6 +14,7 @@ export class AuthorizationService {
     phone: string,
     role: string,
     login?: string,
+    type?: string,
   ): Promise<string> {
     if (!id) {
       throw new HttpException(
@@ -26,8 +27,9 @@ export class AuthorizationService {
       phone: phone,
       role: role,
       login: login,
+      type: type,
     };
-    const token = jwt.sign(data, JWT_SECRET, { expiresIn: '1d' });
+    const token: string = jwt.sign(data, JWT_SECRET, { expiresIn: '1d' });
     return token;
   }
 }

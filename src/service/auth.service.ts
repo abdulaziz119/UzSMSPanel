@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import {
@@ -17,11 +18,13 @@ import { UserEntity } from '../entity/user.entity';
 import {
   AuthLoginDto,
   AuthResendOtpDto,
+  AuthSendOtpDto,
   AuthVerifyDto,
 } from '../frontend/v1/modules/auth/dto/dto';
 import { AuthorizationService } from '../utils/authorization.service';
 import { SingleResponse } from '../utils/dto/dto';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
+import { ContactEntity } from '../entity/contact.entity';
 
 @Injectable()
 export class AuthService {
@@ -39,11 +42,66 @@ export class AuthService {
     private readonly userRepo: Repository<UserEntity>,
     @Inject(MODELS.OTP)
     private readonly otpRepo: Repository<OtpEntity>,
+    @Inject(MODELS.CONTACT)
+    private readonly contactRepo: Repository<ContactEntity>,
     private readonly authorizationService: AuthorizationService,
   ) {}
 
-  async login(
-    payload: AuthLoginDto,
+  async loginFrontend(payload: AuthLoginDto): Promise<
+    SingleResponse<{
+      token: string;
+      user: {
+        id: number;
+        phone: string;
+        role: string;
+        language: string;
+        block: boolean;
+      };
+    }>
+  > {
+    try {
+      await this.checkPhoneBlocked(payload.phone);
+
+      const user: UserEntity = await this.userRepo.findOne({
+        where: { phone: payload.phone, phone_ext: payload.phone_ext },
+        select: ['id', 'phone', 'phone_ext', 'password', 'role'],
+      });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      if (!user || !(await bcrypt.compare(payload.password, user.password))) {
+        throw new HttpException('Invalid  password', HttpStatus.UNAUTHORIZED);
+      }
+
+      const token: string = await this.authorizationService.sign(
+        user.id,
+        user.phone,
+        user.role,
+      );
+      const result = {
+        token,
+        user: {
+          id: user.id,
+          phone: user.phone,
+          role: user.role,
+          language: user.language,
+          block: user.block,
+        },
+      };
+      return { result: result };
+    } catch (error) {
+      throw new HttpException(
+        {
+          message: 'Login failed.',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async sendOtp(
+    payload: AuthSendOtpDto,
   ): Promise<SingleResponse<{ expiresIn: number }>> {
     try {
       // Check if phone is blocked
@@ -52,9 +110,14 @@ export class AuthService {
       const user: UserEntity = await this.userRepo.findOne({
         where: { phone: payload.phone, phone_ext: payload.phone_ext },
       });
+      const hashedPassword: string = await bcrypt.hash(payload.password, 10);
 
       if (!user) {
-        await this.createNewUser(payload.phone, payload.phone_ext);
+        await this.createNewUser(
+          payload.phone,
+          payload.phone_ext,
+          hashedPassword,
+        );
       }
 
       await this.handleOtpCreation(payload.phone);
@@ -64,7 +127,7 @@ export class AuthService {
     } catch (error) {
       throw new HttpException(
         {
-          message: 'Tizimga kirish muvaffaqiyatsiz yakunlandi',
+          message: 'Login failed.',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -108,7 +171,7 @@ export class AuthService {
       );
 
       // Generate refresh token
-      const refreshToken = this.generateRefreshToken();
+      const refreshToken: string = this.generateRefreshToken();
       const refreshTokenExpiresAt = new Date(
         Date.now() + this.REFRESH_TOKEN_EXPIRY,
       );
@@ -354,9 +417,10 @@ export class AuthService {
       });
 
       if (existingOtp) {
-        const timeSinceLastSend = Date.now() - existingOtp.otpSendAt.getTime();
+        const timeSinceLastSend: number =
+          Date.now() - existingOtp.otpSendAt.getTime();
         if (timeSinceLastSend < this.RESEND_COOLDOWN) {
-          const remainingTime = Math.ceil(
+          const remainingTime: number = Math.ceil(
             (this.RESEND_COOLDOWN - timeSinceLastSend) / 1000,
           );
           throw new HttpException(
@@ -373,7 +437,7 @@ export class AuthService {
       return {
         result: { message: 'Verification code sent successfully' },
       };
-    } catch (error: any) {
+    } catch (error) {
       throw new HttpException(
         { message: 'Resend OTP failed', error: error.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -426,12 +490,14 @@ export class AuthService {
   private async createNewUser(
     phone: string,
     phone_ext: string,
+    password: string,
   ): Promise<UserEntity> {
     const newUser: UserEntity = this.userRepo.create({
       role: UserRoleEnum.CLIENT,
       phone,
       language: language.UZ,
       phone_ext: phone_ext,
+      password: password,
     });
 
     return await this.userRepo.save(newUser);
@@ -442,7 +508,7 @@ export class AuthService {
       where: { phone },
     });
 
-    const otp = this.generateOtp();
+    const otp: string = this.generateOtp();
     const otpData = {
       phone,
       otp,
@@ -548,6 +614,18 @@ export class AuthService {
     return user;
   }
 
+  private async findContactByID(id: number): Promise<ContactEntity> {
+    const contact: ContactEntity = await this.contactRepo.findOne({
+      where: { id },
+    });
+
+    if (!contact) {
+      throw new HttpException('Contact not found', HttpStatus.NOT_FOUND);
+    }
+
+    return contact;
+  }
+
   private async findUserByLogin(login: string): Promise<UserEntity> {
     const user: UserEntity = await this.userRepo.findOne({
       where: { login },
@@ -573,7 +651,7 @@ export class AuthService {
     });
 
     if (otp && otp.blockedUntil && otp.blockedUntil > new Date()) {
-      const remainingTime = Math.ceil(
+      const remainingTime: number = Math.ceil(
         (otp.blockedUntil.getTime() - Date.now()) / 1000 / 60,
       );
       throw new HttpException(
