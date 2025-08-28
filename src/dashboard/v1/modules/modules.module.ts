@@ -9,6 +9,7 @@ import { TransactionDashboardModule } from './transaction/transaction.module';
 import { TariffsDashboardModule } from './tariffs/tariffs.module';
 import { CountryDashboardModule } from './country/country.module';
 import { SenderPriceModule } from './sender-price/sender-price.module';
+import { GroupDashboardModule } from './group/group.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { SenderPriceModule } from './sender-price/sender-price.module';
     TariffsDashboardModule,
     CountryDashboardModule,
     SenderPriceModule,
+    GroupDashboardModule,
   ],
 })
 export class ModulesDashboardModule {}

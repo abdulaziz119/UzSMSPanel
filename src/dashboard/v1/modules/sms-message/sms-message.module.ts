@@ -7,7 +7,7 @@ import { userProviders } from '../../../../providers/user.providers';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
 import { SmsContactModule } from '../../../../frontend/v1/modules/sms-contact/sms-contact.module';
-import { smsGroupProviders } from '../../../../providers/sms-group.providers';
+import { groupProviders } from '../../../../providers/group.providers';
 import { smsTemplateProviders } from '../../../../providers/sms-template.providers';
 import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
@@ -21,7 +21,7 @@ import { contactProviders } from '../../../../providers/contact.providers';
     ...smsMessageProviders,
     ...userProviders,
     ...smsContactProviders,
-    ...smsGroupProviders,
+    ...groupProviders,
     ...smsTemplateProviders,
     ...tariffsProviders,
     ...contactProviders,

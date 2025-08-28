@@ -4,7 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { ContactModule } from './contact/contact.module';
 import { FileModule } from './file/file.module';
 import { UserModule } from './user/user.module';
-import { SmsGroupModule } from './sms-group/sms-group.module';
+import { GroupModule } from './group/group.module';
 import { SmsContactModule } from './sms-contact/sms-contact.module';
 import { SmsTemplateModule } from './sms-template/sms-template.module';
 import { SmsSenderModule } from './sms-sender/sms-sender.module';
@@ -21,7 +21,7 @@ import { MessagesModule } from './messages/messages.module';
     ContactModule,
     FileModule,
     UserModule,
-    SmsGroupModule,
+    GroupModule,
     SmsContactModule,
     SmsTemplateModule,
     SmsSenderModule,

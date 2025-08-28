@@ -5,16 +5,16 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse, ParamIdDto } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { SmsGroupService } from '../../../../service/sms-group.service';
-import { SmsGroupEntity } from '../../../../entity/sms-group.entity';
+import { GroupService } from '../../../../service/group.service';
+import { GroupEntity } from '../../../../entity/group.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
-import { GroupFilterDto } from '../../../../utils/dto/sms-group.dto';
+import { GroupFilterDto } from '../../../../utils/dto/group.dto';
 
 @ApiBearerAuth()
-@ApiTags('sms-group')
-@Controller({ path: '/dashboard/sms-group', version: '1' })
-export class SmsGroupController {
-  constructor(private readonly smsGroupService: SmsGroupService) {}
+@ApiTags('group')
+@Controller({ path: '/dashboard/group', version: '1' })
+export class GroupController {
+  constructor(private readonly groupService: GroupService) {}
 
   /**
    * SMS guruhlar ro'yxati (admin) — filter + pagination
@@ -25,8 +25,8 @@ export class SmsGroupController {
   @Auth()
   async findAllGroups(
     @Body() filters: GroupFilterDto,
-  ): Promise<PaginationResponse<SmsGroupEntity[]>> {
-    return await this.smsGroupService.findAllGroups(filters);
+  ): Promise<PaginationResponse<GroupEntity[]>> {
+    return await this.groupService.findAllGroups(filters);
   }
 
   /**
@@ -38,8 +38,8 @@ export class SmsGroupController {
   @Auth()
   async getGroupDetails(
     @Body() param: ParamIdDto,
-  ): Promise<SingleResponse<SmsGroupEntity>> {
-    return await this.smsGroupService.getGroupDetails(param.id);
+  ): Promise<SingleResponse<GroupEntity>> {
+    return await this.groupService.getGroupDetails(param.id);
   }
 
   /**
@@ -50,7 +50,7 @@ export class SmsGroupController {
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
   async getGroupStatistics(): Promise<SingleResponse<any>> {
-    return await this.smsGroupService.getGroupStatistics();
+    return await this.groupService.getGroupStatistics();
   }
 
   /**
@@ -62,7 +62,7 @@ export class SmsGroupController {
   @Auth()
   async getUserGroups(
     @Body() body: { user_id: number },
-  ): Promise<SingleResponse<SmsGroupEntity[]>> {
-    return await this.smsGroupService.getUserGroups(body.user_id);
+  ): Promise<SingleResponse<GroupEntity[]>> {
+    return await this.groupService.getUserGroups(body.user_id);
   }
 }

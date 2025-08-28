@@ -1,4 +1,4 @@
-export enum SmsGroupEnum {
+export enum GroupEnum {
   SMS = 'sms',
   EMAIL = 'email',
 }

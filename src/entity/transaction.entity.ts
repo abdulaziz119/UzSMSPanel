@@ -2,7 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
-import { SmsGroupEntity } from './sms-group.entity';
+import { GroupEntity } from './group.entity';
 import { SmsMessageEntity } from './sms-message.entity';
 import {
   PaymentMethodEnum,
@@ -32,12 +32,12 @@ export class TransactionEntity extends BaseEntity {
   group_id: number | null;
 
   @ManyToOne(
-    () => SmsGroupEntity,
+    () => GroupEntity,
     (group) => group.id,
     cascadeUpdateRelationOptions,
   )
   @JoinColumn({ name: 'group_id' })
-  smsGroup: SmsGroupEntity | null;
+  group: GroupEntity | null;
 
   @Column({ type: 'integer', nullable: true })
   sms_message_id: number | null;

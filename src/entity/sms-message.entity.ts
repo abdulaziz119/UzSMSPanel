@@ -1,8 +1,15 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
-import { SmsGroupEntity } from './sms-group.entity';
+import { GroupEntity } from './group.entity';
 import { SmsTemplateEntity } from './sms-template.entity';
 import { TransactionEntity } from './transaction.entity';
 import {
@@ -34,9 +41,9 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'integer', nullable: true })
   group_id: number | null;
 
-  @ManyToOne(() => SmsGroupEntity, undefined, cascadeUpdateRelationOptions)
+  @ManyToOne(() => GroupEntity, undefined, cascadeUpdateRelationOptions)
   @JoinColumn({ name: 'group_id' })
-  smsGroup: SmsGroupEntity;
+  group: GroupEntity;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
   phone: string;
@@ -76,6 +83,10 @@ export class SmsMessageEntity extends BaseEntity {
   @Column({ type: 'json', nullable: true })
   delivery_report: any | null;
 
-  @OneToMany(() => TransactionEntity, (t) => t.smsMessage, cascadeUpdateRelationOptions)
+  @OneToMany(
+    () => TransactionEntity,
+    (t) => t.smsMessage,
+    cascadeUpdateRelationOptions,
+  )
   transactions: TransactionEntity[];
 }

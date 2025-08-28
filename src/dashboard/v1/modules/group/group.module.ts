@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
-import { SmsGroupController } from './sms-group.controller';
-import { SmsGroupService } from '../../../../service/sms-group.service';
+import { GroupController } from './group.controller';
+import { GroupService } from '../../../../service/group.service';
 import { DatabaseModule } from '../../../../database/database.module';
-import { smsGroupProviders } from '../../../../providers/sms-group.providers';
+import { groupProviders } from '../../../../providers/group.providers';
 import { userProviders } from '../../../../providers/user.providers';
 import { contactProviders } from '../../../../providers/contact.providers';
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [SmsGroupController],
+  controllers: [GroupController],
   providers: [
-    ...smsGroupProviders,
+    ...groupProviders,
     ...userProviders,
     ...contactProviders,
-    SmsGroupService,
+    GroupService,
   ],
 })
-export class SmsGroupDashboardModule {}
+export class GroupDashboardModule {}

@@ -19,7 +19,7 @@ import {
   SmsContactFindAllDto,
 } from '../utils/dto/sms-contact.dto';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
-import { SmsGroupEntity } from '../entity/sms-group.entity';
+import { GroupEntity } from '../entity/group.entity';
 const XLSX = require('xlsx');
 import { ParsedContactRow } from '../utils/sms.contact.excel.service';
 
@@ -30,8 +30,8 @@ export class SmsContactService {
     private readonly smsContactRepo: Repository<SmsContactEntity>,
     @Inject(MODELS.TARIFFS)
     private readonly tariffRepo: Repository<TariffEntity>,
-    @Inject(MODELS.SMS_GROUP)
-    private readonly smsGroupRepo: Repository<SmsGroupEntity>,
+    @Inject(MODELS.GROUP)
+    private readonly groupRepo: Repository<GroupEntity>,
   ) {}
 
   async validatePhoneNumber(phone: string): Promise<SMSContactStatusEnum> {
@@ -186,7 +186,7 @@ export class SmsContactService {
     payload: CreateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {
     try {
-      const smsGroupData: SmsGroupEntity = await this.smsGroupRepo.findOne({
+      const smsGroupData: GroupEntity = await this.groupRepo.findOne({
         where: { id: payload.group_id },
       });
       if (!smsGroupData) {
@@ -207,9 +207,9 @@ export class SmsContactService {
       const savedSmsContact: SmsContactEntity =
         await this.smsContactRepo.save(newSmsContact);
 
-      await this.smsGroupRepo
+      await this.groupRepo
         .createQueryBuilder()
-        .update(SmsGroupEntity)
+        .update(GroupEntity)
         .set({ contact_count: () => 'COALESCE(contact_count, 0) + 1' })
         .where('id = :id', { id: payload.group_id })
         .execute();
@@ -234,7 +234,7 @@ export class SmsContactService {
     let skipped: number = 0;
 
     // Preload group data once
-    const smsGroupData: SmsGroupEntity = await this.smsGroupRepo.findOne({
+    const smsGroupData: GroupEntity = await this.groupRepo.findOne({
       where: { id: default_group_id },
     });
     if (!smsGroupData) throw new NotFoundException('SMS Group not found');
@@ -267,9 +267,9 @@ export class SmsContactService {
     }
 
     if (created > 0) {
-      await this.smsGroupRepo
+      await this.groupRepo
         .createQueryBuilder()
-        .update(SmsGroupEntity)
+        .update(GroupEntity)
         .set({
           contact_count: (): string =>
             `COALESCE(contact_count, 0) + ${created}`,

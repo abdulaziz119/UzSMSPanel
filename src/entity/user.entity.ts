@@ -2,7 +2,7 @@ import { Entity, Column, Index, OneToMany, Unique } from 'typeorm';
 import { DB_SCHEMA } from '../utils/env/env';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
-import { SmsGroupEntity } from './sms-group.entity';
+import { GroupEntity } from './group.entity';
 import { ContactEntity } from './contact.entity';
 import { SmsTemplateEntity } from './sms-template.entity';
 import { SmsSenderEntity } from './sms-sender.entity';
@@ -69,11 +69,11 @@ export class UserEntity extends BaseEntity {
   contacts: ContactEntity[];
 
   @OneToMany(
-    () => SmsGroupEntity,
+    () => GroupEntity,
     (entity) => entity.user,
     cascadeUpdateRelationOptions,
   )
-  smsGroup: SmsGroupEntity[];
+  group: GroupEntity[];
 
   @OneToMany(
     () => SmsTemplateEntity,

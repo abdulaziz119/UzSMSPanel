@@ -1,12 +1,12 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
-import { SmsGroupEntity } from './sms-group.entity';
+import { GroupEntity } from './group.entity';
 import {
   SMSContactStatusEnum,
   SmsContactTyeEnum,
 } from '../utils/enum/sms-contact.enum';
-import { SmsGroupEnum } from '../utils/enum/sms-group.enum';
+import { GroupEnum } from '../utils/enum/group.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_contacts' })
 @Index(['phone'])
@@ -38,10 +38,10 @@ export class SmsContactEntity extends BaseEntity {
   group_id: number;
 
   @ManyToOne(
-    () => SmsGroupEntity,
+    () => GroupEntity,
     (group) => group.smsContact,
     cascadeUpdateRelationOptions,
   )
   @JoinColumn({ name: 'group_id' })
-  smsGroup: SmsGroupEntity;
+  group: GroupEntity;
 }

@@ -9,20 +9,20 @@ import {
 } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { SmsGroupEntity } from '../../../../entity/sms-group.entity';
+import { GroupEntity } from '../../../../entity/group.entity';
 import { User } from '../auth/decorators/user.decorator';
-import { SmsGroupService } from '../../../../service/sms-group.service';
-import {
-  CreateSmsGroupDto,
-  UpdateSmsGroupDto,
-} from '../../../../utils/dto/sms-group.dto';
+import { GroupService } from '../../../../service/group.service';
 import { PaginationResponse } from '../../../../utils/pagination.response';
+import {
+  CreateGroupDto,
+  UpdateGroupDto,
+} from '../../../../utils/dto/group.dto';
 
 @ApiBearerAuth()
-@ApiTags('sms-group')
-@Controller({ path: '/frontend/sms-group', version: '1' })
-export class SmsGroupController {
-  constructor(private readonly smsGroupService: SmsGroupService) {}
+@ApiTags('group')
+@Controller({ path: '/frontend/group', version: '1' })
+export class GroupController {
+  constructor(private readonly groupService: GroupService) {}
 
   @Post('/create')
   @HttpCode(201)
@@ -30,10 +30,10 @@ export class SmsGroupController {
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async create(
-    @Body() body: CreateSmsGroupDto,
+    @Body() body: CreateGroupDto,
     @User('id') user_id: number,
-  ): Promise<SingleResponse<SmsGroupEntity>> {
-    return await this.smsGroupService.create(body, user_id);
+  ): Promise<SingleResponse<GroupEntity>> {
+    return await this.groupService.create(body, user_id);
   }
 
   @Post('/findAll')
@@ -42,8 +42,8 @@ export class SmsGroupController {
   @Auth(false)
   async findAll(
     @Body() query: PaginationParams,
-  ): Promise<PaginationResponse<SmsGroupEntity[]>> {
-    return await this.smsGroupService.findAll(query);
+  ): Promise<PaginationResponse<GroupEntity[]>> {
+    return await this.groupService.findAll(query);
   }
 
   @Post('/update')
@@ -51,10 +51,10 @@ export class SmsGroupController {
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async update(
-    @Body() body: UpdateSmsGroupDto,
+    @Body() body: UpdateGroupDto,
     @User('id') user_id: number,
-  ): Promise<SingleResponse<SmsGroupEntity>> {
-    return await this.smsGroupService.update(body, user_id);
+  ): Promise<SingleResponse<GroupEntity>> {
+    return await this.groupService.update(body, user_id);
   }
 
   @Post('/delete')
@@ -62,6 +62,6 @@ export class SmsGroupController {
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)
   async delete(@Body() param: ParamIdDto): Promise<{ result: true }> {
-    return await this.smsGroupService.delete(param);
+    return await this.groupService.delete(param);
   }
 }

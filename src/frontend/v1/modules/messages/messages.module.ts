@@ -9,7 +9,7 @@ import { smsContactProviders } from '../../../../providers/sms-contact.providers
 import { contactProviders } from '../../../../providers/contact.providers';
 import { smsTemplateProviders } from '../../../../providers/sms-template.providers';
 import { DatabaseModule } from '../../../../database/database.module';
-import { smsGroupProviders } from '../../../../providers/sms-group.providers';
+import { groupProviders } from '../../../../providers/group.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
 import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
@@ -35,16 +35,16 @@ import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
   providers: [
     ...smsMessageProviders,
     ...userProviders,
-  ...contactProviders,
+    ...contactProviders,
     ...smsContactProviders,
     ...tariffsProviders,
     ...smsTemplateProviders,
-    ...smsGroupProviders,
+    ...groupProviders,
     SmsContactService,
     BillingService,
     PerformanceMonitor,
     SmsMessageService,
-  MessagesService,
+    MessagesService,
     // queue processor
     MessagesQueue,
   ],

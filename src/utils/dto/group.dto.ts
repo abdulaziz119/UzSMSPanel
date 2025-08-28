@@ -9,14 +9,14 @@ import {
   IsDateString,
 } from 'class-validator';
 
-export class CreateSmsGroupDto {
+export class CreateGroupDto {
   @ApiProperty({ example: 'My SMS Group', description: 'SMS group title' })
   @IsString()
   @IsNotEmpty()
   title: string;
 }
 
-export class UpdateSmsGroupDto {
+export class UpdateGroupDto {
   @ApiProperty({ example: 1 })
   @IsDefined()
   id: number;

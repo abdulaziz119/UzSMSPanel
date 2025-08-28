@@ -1,12 +1,12 @@
 import { DataSource } from 'typeorm';
 import { MODELS, UZ_SMS_PANEL } from '../constants/constants';
-import { SmsGroupEntity } from '../entity/sms-group.entity';
+import { GroupEntity } from '../entity/group.entity';
 
-export const smsGroupProviders = [
+export const groupProviders = [
   {
-    provide: MODELS.SMS_GROUP,
+    provide: MODELS.GROUP,
     useFactory: (dataSource: DataSource) =>
-      dataSource.getRepository(SmsGroupEntity),
+      dataSource.getRepository(GroupEntity),
     inject: [UZ_SMS_PANEL],
   },
 ];

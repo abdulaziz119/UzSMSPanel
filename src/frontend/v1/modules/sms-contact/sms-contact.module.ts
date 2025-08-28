@@ -5,7 +5,7 @@ import { SmsContactController } from './sms-contact.controller';
 import { SmsContactService } from '../../../../service/sms-contact.service';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
-import { smsGroupProviders } from '../../../../providers/sms-group.providers';
+import { groupProviders } from '../../../../providers/group.providers';
 import { SmsContactQueue } from '../../../../queue/sms-contact.queue';
 import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
 import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
@@ -27,7 +27,7 @@ import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
   providers: [
     ...smsContactProviders,
     ...tariffsProviders,
-    ...smsGroupProviders,
+    ...groupProviders,
     SmsContactService,
     SmsContactQueue,
   ],
