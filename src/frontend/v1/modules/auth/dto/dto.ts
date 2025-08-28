@@ -1,11 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDefined,
+  IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   Matches,
 } from 'class-validator';
+import { language } from '../../../../../utils/enum/user.enum';
 
 export class AuthLoginDto {
   @ApiProperty({
@@ -49,6 +52,11 @@ export class AuthSendOtpDto {
   @IsString()
   @IsNotEmpty()
   password: string;
+
+  @ApiProperty({ enum: language, example: language.UZ })
+  @IsEnum(language)
+  @IsOptional()
+  lang?: language;
 }
 
 export class AuthVerifyDto {

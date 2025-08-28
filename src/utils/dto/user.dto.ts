@@ -3,17 +3,58 @@ import {
   IsEmail,
   IsEnum,
   IsOptional,
-  IsString,
   IsNumber,
   IsNotEmpty,
   IsBoolean,
+  Matches,
+  MaxLength,
+  IsString,
+  MinLength,
 } from 'class-validator';
-import { UserRoleEnum, language, BalanceOperationEnum } from '../enum/user.enum';
+import {
+  UserRoleEnum,
+  language,
+  BalanceOperationEnum,
+} from '../enum/user.enum';
 import { PaginationParams } from './dto';
+import { Match } from '../match.decorator';
 
 export interface LocationInterface {
   latitude: number;
   longitude: number;
+}
+
+export class UpdatePasswordDto {
+  @ApiProperty({ example: 'OldPassword123!' })
+  @IsString()
+  oldPassword: string;
+
+  @ApiProperty({ example: 'NewPassword123!' })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  @Matches(/(?=.*\d)(?=.*[a-zA-Z]).{8,}/, {
+    message: 'Password must contain letters and numbers',
+  })
+  newPassword: string;
+
+  @ApiProperty({ example: 'NewPassword123!' })
+  @IsString()
+  @Match('newPassword', { message: 'Passwords do not match' })
+  confirmPassword: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: 'NewPassword123!' })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  newPassword: string;
+
+  @ApiProperty({ example: 'NewPassword123!' })
+  @IsString()
+  @Match('newPassword', { message: 'Passwords do not match' })
+  confirmPassword: string;
 }
 
 export class UpdateUserProfileDto {
@@ -226,34 +267,4 @@ export class BlockUserDto {
   @IsNotEmpty()
   @IsString()
   reason: string;
-}
-
-export class UserStatsDto {
-  @ApiProperty({
-    example: '2025-01-01',
-    description: 'Start date for statistics',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  date_from?: string;
-
-  @ApiProperty({
-    example: '2025-12-31',
-    description: 'End date for statistics',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  date_to?: string;
-
-  @ApiProperty({
-    example: 'CLIENT',
-    enum: UserRoleEnum,
-    description: 'Filter by user role',
-    required: false,
-  })
-  @IsOptional()
-  @IsEnum(UserRoleEnum)
-  role?: UserRoleEnum;
 }

@@ -13,8 +13,14 @@ import { SingleResponse } from '../utils/dto/dto';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
 import { UserRoleEnum, BalanceOperationEnum } from '../utils/enum/user.enum';
-import { BlockUserDto, UpdateUserBalanceDto } from '../utils/dto/user.dto';
+import {
+  BlockUserDto,
+  ResetPasswordDto,
+  UpdatePasswordDto,
+  UpdateUserBalanceDto,
+} from '../utils/dto/user.dto';
 import { UserFilterDto } from '../utils/interfaces/user.interfaces';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -25,6 +31,48 @@ export class UserService {
 
   async getMe(user_id: number): Promise<SingleResponse<UserEntity>> {
     return await this.getUserProfile(user_id);
+  }
+
+  async updatePassword(
+    user_id: number,
+    dto: UpdatePasswordDto,
+  ): Promise<SingleResponse<UserEntity>> {
+    const user: UserEntity = await this.userRepo.findOne({
+      where: { id: user_id },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    // eski parolni tekshirish
+    const isMatch: boolean = await bcrypt.compare(
+      dto.oldPassword,
+      user.password,
+    );
+    if (!isMatch) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+
+    // yangi parolni hash qilish
+    const hashed: string = await bcrypt.hash(dto.newPassword, 10);
+    user.password = hashed;
+    await this.userRepo.save(user);
+
+    return { result: user };
+  }
+
+  async resetPassword(
+    user_id: number,
+    dto: ResetPasswordDto,
+  ): Promise<SingleResponse<UserEntity>> {
+    const user: UserEntity = await this.userRepo.findOne({
+      where: { id: user_id },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const hashed: string = await bcrypt.hash(dto.newPassword, 10);
+    user.password = hashed;
+    await this.userRepo.save(user);
+
+    return { result: user };
   }
 
   private async getUserProfile(

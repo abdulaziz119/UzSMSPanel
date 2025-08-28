@@ -1,4 +1,4 @@
-import { Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserEntity } from '../../../../entity/user.entity';
 import { UserService } from '../../../../service/user.service';
@@ -8,6 +8,10 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { User } from '../auth/decorators/user.decorator';
+import {
+  ResetPasswordDto,
+  UpdatePasswordDto,
+} from '../../../../utils/dto/user.dto';
 
 @ApiBearerAuth()
 @ApiTags('Users')
@@ -24,5 +28,29 @@ export class UserController {
     @User('id') user_id: number,
   ): Promise<SingleResponse<UserEntity>> {
     return await this.userService.getMe(user_id);
+  }
+
+  @Post('/reset-password')
+  @HttpCode(200)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async resetPassword(
+    @User('id') user_id: number,
+    @Body() dto: ResetPasswordDto,
+  ): Promise<SingleResponse<UserEntity>> {
+    return await this.userService.resetPassword(user_id, dto);
+  }
+
+  @Post('/update-password')
+  @HttpCode(200)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async updatePassword(
+    @User('id') user_id: number,
+    @Body() dto: UpdatePasswordDto,
+  ): Promise<SingleResponse<UserEntity>> {
+    return await this.userService.updatePassword(user_id, dto);
   }
 }
