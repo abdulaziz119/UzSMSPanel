@@ -53,7 +53,7 @@ export class ContactService {
 
       const contactData: ContactEntity = await this.contactRepo.findOne({
         where: {
-          id: user_id,
+          user_id: user_id,
           type: ContactTypeEnum.INDIVIDUAL,
         },
       });
