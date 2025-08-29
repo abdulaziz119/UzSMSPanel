@@ -22,7 +22,7 @@ import { MY_GO_URL } from '../utils/env/env';
 
 @Injectable()
 export class ContactService {
-  private url = MY_GO_URL;
+  private url: string = MY_GO_URL;
   constructor(
     @Inject(MODELS.CONTACT)
     private readonly contactRepo: Repository<ContactEntity>,
