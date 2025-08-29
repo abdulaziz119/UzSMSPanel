@@ -5,9 +5,10 @@ import { DatabaseModule } from '../../../../database/database.module';
 import { contactProviders } from '../../../../providers/contact.providers';
 import { userProviders } from '../../../../providers/user.providers';
 import { groupProviders } from '../../../../providers/group.providers';
+import { AxiosModule } from '../../../../helpers/axios.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AxiosModule],
   controllers: [ContactController],
   providers: [
     ...contactProviders,

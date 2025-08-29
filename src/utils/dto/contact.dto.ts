@@ -149,89 +149,10 @@ export class CreateContactDto {
 
 // DTO for creating individual contact
 export class CreateIndividualContactDto {
-  @ApiProperty({ enum: ContactStatusEnum, example: ContactStatusEnum.ACTIVE })
-  @IsEnum(ContactStatusEnum)
-  @IsOptional()
-  status?: ContactStatusEnum;
-
   @ApiProperty({ example: 'John Doe' })
   @IsString()
   @IsNotEmpty()
-  name: string;
-
-  @ApiPropertyOptional({ example: 1995 })
-  @IsNumber()
-  @IsOptional()
-  birth_year?: number;
-
-  @ApiPropertyOptional({ example: 'Uzbekistan' })
-  @IsString()
-  @IsOptional()
-  country?: string;
-
-  @ApiPropertyOptional({ example: 'Tashkent' })
-  @IsString()
-  @IsOptional()
-  city?: string;
-
-  @ApiPropertyOptional({ example: 'example@mail.com' })
-  @IsEmail()
-  @IsOptional()
-  email?: string;
-
-  @ApiPropertyOptional({ example: 'AB' })
-  @IsString()
-  @Length(2, 10)
-  @IsOptional()
-  passport_seria?: string;
-
-  @ApiPropertyOptional({ example: '1234567' })
-  @IsString()
-  @Length(1, 20)
-  @IsOptional()
-  passport_number?: string;
-
-  @ApiPropertyOptional({ example: 'Tashkent IIB' })
-  @IsString()
-  @IsOptional()
-  passport_given_by?: string;
-
-  @ApiPropertyOptional({ example: '2030-01-01' })
-  @IsDateString()
-  @IsOptional()
-  passport_expiration_date?: Date;
-
-  @ApiPropertyOptional({ example: 12345, description: 'Passport file ID' })
-  @IsNumber()
-  @IsOptional()
-  passport_file_id?: number;
-
-  @ApiPropertyOptional({ example: 'Chilonzor street, Tashkent' })
-  @IsString()
-  @IsOptional()
-  address?: string;
-
-  @ApiPropertyOptional({
-    example: 12346,
-    description: 'Address document file ID',
-  })
-  @IsNumber()
-  @IsOptional()
-  address_file_id?: number;
-
-  @ApiPropertyOptional({
-    example: 'uz',
-    description: 'Country code/identifier',
-  })
-  @IsString()
-  @Length(2, 5)
-  @IsOptional()
-  prefix?: string;
-
-  @ApiProperty({ enum: language, example: language.UZ })
-  @IsEnum(language)
-  @IsOptional()
-  lang?: language;
+  code: string;
 }
 
 // DTO for creating company contact

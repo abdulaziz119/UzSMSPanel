@@ -1,15 +1,24 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  UpdateDateColumn,
+} from 'typeorm';
 import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
-import { language } from '../utils/enum/user.enum';
 import { ContactStatusEnum, ContactTypeEnum } from '../utils/enum/contact.enum';
 import { FileEntity } from './file.entity';
+import {
+  CommonData,
+  Contacts,
+  DocData,
+  Address,
+} from '../utils/interfaces/contact.interfaces';
 
 @Entity({ schema: DB_SCHEMA, name: 'contacts' })
-@Index(['user_id', 'status'])
-@Index(['phone', 'phone_ext'])
-@Index(['user_id', 'phone'])
 export class ContactEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
@@ -21,6 +30,67 @@ export class ContactEntity extends BaseEntity {
   )
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
+
+  @Column({ type: 'integer' })
+  my_go_id: number | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  identity_code: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  method_type: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  code_from: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  code: string | null;
+
+  @Column({ type: 'integer' })
+  step: number | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  step_type: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  step_result: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  step_error: string | null;
+
+  @Column({ type: 'boolean', nullable: true })
+  success: boolean | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  access_token: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  refresh_token: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  job_id: string | null;
+
+  @CreateDateColumn({ type: 'timestamp', nullable: true })
+  my_go_created_at: Date | null;
+
+  @UpdateDateColumn({ type: 'timestamp', nullable: true })
+  my_go_updated_at: Date | null;
+
+  // Asosiy ma'lumotlar - nested object sifatida
+  @Column({ type: 'json', nullable: true })
+  commonData: CommonData | null;
+
+  // Hujjat ma'lumotlari - nested object sifatida
+  @Column({ type: 'json', nullable: true })
+  docData: DocData | null;
+
+  // Aloqa ma'lumotlari - nested object sifatida
+  @Column({ type: 'json', nullable: true })
+  contacts: Contacts | null;
+
+  // Manzillar - array of objects sifatida
+  @Column({ type: 'json', nullable: true })
+  address: Address[] | null;
 
   @Column({
     type: 'enum',
@@ -36,49 +106,12 @@ export class ContactEntity extends BaseEntity {
   })
   type: ContactTypeEnum;
 
-  @Column({ type: 'varchar', nullable: true })
-  name: string | null;
-
-  @Column({ type: 'integer', nullable: true })
-  birth_year: number | null;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  country: string | null;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  city: string | null;
-
-  @Column({ type: 'varchar', length: 20, nullable: false })
-  @Index()
-  phone: string;
-
-  @Column({ type: 'varchar', length: 8, nullable: true })
-  phone_ext: string | null;
-
-  @Column({ type: 'varchar', nullable: true })
-  email: string | null;
-
-  @Column({ type: 'varchar', length: 10, nullable: true })
-  passport_seria: string | null;
-
-  @Column({ type: 'varchar', length: 20, nullable: true })
-  passport_number: string | null;
-
-  @Column({ type: 'varchar', nullable: true })
-  passport_given_by: string | null;
-
-  @Column({ type: 'date', nullable: true })
-  passport_expiration_date: Date | null;
-
   @ManyToOne(() => FileEntity)
   @JoinColumn({ name: 'passport_file_id' })
   passport_file: FileEntity;
 
   @Column({ type: 'integer', nullable: true })
   passport_file_id: number | null;
-
-  @Column({ type: 'text', nullable: true })
-  address: string | null;
 
   @ManyToOne(() => FileEntity)
   @JoinColumn({ name: 'address_file_id' })
@@ -107,9 +140,6 @@ export class ContactEntity extends BaseEntity {
 
   @Column({ type: 'varchar', length: 10, nullable: true })
   prefix: string | null;
-
-  @Column({ type: 'enum', enum: language, default: language.UZ })
-  lang: language;
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   balance: number;

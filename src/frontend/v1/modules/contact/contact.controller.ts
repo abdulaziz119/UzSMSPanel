@@ -24,9 +24,6 @@ import {
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 
-  /**
-   * Jismoniy shaxs kontaktini yaratish
-   */
   @Post('/create/individual')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })
@@ -39,9 +36,6 @@ export class ContactController {
     return await this.contactService.createIndividual(body, user_id);
   }
 
-  /**
-   * Yuridik shaxs (kompaniya) kontaktini yaratish
-   */
   @Post('/create/company')
   @HttpCode(201)
   @ApiBadRequestResponse({ type: ErrorResourceDto })

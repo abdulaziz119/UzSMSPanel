@@ -17,14 +17,18 @@ import {
 } from '../utils/dto/contact.dto';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
 import { UserEntity } from '../entity/user.entity';
+import { AxiosService } from '../helpers/axios.service';
+import { MY_GO_URL } from '../utils/env/env';
 
 @Injectable()
 export class ContactService {
+  private url = MY_GO_URL;
   constructor(
     @Inject(MODELS.CONTACT)
     private readonly contactRepo: Repository<ContactEntity>,
     @Inject(MODELS.USER)
     private readonly userRepo: Repository<UserEntity>,
+    private readonly axiosService: AxiosService,
   ) {}
 
   async createIndividual(
@@ -54,12 +58,41 @@ export class ContactService {
         );
       }
 
+      const url = `${this.url}/myid/getByIdnCode`;
+      const myGo: any = await this.axiosService.sendGetRequest(
+        url,
+        payload.code,
+      );
+
+      if (!myGo) {
+        throw new HttpException(
+          { message: 'Error fetching data from MyGo' },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
       const newContact: ContactEntity = this.contactRepo.create({
-        ...payload,
-        user_id,
+        address: myGo.address,
+        contacts: myGo.contacts,
+        docData: myGo.docData,
+        commonData: myGo.commonData,
+        my_go_updated_at: myGo.updated_at,
+        my_go_created_at: myGo.created_at,
+        job_id: myGo.job_id,
+        refresh_token: myGo.refresh_token,
+        access_token: myGo.access_token,
+        success: myGo.success,
+        step_error: myGo.step_error,
+        step_result: myGo.step_result,
+        step_type: myGo.step_type,
+        step: myGo.step,
+        code: myGo.code,
+        code_from: myGo.code_from,
+        method_type: myGo.method_type,
+        identity_code: myGo.identity_code,
+        my_go_id: myGo.id,
+        user_id: user_id,
         type: ContactTypeEnum.INDIVIDUAL,
-        phone: userData.phone,
-        phone_ext: userData.phone_ext,
         company_name: null,
         company_bank_name: null,
         company_bank_id: null,
@@ -108,18 +141,11 @@ export class ContactService {
       }
 
       const newContact: ContactEntity = this.contactRepo.create({
-        ...payload,
-        user_id,
-        type: ContactTypeEnum.COMPANY,
-        phone: userData.phone,
-        phone_ext: userData.phone_ext || '998',
-        birth_year: null,
-        passport_seria: null,
-        passport_number: null,
-        passport_given_by: null,
-        passport_expiration_date: null,
-        passport_file_id: null,
-        address_file_id: null,
+        // ...payload,
+        // user_id,
+        // type: ContactTypeEnum.COMPANY,
+        // phone: userData.phone,
+        // phone_ext: userData.phone_ext || '998',
       });
 
       const savedContact: ContactEntity =
