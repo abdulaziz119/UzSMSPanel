@@ -10,7 +10,6 @@ import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { ContactStatusEnum, ContactTypeEnum } from '../utils/enum/contact.enum';
-import { FileEntity } from './file.entity';
 import {
   CommonData,
   Contacts,
@@ -106,22 +105,17 @@ export class ContactEntity extends BaseEntity {
   })
   type: ContactTypeEnum;
 
-  @ManyToOne(() => FileEntity)
-  @JoinColumn({ name: 'passport_file_id' })
-  passport_file: FileEntity;
+  @Column({ type: 'integer', nullable: true })
+  passport_file_url: number | null;
 
   @Column({ type: 'integer', nullable: true })
-  passport_file_id: number | null;
-
-  @ManyToOne(() => FileEntity)
-  @JoinColumn({ name: 'address_file_id' })
-  address_file: FileEntity;
-
-  @Column({ type: 'integer', nullable: true })
-  address_file_id: number | null;
+  address_file_url: number | null;
 
   @Column({ type: 'varchar', nullable: true })
   company_name: string | null;
+
+  @Column({ type: 'integer', nullable: true })
+  company_regis_file_url: number | null;
 
   @Column({ type: 'varchar', nullable: true })
   company_bank_name: string | null;

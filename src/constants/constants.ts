@@ -13,7 +13,6 @@ export const MODELS = {
   SENDER_PRICE: 'SENDER_PRICE',
   TARIFFS: 'TARIFFS',
   COUNTRY: 'COUNTRY',
-  FILE: 'FILE',
 };
 
 export const SMS_CONTACT_QUEUE = 'smsContactNtfQueueGF';

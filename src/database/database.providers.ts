@@ -19,7 +19,6 @@ import { SmsMessageEntity } from '../entity/sms-message.entity';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { UserEntity } from '../entity/user.entity';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
-import { FileEntity } from '../entity/file.entity';
 import { SmsSenderEntity } from '../entity/sms-sender.entity';
 import { SenderPriceEntity } from '../entity/sender-price.entity';
 import { CountryEntity } from '../entity/country.entity';
@@ -51,7 +50,6 @@ export const databaseProviders = [
           TariffEntity,
           CountryEntity,
           UserEntity,
-          FileEntity,
         ],
         // extra: {
         //   timezone: 'UTC',
