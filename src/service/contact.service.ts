@@ -34,7 +34,14 @@ export class ContactService {
   async createIndividual(
     payload: CreateIndividualContactDto,
     user_id: number,
-  ): Promise<SingleResponse<ContactEntity>> {
+  ): Promise<
+    SingleResponse<{
+      id: number;
+      first_name: string;
+      last_name: string;
+      middle_name: string;
+    }>
+  > {
     try {
       const userData: UserEntity = await this.userRepo.findOne({
         where: { id: user_id },
@@ -58,11 +65,8 @@ export class ContactService {
         );
       }
 
-      const url = `${this.url}/myid/getByIdnCode`;
-      const myGo: any = await this.axiosService.sendGetRequest(
-        url,
-        payload.code,
-      );
+      const url: string = `${this.url}/myid/getByIdnCode/${payload.code}`;
+      const myGo: any = await this.axiosService.sendGetRequest(url);
 
       if (!myGo) {
         throw new HttpException(
@@ -103,7 +107,14 @@ export class ContactService {
 
       const savedContact: ContactEntity =
         await this.contactRepo.save(newContact);
-      return { result: savedContact };
+
+      const result = {
+        id: savedContact.id,
+        first_name: savedContact.commonData.first_name,
+        last_name: savedContact.commonData.last_name,
+        middle_name: savedContact.commonData.middle_name,
+      };
+      return { result: result };
     } catch (error) {
       throw new HttpException(
         { message: 'Error creating individual contact', error: error.message },

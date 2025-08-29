@@ -50,7 +50,14 @@ export class ContactController {
   async createIndividual(
     @Body() body: CreateIndividualContactDto,
     @User('id') user_id: number,
-  ): Promise<SingleResponse<ContactEntity>> {
+  ): Promise<
+    SingleResponse<{
+      id: number;
+      first_name: string;
+      last_name: string;
+      middle_name: string;
+    }>
+  > {
     return await this.contactService.createIndividual(body, user_id);
   }
 

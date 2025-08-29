@@ -6,7 +6,7 @@ import { SmsContactEntity } from './sms-contact.entity';
 import { TransactionEntity } from './transaction.entity';
 import { GroupEnum } from '../utils/enum/group.enum';
 
-@Entity({ schema: DB_SCHEMA, name: 'groups' })
+@Entity({ schema: DB_SCHEMA, name: 'group' })
 export class GroupEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   title: string | null;
