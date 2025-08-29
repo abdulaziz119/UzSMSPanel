@@ -12,6 +12,7 @@ import { SmsMessageModule } from './sms-message/sms-message.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { TariffsFrontendModule } from './tariffs/tariffs.module';
 import { MessagesModule } from './messages/messages.module';
+import { FileModule } from './file/file.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MessagesModule } from './messages/messages.module';
     SmsMessageModule,
     TransactionModule,
     TariffsFrontendModule,
+    FileModule,
   ],
 })
 export class ModulesFrontendModule {}

@@ -4,8 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
-import * as express from 'express';
-import { FRONTEND_PORT, MEDIA_DIRECTORY } from '../utils/env/env';
+import { FRONTEND_PORT } from '../utils/env/env';
 import { ModulesFrontendModule } from './v1/modules/modules.module';
 import * as path from 'path';
 
@@ -19,13 +18,17 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Optimized body parser settings
-  app.use(bodyParser.json({ 
-    limit: '50mb'
-  }));
-  app.use(bodyParser.urlencoded({ 
-    limit: '50mb', 
-    extended: true
-  }));
+  app.use(
+    bodyParser.json({
+      limit: '50mb',
+    }),
+  );
+  app.use(
+    bodyParser.urlencoded({
+      limit: '50mb',
+      extended: true,
+    }),
+  );
 
   app.disable('etag');
   app.disable('x-powered-by');
@@ -41,11 +44,6 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-
-  app.use(
-    `/${MEDIA_DIRECTORY}`,
-    express.static(path.resolve(process.cwd(), MEDIA_DIRECTORY)),
-  );
 
   app.setGlobalPrefix('api');
   const document = SwaggerModule.createDocument(app, options);

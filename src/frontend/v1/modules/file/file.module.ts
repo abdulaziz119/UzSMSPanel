@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { FileController } from './file.controller';
 import { FileService } from '../../../../service/file.service';
 import { DatabaseModule } from '../../../../database/database.module';
-import { fileProviders } from '../../../../providers/file.providers';
-import { userProviders } from '../../../../providers/user.providers';
+import { AxiosService } from '../../../../helpers/axios.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, HttpModule],
   controllers: [FileController],
-  providers: [...fileProviders, ...userProviders, FileService],
+  providers: [FileService, AxiosService],
 })
 export class FileModule {}

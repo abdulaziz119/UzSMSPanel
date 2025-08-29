@@ -8,7 +8,6 @@ import {
   FileTypeValidator,
   MaxFileSizeValidator,
   Body,
-  HttpCode,
 } from '@nestjs/common';
 import { FileService } from '../../../../service/file.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -17,26 +16,12 @@ import {
   ApiResponse,
   ApiTags,
   ApiBody,
-  ApiBadRequestResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { FileEntity } from '../../../../entity/file.entity';
-import {
-  FileCreateBodyDto,
-  FileUploadDto,
-  FileUploadResponseDto,
-} from '../../../../utils/dto/file.dto';
+import { FileCreateBodyDto, FileUploadResponseDto } from '../../../../utils/dto/file.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
-import {
-  PaginationParams,
-  ParamIdDto,
-  SingleResponse,
-} from '../../../../utils/dto/dto';
-import { PaginationResponse } from '../../../../utils/pagination.response';
-import { FileCategory } from '../../../../utils/enum/file.enum';
 
 @ApiBearerAuth()
 @ApiTags('File')
@@ -60,13 +45,8 @@ export class FileController {
           type: 'string',
           format: 'binary',
         },
-        source: {
-          type: 'string',
-          enum: Object.values(FileCategory),
-          description: 'File categories',
-        },
       },
-      required: ['file', 'file_category'],
+      required: ['file'],
     },
   })
   @ApiResponse({

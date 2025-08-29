@@ -14,14 +14,12 @@ const REDIS_HOST = process.env.REDIS_HOST || '';
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD || '';
 
-const MEDIA_DIRECTORY = process.env.MEDIA_DIRECTORY || '';
-const SERVER_BASE_URL = process.env.SERVER_BASE_URL || '';
-
 const JWT_SECRET = process.env.JWT_SECRET || '';
 
 const MY_GO_URL = process.env.MY_GO_URL || '';
 
 const IMAGES_URL = process.env.IMAGES_URL || '';
+const IMAGES_PROJECT_NAME = process.env.IMAGES_PROJECT_NAME || '';
 
 // Port konfiguratsiyasi
 const DASHBOARD_PORT = process.env.DASHBOARD_PORT || 8080;
@@ -32,13 +30,12 @@ if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
 }
 
 export {
+  IMAGES_PROJECT_NAME,
   IMAGES_URL,
   MY_GO_URL,
   REDIS_HOST,
   REDIS_PORT,
   REDIS_PASSWORD,
-  MEDIA_DIRECTORY,
-  SERVER_BASE_URL,
   DASHBOARD_PORT,
   DB_DB,
   DB_HOST,

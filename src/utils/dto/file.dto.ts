@@ -11,6 +11,10 @@ import {
 } from 'class-validator';
 import { FileCategory, FileType, FileVisibility } from '../enum/file.enum';
 
+export class FileCreateBodyDto {
+  // Boshqa maydonlar kerak bo'lsa shu yerga qo'shish mumkin
+}
+
 export class FileUploadResponseDto {
   @ApiProperty({
     example: true,
@@ -36,12 +40,6 @@ export class FileUploadResponseDto {
   data: {
     url: string;
   };
-}
-
-export class FileCreateBodyDto {
-  @ApiProperty({ enum: FileCategory, description: 'File type' })
-  @IsEnum(FileCategory)
-  file_category: FileCategory;
 }
 
 export class FileUploadDto {

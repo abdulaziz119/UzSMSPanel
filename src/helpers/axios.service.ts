@@ -145,9 +145,10 @@ export class AxiosService {
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<T>> {
     try {
+      // File upload uchun responseType 'json' qilish
       config = {
         ...config,
-        responseType: 'arraybuffer',
+        // responseType: 'json' yoki hech narsa qo'ymasak default json bo'ladi
       };
       return await axios.post<T>(url, payload, config);
     } catch (error) {
