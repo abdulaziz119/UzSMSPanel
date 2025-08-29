@@ -1,7 +1,7 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { catchError, firstValueFrom } from 'rxjs';
-import { AxiosError } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 @Injectable()
 export class AxiosService {
@@ -120,5 +120,39 @@ export class AxiosService {
     );
 
     return data;
+  }
+
+  async sendGetFileRequest<T = any>(
+    url: string,
+    payload: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<T>> {
+    try {
+      config = {
+        ...config,
+        responseType: 'arraybuffer',
+        params: payload,
+      };
+      return await axios.get<T>(url, config);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async sendPostFileRequest<T = any>(
+    url: string,
+    payload: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<T>> {
+    try {
+      config = {
+        ...config,
+        responseType: 'arraybuffer',
+      };
+      return await axios.post<T>(url, payload, config);
+    } catch (error) {
+      console.error('Error in sendPostFileRequest:', error);
+      throw error;
+    }
   }
 }

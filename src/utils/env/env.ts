@@ -21,6 +21,8 @@ const JWT_SECRET = process.env.JWT_SECRET || '';
 
 const MY_GO_URL = process.env.MY_GO_URL || '';
 
+const IMAGES_URL = process.env.IMAGES_URL || '';
+
 // Port konfiguratsiyasi
 const DASHBOARD_PORT = process.env.DASHBOARD_PORT || 8080;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
@@ -30,6 +32,7 @@ if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
 }
 
 export {
+  IMAGES_URL,
   MY_GO_URL,
   REDIS_HOST,
   REDIS_PORT,
