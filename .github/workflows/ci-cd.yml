@@ -64,7 +64,7 @@ jobs:
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
-        password: ${{ secrets.GIT_TOKEN }}
+        password: ${{ secrets.CONTAINER_TOKEN }}
 
     - name: Extract metadata
       id: meta
@@ -113,7 +113,7 @@ jobs:
           git pull origin main
           
           # Login to GitHub Container Registry
-          echo ${{ secrets.GIT_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo ${{ secrets.CONTAINER_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
           # Pull latest images
           docker pull ghcr.io/${{ github.repository }}-dashboard:latest
