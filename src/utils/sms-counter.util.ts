@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const SmsCounter = require('sms-counter');
 
 export function analyzeSmsContent(text: string) {

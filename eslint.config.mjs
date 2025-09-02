@@ -16,14 +16,17 @@ export default tseslint.config(
         ...globals.jest,
       },
       sourceType: 'commonjs',
+      parserOptions: {
+        project: './tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
       '@typescript-eslint/no-unused-vars': 'warn',
+      // Type-aware rules olib tashlandi
     },
   },
 );
