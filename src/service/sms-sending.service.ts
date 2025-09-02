@@ -11,11 +11,11 @@ import { analyzeSmsContent } from '../utils/sms-counter.util';
 import {
   CanSendContactDto,
   CanSendGroupDto,
-} from '../frontend/v1/modules/messages/dto/messages.dto';
+} from '../frontend/v1/modules/sms-sending/dto/sms-sending.dto';
 import { TariffEntity } from '../entity/tariffs.entity';
 
 @Injectable()
-export class MessageEstimationService {
+export class SmsSendingService {
   constructor(
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,

@@ -1,7 +1,7 @@
 import {
   SendToContactDto,
   SendToGroupDto,
-} from '../../frontend/v1/modules/messages/dto/messages.dto';
+} from '../../frontend/v1/modules/sms-sending/dto/sms-sending.dto';
 import { ContactTypeEnum } from '../enum/contact.enum';
 
 export interface SendToContactJobData {

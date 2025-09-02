@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-  Headers,
-  BadRequestException,
-  Inject,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Headers } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import {
@@ -26,22 +18,22 @@ import {
   SendToGroupDto,
   CanSendContactDto,
   CanSendGroupDto,
-} from './dto/messages.dto';
+} from './dto/sms-sending.dto';
 import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
-import { MessageEstimationService } from '../../../../service/message-estimation.service';
+import { SmsSendingService } from '../../../../service/sms-sending.service';
 import {
   SendToContactJobData,
   SendToGroupJobData,
 } from '../../../../utils/interfaces/messages.interfaces';
 
 @ApiBearerAuth()
-@ApiTags('messages')
-@Controller({ path: '/frontend/messages', version: '1' })
-export class MessagesController {
+@ApiTags('sms-sending')
+@Controller({ path: '/frontend/sms-sending', version: '1' })
+export class SmsSendingController {
   constructor(
     @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
-    private readonly messagesService: MessageEstimationService,
+    private readonly messagesService: SmsSendingService,
   ) {}
 
   @Post('/send-contact')
