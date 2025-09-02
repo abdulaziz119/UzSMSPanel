@@ -37,7 +37,11 @@ services:
       retries: 5
 
   dashboard-app:
-    image: ${DASHBOARD_IMAGE:-ghcr.io/abdulaziz119/uzsmspanel-dashboard:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+      args:
+        NODE_ENV: production
     container_name: uzsmspanel-dashboard
     depends_on:
       postgres:
@@ -79,7 +83,11 @@ services:
         max-file: "3"
 
   frontend-app:
-    image: ${FRONTEND_IMAGE:-ghcr.io/abdulaziz119/uzsmspanel-frontend:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NODE_ENV: production
     container_name: uzsmspanel-frontend
     depends_on:
       postgres:
