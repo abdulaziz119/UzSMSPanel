@@ -1,4 +1,4 @@
-import SmsCounter from 'sms-counter';
+const SmsCounter = require('sms-counter');
 
 export function analyzeSmsContent(text: string) {
   const result = SmsCounter.count(text);
