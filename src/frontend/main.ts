@@ -16,8 +16,8 @@ async function bootstrap() {
   app.enableCors();
 
   app.use(cookieParser());
-
   // Optimized body parser settings
+
   app.use(
     bodyParser.json({
       limit: '50mb',
