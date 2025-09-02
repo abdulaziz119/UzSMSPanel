@@ -1,0 +1,136 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: uzsmspanel-prod-postgres
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-uzsmspanel_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - uzsmspanel-prod-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: uzsmspanel-prod-redis
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data_prod:/data
+    networks:
+      - uzsmspanel-prod-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", ${REDIS_PASSWORD:+-a $REDIS_PASSWORD}, "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  dashboard-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+      args:
+        NODE_ENV: production
+    container_name: uzsmspanel-prod-dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '${DASHBOARD_EXTERNAL_PORT:-4040}:${DASHBOARD_PORT:-4040}'
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      DB_DATABASE: ${DB_DATABASE:-uzsmspanel_db}
+      DB_SCHEMA: ${DB_SCHEMA:-public}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      DASHBOARD_PORT: ${DASHBOARD_PORT:-4040}
+      JWT_SECRET: ${JWT_SECRET:-uzsmspanel_jwt_secret_key_2024_secure_random_string}
+      NODE_ENV: production
+      MY_GO_URL: ${MY_GO_URL:-}
+      IMAGES_URL: ${IMAGES_URL:-}
+      IMAGES_PROJECT_NAME: ${IMAGES_PROJECT_NAME:-uzsmspanel}
+    restart: unless-stopped
+    volumes:
+      - uploads_data_prod:/app/uploads
+      - ./public:/app/public:ro
+    networks:
+      - uzsmspanel-prod-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NODE_ENV: production
+    container_name: uzsmspanel-prod-frontend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '${FRONTEND_EXTERNAL_PORT:-4141}:${FRONTEND_PORT:-4141}'
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres123}
+      DB_DATABASE: ${DB_DATABASE:-uzsmspanel_db}
+      DB_SCHEMA: ${DB_SCHEMA:-public}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      FRONTEND_PORT: ${FRONTEND_PORT:-4141}
+      JWT_SECRET: ${JWT_SECRET:-uzsmspanel_jwt_secret_key_2024_secure_random_string}
+      NODE_ENV: production
+      MY_GO_URL: ${MY_GO_URL:-}
+      IMAGES_URL: ${IMAGES_URL:-}
+      IMAGES_PROJECT_NAME: ${IMAGES_PROJECT_NAME:-uzsmspanel}
+    restart: unless-stopped
+    volumes:
+      - uploads_data_prod:/app/uploads
+      - ./public:/app/public:ro
+    networks:
+      - uzsmspanel-prod-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+  uploads_data_prod:
+    driver: local
+
+networks:
+  uzsmspanel-prod-network:
+    driver: bridge
+    name: uzsmspanel-prod-network

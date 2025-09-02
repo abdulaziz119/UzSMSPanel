@@ -29,9 +29,16 @@
     "test:load": "npm run build && node dist/test/load-test.js",
     "performance:monitor": "node --inspect dist/src/utils/performance-monitor.js",
     "docker:build": "docker build -t uzsmspanel .",
+    "docker:build:dashboard": "docker build -f Dockerfile.dashboard -t uzsmspanel-dashboard .",
+    "docker:build:frontend": "docker build -f Dockerfile.frontend -t uzsmspanel-frontend .",
+    "docker:up": "docker-compose up -d --build",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
     "docker:prod:up": "docker-compose -f docker-compose.prod.yml up -d --build",
     "docker:prod:down": "docker-compose -f docker-compose.prod.yml down",
-    "docker:prod:logs": "docker-compose -f docker-compose.prod.yml logs -f"
+    "docker:prod:logs": "docker-compose -f docker-compose.prod.yml logs -f",
+    "docker:prod:restart": "docker-compose -f docker-compose.prod.yml restart"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
