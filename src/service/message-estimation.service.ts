@@ -15,7 +15,7 @@ import {
 import { TariffEntity } from '../entity/tariffs.entity';
 
 @Injectable()
-export class MessagesService {
+export class MessageEstimationService {
   constructor(
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,

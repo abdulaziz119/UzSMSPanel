@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { MessagesController } from './messages.controller';
 import { MessageService } from '../../../../service/message.service';
-import { MessagesService } from '../../../../service/messages.service';
+import { MessageEstimationService } from '../../../../service/message-estimation.service';
 import { messageProviders } from '../../../../providers/message.providers';
 import { userProviders } from '../../../../providers/user.providers';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
@@ -44,7 +44,7 @@ import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
     BillingService,
     PerformanceMonitor,
     MessageService,
-    MessagesService,
+    MessageEstimationService,
     // queue processor
     MessagesQueue,
   ],

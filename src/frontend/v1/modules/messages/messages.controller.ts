@@ -29,7 +29,7 @@ import {
 } from './dto/messages.dto';
 import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
-import { MessagesService } from '../../../../service/messages.service';
+import { MessageEstimationService } from '../../../../service/message-estimation.service';
 import {
   SendToContactJobData,
   SendToGroupJobData,
@@ -41,7 +41,7 @@ import {
 export class MessagesController {
   constructor(
     @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
-    private readonly messagesService: MessagesService,
+    private readonly messagesService: MessageEstimationService,
   ) {}
 
   @Post('/send-contact')
