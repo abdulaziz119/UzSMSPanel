@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bull';
 import { SmsSendingController } from './sms-sending.controller';
 import { MessageService } from '../../../../service/message.service';
 import { SmsSendingService } from '../../../../service/sms-sending.service';
@@ -15,21 +14,10 @@ import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
 import { PerformanceMonitor } from '../../../../utils/performance-monitor.util';
 import { MessagesQueue } from '../../../../queue/messages.queue';
-import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
-import { REDIS_HOST, REDIS_PORT } from '../../../../utils/env/env';
 
 @Module({
   imports: [
     DatabaseModule,
-    BullModule.forRoot({
-      redis: {
-        host: REDIS_HOST,
-        port: Number(REDIS_PORT),
-      },
-    }),
-    BullModule.registerQueue({
-      name: SMS_MESSAGE_QUEUE,
-    }),
   ],
   controllers: [SmsSendingController],
   providers: [

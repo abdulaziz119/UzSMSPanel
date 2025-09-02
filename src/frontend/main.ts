@@ -6,9 +6,9 @@ import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import { FRONTEND_PORT } from '../utils/env/env';
 import { ModulesFrontendModule } from './v1/modules/modules.module';
-import * as path from 'path';
 
 async function bootstrap() {
+  console.log('🚀 Frontend servisi ishga tushirilmoqda...');
   const app = await NestFactory.create<NestExpressApplication>(
     ModulesFrontendModule,
   );
@@ -54,8 +54,13 @@ async function bootstrap() {
   });
 
   await app.listen(FRONTEND_PORT);
+  console.log('✅ Frontend servisi muvaffaqiyatli ishga tushdi!');
 }
 
-bootstrap().then(() =>
-  console.log(`http://0.0.0.0:${FRONTEND_PORT}/api/v1/swagger`),
-);
+bootstrap().then(() => {
+  console.log('═══════════════════════════════════════════════════════');
+  console.log(
+    `🌐 Frontend API: http://0.0.0.0:${FRONTEND_PORT}/api/v1/swagger`,
+  );
+  console.log('═══════════════════════════════════════════════════════');
+});

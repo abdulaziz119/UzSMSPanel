@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../../database/database.module';
+import { QueueMonitorModule } from '../../../queue/queue-monitor.module';
 import { AuthModule } from './auth/auth.module';
 import { ContactModule } from './contact/contact.module';
 import { UserModule } from './user/user.module';
@@ -17,6 +18,7 @@ import { FileModule } from './file/file.module';
 @Module({
   imports: [
     DatabaseModule,
+    QueueMonitorModule,
     AuthModule,
     ContactModule,
     UserModule,

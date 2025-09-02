@@ -7,6 +7,7 @@ import { DASHBOARD_PORT } from '../utils/env/env';
 import { ModulesDashboardModule } from './v1/modules/modules.module';
 
 async function bootstrap() {
+  console.log('🚀 Dashboard servisi ishga tushirilmoqda...');
   const app = await NestFactory.create<NestExpressApplication>(
     ModulesDashboardModule,
   );
@@ -42,8 +43,11 @@ async function bootstrap() {
   app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
   await app.listen(DASHBOARD_PORT);
+  console.log('✅ Dashboard servisi muvaffaqiyatli ishga tushdi!');
 }
 
-bootstrap().then(() =>
-  console.log(`http://0.0.0.0:${DASHBOARD_PORT}/api/v1/swagger`),
-);
+bootstrap().then(() => {
+  console.log('═══════════════════════════════════════════════════════');
+  console.log(`🎛️ Dashboard API: http://0.0.0.0:${DASHBOARD_PORT}/api/v1/swagger`);
+  console.log('═══════════════════════════════════════════════════════');
+});
