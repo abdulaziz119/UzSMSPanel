@@ -1,40 +1,4 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: uzsmspanel-postgres
-    environment:
-      POSTGRES_DB: ${DB_DATABASE:-sms_panel}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
-    ports:
-      - '${DB_PORT:-5432}:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - uzsmspanel-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    container_name: uzsmspanel-redis
-    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
-    ports:
-      - '${REDIS_PORT:-6379}:6379'
-    volumes:
-      - redis_data:/data
-    networks:
-      - uzsmspanel-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", ${REDIS_PASSWORD:+-a $REDIS_PASSWORD}, "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   dashboard-app:
     build:
@@ -43,11 +7,6 @@ services:
       args:
         NODE_ENV: production
     container_name: uzsmspanel-dashboard
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     ports:
       - '${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}'
     environment:
@@ -89,11 +48,6 @@ services:
       args:
         NODE_ENV: production
     container_name: uzsmspanel-frontend
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     ports:
       - '${FRONTEND_PORT:-3001}:${FRONTEND_PORT:-3001}'
     environment:
@@ -129,10 +83,6 @@ services:
         max-file: "3"
 
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
   uploads_data:
     driver: local
 
