@@ -35,12 +35,17 @@
     "docker:build": "docker build -t uzsmspanel .",
     "docker:build:dashboard": "docker build -f Dockerfile.dashboard -t uzsmspanel-dashboard .",
     "docker:build:frontend": "docker build -f Dockerfile.frontend -t uzsmspanel-frontend .",
-    "docker:up": "docker-compose -f docker-compose.prod.yml up -d --build",
-    "docker:down": "docker-compose -f docker-compose.prod.yml down",
-    "docker:logs": "docker-compose -f docker-compose.prod.yml logs -f",
-    "docker:restart": "docker-compose -f docker-compose.prod.yml restart",
-    "docker:ps": "docker-compose -f docker-compose.prod.yml ps",
-    "docker:clean": "docker-compose -f docker-compose.prod.yml down -v --rmi all"
+    "docker:up": "docker compose -f docker-compose.prod.yml up -d",
+    "docker:down": "docker compose -f docker-compose.prod.yml down",
+    "docker:logs": "docker compose -f docker-compose.prod.yml logs -f",
+    "docker:restart": "docker compose -f docker-compose.prod.yml restart",
+    "docker:ps": "docker compose -f docker-compose.prod.yml ps",
+    "docker:clean": "docker compose -f docker-compose.prod.yml down -v --rmi all",
+    "docker:dev:up": "docker compose -f docker-compose.dev.yml up -d --build",
+    "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:dev:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "docker:dev:restart": "docker compose -f docker-compose.dev.yml restart",
+    "docker:build:push": "docker compose -f docker-compose.prod.yml build && docker compose -f docker-compose.prod.yml push"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",

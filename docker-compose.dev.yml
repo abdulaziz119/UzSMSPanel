@@ -1,0 +1,134 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: uzsmspanel-dev-postgres
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-sms_panel}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - uzsmspanel-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: uzsmspanel-dev-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - uzsmspanel-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  dashboard-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+      args:
+        NODE_ENV: development
+    container_name: uzsmspanel-dev-dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres123
+      DB_DATABASE: sms_panel
+      DB_SCHEMA: public
+      DB_SYNCHRONIZE: true
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 1
+      REDIS_PASSWORD: ""
+      DASHBOARD_PORT: 3000
+      JWT_SECRET: dev_jwt_secret_key
+      NODE_ENV: development
+      MY_GO_URL: http://10.1.1.103:25000
+      IMAGES_URL: https://files.isds.uz
+      IMAGES_PROJECT_NAME: sms_panel
+      MEDIA_DIRECTORY: public
+      SERVER_BASE_URL: http://localhost:3001
+    restart: unless-stopped
+    volumes:
+      - uploads_data_dev:/app/uploads
+      - ./public:/app/public
+      - ./src:/app/src
+    networks:
+      - uzsmspanel-network
+
+  frontend-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NODE_ENV: development
+    container_name: uzsmspanel-dev-frontend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres123
+      DB_DATABASE: sms_panel
+      DB_SCHEMA: public
+      DB_SYNCHRONIZE: true
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 1
+      REDIS_PASSWORD: ""
+      FRONTEND_PORT: 3001
+      JWT_SECRET: dev_jwt_secret_key
+      NODE_ENV: development
+      MY_GO_URL: http://10.1.1.103:25000
+      IMAGES_URL: https://files.isds.uz
+      IMAGES_PROJECT_NAME: sms_panel
+      MEDIA_DIRECTORY: public
+      SERVER_BASE_URL: http://localhost:3001
+    restart: unless-stopped
+    volumes:
+      - uploads_data_dev:/app/uploads
+      - ./public:/app/public
+      - ./src:/app/src
+    networks:
+      - uzsmspanel-network
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  uploads_data_dev:
+    driver: local
+
+networks:
+  uzsmspanel-network:
+    driver: bridge
+    name: uzsmspanel-network

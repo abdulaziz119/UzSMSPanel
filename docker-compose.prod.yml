@@ -1,11 +1,7 @@
 services:
 
   dashboard-app:
-    build:
-      context: .
-      dockerfile: Dockerfile.dashboard
-      args:
-        NODE_ENV: production
+    image: ${DASHBOARD_IMAGE:-ghcr.io/abdulaziz119/uzsmspanel-dashboard:latest}
     container_name: uzsmspanel-dashboard
     ports:
       - '${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}'
@@ -42,11 +38,7 @@ services:
         max-file: "3"
 
   frontend-app:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        NODE_ENV: production
+    image: ${FRONTEND_IMAGE:-ghcr.io/abdulaziz119/uzsmspanel-frontend:latest}
     container_name: uzsmspanel-frontend
     ports:
       - '${FRONTEND_PORT:-3001}:${FRONTEND_PORT:-3001}'
