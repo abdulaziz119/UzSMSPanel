@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { SmsMessageController } from './sms-message.controller';
-import { SmsMessageService } from '../../../../service/sms-message.service';
+import { MessageController } from './message.controller';
+import { MessageService } from '../../../../service/message.service';
 import { DatabaseModule } from '../../../../database/database.module';
-import { smsMessageProviders } from '../../../../providers/sms-message.providers';
+import { messageProviders } from '../../../../providers/message.providers';
 import { userProviders } from '../../../../providers/user.providers';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
@@ -16,9 +16,9 @@ import { contactProviders } from '../../../../providers/contact.providers';
 
 @Module({
   imports: [DatabaseModule, SmsContactModule],
-  controllers: [SmsMessageController],
+  controllers: [MessageController],
   providers: [
-    ...smsMessageProviders,
+    ...messageProviders,
     ...userProviders,
     ...smsContactProviders,
     ...groupProviders,
@@ -28,7 +28,7 @@ import { contactProviders } from '../../../../providers/contact.providers';
     SmsContactService,
     BillingService,
     PerformanceMonitor,
-    SmsMessageService,
+    MessageService,
   ],
 })
 export class SmsMessageDashboardModule {}

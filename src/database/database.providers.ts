@@ -15,7 +15,7 @@ import { ContactEntity } from '../entity/contact.entity';
 import { OtpEntity } from '../entity/otp.entity';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
 import { GroupEntity } from '../entity/group.entity';
-import { SmsMessageEntity } from '../entity/sms-message.entity';
+import { MessageEntity } from '../entity/message.entity';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { UserEntity } from '../entity/user.entity';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
@@ -43,7 +43,7 @@ export const databaseProviders = [
           OtpEntity,
           SmsContactEntity,
           GroupEntity,
-          SmsMessageEntity,
+          MessageEntity,
           SmsTemplateEntity,
           SmsSenderEntity,
           SenderPriceEntity,

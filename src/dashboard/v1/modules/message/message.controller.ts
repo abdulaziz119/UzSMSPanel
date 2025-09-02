@@ -5,8 +5,8 @@ import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse, ParamIdDto } from '../../../../utils/dto/dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
-import { SmsMessageService } from '../../../../service/sms-message.service';
-import { SmsMessageEntity } from '../../../../entity/sms-message.entity';
+import { MessageService } from '../../../../service/message.service';
+import { MessageEntity } from '../../../../entity/message.entity';
 import { PaginationResponse } from '../../../../utils/pagination.response';
 import {
   MessageFilterDto,
@@ -14,10 +14,10 @@ import {
 } from '../../../../utils/dto/sms-message.dto';
 
 @ApiBearerAuth()
-@ApiTags('sms-message')
-@Controller({ path: '/dashboard/sms-message', version: '1' })
-export class SmsMessageController {
-  constructor(private readonly smsMessageService: SmsMessageService) {}
+@ApiTags('message')
+@Controller({ path: '/dashboard/message', version: '1' })
+export class MessageController {
+  constructor(private readonly smsMessageService: MessageService) {}
 
   // /**
   //  * SMS xabarlar tarixi (filter + pagination)
@@ -28,7 +28,7 @@ export class SmsMessageController {
   // @Auth()
   // async findAllMessages(
   //   @Body() filters: MessageFilterDto,
-  // ): Promise<PaginationResponse<SmsMessageEntity[]>> {
+  // ): Promise<PaginationResponse<MessageEntity[]>> {
   //   return await this.smsMessageService.getMessageHistory(filters);
   // }
   //
@@ -41,7 +41,7 @@ export class SmsMessageController {
   // @Auth()
   // async getMessageDetails(
   //   @Body() param: ParamIdDto,
-  // ): Promise<SingleResponse<SmsMessageEntity>> {
+  // ): Promise<SingleResponse<MessageEntity>> {
   //   return await this.smsMessageService.getMessageDetails(param.id);
   // }
   //

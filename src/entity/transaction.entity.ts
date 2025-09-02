@@ -3,7 +3,7 @@ import { BaseEntity, cascadeUpdateRelationOptions } from './base.entity';
 import { DB_SCHEMA } from '../utils/env/env';
 import { UserEntity } from './user.entity';
 import { GroupEntity } from './group.entity';
-import { SmsMessageEntity } from './sms-message.entity';
+import { MessageEntity } from './message.entity';
 import {
   PaymentMethodEnum,
   TransactionStatusEnum,
@@ -15,7 +15,7 @@ import {
 @Index(['created_at', 'status'])
 @Index(['transaction_id'])
 @Index(['group_id'])
-@Index(['sms_message_id'])
+@Index(['message_id'])
 export class TransactionEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
@@ -40,15 +40,15 @@ export class TransactionEntity extends BaseEntity {
   group: GroupEntity | null;
 
   @Column({ type: 'integer', nullable: true })
-  sms_message_id: number | null;
+  message_id: number | null;
 
   @ManyToOne(
-    () => SmsMessageEntity,
+    () => MessageEntity,
     (sms) => sms.transactions,
     cascadeUpdateRelationOptions,
   )
-  @JoinColumn({ name: 'sms_message_id' })
-  smsMessage: SmsMessageEntity | null;
+  @JoinColumn({ name: 'message_id' })
+  message: MessageEntity | null;
 
   @Column({ type: 'varchar', length: 100, unique: true })
   transaction_id: string;

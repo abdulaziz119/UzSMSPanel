@@ -6,7 +6,7 @@ import { GroupEntity } from './group.entity';
 import { ContactEntity } from './contact.entity';
 import { SmsTemplateEntity } from './sms-template.entity';
 import { SmsSenderEntity } from './sms-sender.entity';
-import { SmsMessageEntity } from './sms-message.entity';
+import { MessageEntity } from './message.entity';
 import { TransactionEntity } from './transaction.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'users' })
@@ -90,11 +90,11 @@ export class UserEntity extends BaseEntity {
   smsSenders: SmsSenderEntity[];
 
   @OneToMany(
-    () => SmsMessageEntity,
+    () => MessageEntity,
     (entity) => entity.user,
     cascadeUpdateRelationOptions,
   )
-  smsMessages: SmsMessageEntity[];
+  messages: MessageEntity[];
 
   @OneToMany(
     () => TransactionEntity,

@@ -3,7 +3,7 @@ import { StatisticsController } from './statistics.controller';
 import { StatisticsService } from '../../../../service/statistics.service';
 import { DatabaseModule } from '../../../../database/database.module';
 import { userProviders } from '../../../../providers/user.providers';
-import { smsMessageProviders } from '../../../../providers/sms-message.providers';
+import { messageProviders } from '../../../../providers/message.providers';
 import { transactionProviders } from '../../../../providers/transaction.providers';
 
 @Module({
@@ -11,7 +11,7 @@ import { transactionProviders } from '../../../../providers/transaction.provider
   controllers: [StatisticsController],
   providers: [
     ...userProviders,
-    ...smsMessageProviders,
+    ...messageProviders,
     ...transactionProviders,
     StatisticsService,
   ],

@@ -2,7 +2,7 @@ import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { UserEntity } from '../entity/user.entity';
-import { SmsMessageEntity } from '../entity/sms-message.entity';
+import { MessageEntity } from '../entity/message.entity';
 import { TransactionEntity } from '../entity/transaction.entity';
 import { SingleResponse } from '../utils/dto/dto';
 import { UserRoleEnum } from '../utils/enum/user.enum';
@@ -18,8 +18,8 @@ export class StatisticsService {
   constructor(
     @Inject(MODELS.USER)
     private readonly userRepo: Repository<UserEntity>,
-    @Inject(MODELS.SMS_MESSAGE)
-    private readonly messageRepo: Repository<SmsMessageEntity>,
+    @Inject(MODELS.MESSAGE)
+    private readonly messageRepo: Repository<MessageEntity>,
     @Inject(MODELS.TRANSACTION)
     private readonly transactionRepo: Repository<TransactionEntity>,
   ) {}

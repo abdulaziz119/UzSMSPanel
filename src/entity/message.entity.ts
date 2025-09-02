@@ -17,7 +17,7 @@ import {
   MessageTypeEnum,
 } from '../utils/enum/sms-message.enum';
 
-@Entity({ schema: DB_SCHEMA, name: 'sms_messages' })
+@Entity({ schema: DB_SCHEMA, name: 'messages' })
 @Index([
   'user_id',
   'status',
@@ -26,13 +26,13 @@ import {
   'price_provider_sms',
   'cost',
 ])
-export class SmsMessageEntity extends BaseEntity {
+export class MessageEntity extends BaseEntity {
   @Column({ type: 'integer' })
   user_id: number;
 
   @ManyToOne(
     () => UserEntity,
-    (user) => user.smsMessages,
+    (user) => user.messages,
     cascadeUpdateRelationOptions,
   )
   @JoinColumn({ name: 'user_id' })
@@ -85,7 +85,7 @@ export class SmsMessageEntity extends BaseEntity {
 
   @OneToMany(
     () => TransactionEntity,
-    (t) => t.smsMessage,
+    (t) => t.message,
     cascadeUpdateRelationOptions,
   )
   transactions: TransactionEntity[];

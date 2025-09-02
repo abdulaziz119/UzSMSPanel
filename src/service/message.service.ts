@@ -1,7 +1,7 @@
 import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
-import { SmsMessageEntity } from '../entity/sms-message.entity';
+import { MessageEntity } from '../entity/message.entity';
 import { UserEntity } from '../entity/user.entity';
 import { PaginationResponse } from '../utils/pagination.response';
 import { getPaginationResponse } from '../utils/pagination.builder';
@@ -22,10 +22,10 @@ import {
 } from '../utils/enum/transaction.enum';
 
 @Injectable()
-export class SmsMessageService {
+export class MessageService {
   constructor(
-    @Inject(MODELS.SMS_MESSAGE)
-    private readonly messageRepo: Repository<SmsMessageEntity>,
+    @Inject(MODELS.MESSAGE)
+    private readonly messageRepo: Repository<MessageEntity>,
     private readonly billingService: BillingService,
     private readonly performanceMonitor: PerformanceMonitor,
   ) {}
@@ -44,7 +44,7 @@ export class SmsMessageService {
     template: SmsTemplateEntity,
     balance?: ContactTypeEnum,
     totalCost?: number,
-  ): Promise<SmsMessageEntity> {
+  ): Promise<MessageEntity> {
     return await this.messageRepo.manager.transaction(async (em) => {
       // Capture balance_before
       let balanceBefore: number = 0;
@@ -83,7 +83,7 @@ export class SmsMessageService {
       }
 
       // Create SMS message
-      const msg: SmsMessageEntity = em.getRepository(SmsMessageEntity).create({
+      const msg: MessageEntity = em.getRepository(MessageEntity).create({
         user_id: smsData.user_id,
         phone: smsData.phone,
         message: smsData.message,
@@ -94,8 +94,8 @@ export class SmsMessageService {
         cost: smsData.cost,
         price_provider_sms: smsData.price_provider_sms,
       });
-      const saved: SmsMessageEntity = await em
-        .getRepository(SmsMessageEntity)
+      const saved: MessageEntity = await em
+        .getRepository(MessageEntity)
         .save(msg);
 
       // Update template usage
@@ -121,7 +121,7 @@ export class SmsMessageService {
           balance_before: balanceBefore,
           balance_after: balanceAfter,
           description: `Single SMS send to ${smsData.phone}`,
-          sms_message_id: saved.id,
+          message_id: saved.id,
           group_id: null,
         });
       await em.getRepository(TransactionEntity).save(trx);
@@ -145,7 +145,7 @@ export class SmsMessageService {
     template: SmsTemplateEntity,
     balance?: ContactTypeEnum,
     totalCost?: number,
-  ): Promise<SmsMessageEntity[]> {
+  ): Promise<MessageEntity[]> {
     return await this.performanceMonitor.measureAsync(
       'createBulkSmsMessagesWithBilling',
       async () => {
@@ -196,15 +196,15 @@ export class SmsMessageService {
 
           // Optimized bulk insert
           const insertTimer = this.performanceMonitor.startTimer('bulk_insert');
-          const repo = em.getRepository(SmsMessageEntity);
+          const repo = em.getRepository(MessageEntity);
 
           // Create entities in batches to avoid memory issues
           const CHUNK_SIZE = 1000;
-          const savedMessages: SmsMessageEntity[] = [];
+          const savedMessages: MessageEntity[] = [];
 
           for (let i: number = 0; i < smsDataArray.length; i += CHUNK_SIZE) {
             const chunk = smsDataArray.slice(i, i + CHUNK_SIZE);
-            const toSave: SmsMessageEntity[] = chunk.map((smsData) =>
+            const toSave: MessageEntity[] = chunk.map((smsData) =>
               repo.create({
                 user_id: smsData.user_id,
                 phone: smsData.phone,
@@ -219,7 +219,7 @@ export class SmsMessageService {
               }),
             );
 
-            const chunkSaved: SmsMessageEntity[] = await repo.save(toSave, {
+            const chunkSaved: MessageEntity[] = await repo.save(toSave, {
               chunk: 500,
             });
             savedMessages.push(...chunkSaved);
@@ -255,7 +255,7 @@ export class SmsMessageService {
               balance_after: balanceAfter,
               description: `Group SMS send (group_id=${group_id}) x${savedMessages.length}`,
               group_id,
-              sms_message_id: null,
+              message_id: null,
             });
           await em.getRepository(TransactionEntity).save(trx);
 
@@ -269,7 +269,7 @@ export class SmsMessageService {
     filters: SmsHistoryFilterDto,
     user_id: number,
     isDashboard: boolean,
-  ): Promise<PaginationResponse<SmsMessageEntity[]>> {
+  ): Promise<PaginationResponse<MessageEntity[]>> {
     const { page = 1, limit = 20 } = filters;
     const skip: number = (page - 1) * limit;
 
@@ -336,12 +336,7 @@ export class SmsMessageService {
         .take(limit)
         .getManyAndCount();
 
-      return getPaginationResponse<SmsMessageEntity>(
-        messages,
-        page,
-        limit,
-        total,
-      );
+      return getPaginationResponse<MessageEntity>(messages, page, limit, total);
     } catch (error) {
       throw new HttpException(
         { message: 'Error fetching SMS history', error: error.message },
@@ -483,7 +478,7 @@ export class SmsMessageService {
   }
   // async getMessageHistory(
   //   filters: MessageFilterDto,
-  // ): Promise<PaginationResponse<SmsMessageEntity[]>> {
+  // ): Promise<PaginationResponse<MessageEntity[]>> {
   //   try {
   //     const queryBuilder = this.messageRepo
   //       .createQueryBuilder('message')
@@ -573,7 +568,7 @@ export class SmsMessageService {
   //
   // async getMessageDetails(
   //   id: number,
-  // ): Promise<SingleResponse<SmsMessageEntity>> {
+  // ): Promise<SingleResponse<MessageEntity>> {
   //   try {
   //     const message = await this.messageRepo.findOne({
   //       where: { id },
@@ -798,7 +793,7 @@ export class SmsMessageService {
   //   }
   // }
   //
-  // private async sendSmsToProvider(message: SmsMessageEntity): Promise<void> {
+  // private async sendSmsToProvider(message: MessageEntity): Promise<void> {
   //   try {
   //     // Bu yerda real SMS provider API'si chaqiriladi
   //     // Masalan: Eskiz.uz, Play Mobile, SMS.uz va boshqalar

@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { SMS_MESSAGE_QUEUE, MODELS } from '../constants/constants';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
-import { SmsMessageService } from '../service/sms-message.service';
+import { MessageService } from '../service/message.service';
 import { SmsContactService } from '../service/sms-contact.service';
 import { Repository } from 'typeorm';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
@@ -31,7 +31,7 @@ import {
   SendToContactJobData,
   SendToGroupJobData,
 } from '../utils/interfaces/messages.interfaces';
-import { SmsMessageEntity } from '../entity/sms-message.entity';
+import { MessageEntity } from '../entity/message.entity';
 
 @Processor(SMS_MESSAGE_QUEUE)
 @Injectable()
@@ -39,7 +39,7 @@ export class MessagesQueue {
   private readonly logger = new Logger(MessagesQueue.name);
 
   constructor(
-    private readonly smsMessageService: SmsMessageService,
+    private readonly smsMessageService: MessageService,
     private readonly smsContactService: SmsContactService,
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
@@ -241,7 +241,7 @@ export class MessagesQueue {
         group_id: payload.group_id,
       }));
 
-      const messages: SmsMessageEntity[] =
+      const messages: MessageEntity[] =
         await this.smsMessageService.createBulkSmsMessagesWithBilling(
           smsDataArray,
           getTemplate,
