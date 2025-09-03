@@ -1,12 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDefined,
+  IsEmail,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   Length,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 import { language } from '../../../../../utils/enum/user.enum';
 
@@ -33,20 +35,34 @@ export class AuthLoginDto {
 }
 
 export class AuthSendOtpDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '901234567',
-    description: 'Phone number without country code',
+    description: 'Phone number without country code (required if email is not provided)',
   })
+  @ValidateIf((o) => !o.email)
   @IsString()
   @IsNotEmpty()
   @Length(7, 15)
-  phone: string;
+  phone?: string;
 
-  @ApiPropertyOptional({ example: '998', description: 'Country phone code' })
+  @ApiPropertyOptional({ 
+    example: '998', 
+    description: 'Country phone code (required if phone is provided)' 
+  })
+  @ValidateIf((o) => o.phone)
   @IsString()
   @IsDefined()
   @Length(1, 5)
-  phone_ext: string;
+  phone_ext?: string;
+
+  @ApiPropertyOptional({
+    example: 'user@example.com',
+    description: 'Email address (required if phone is not provided)',
+  })
+  @ValidateIf((o) => !o.phone)
+  @IsEmail()
+  @IsNotEmpty()
+  email?: string;
 
   @ApiProperty({ example: 'test' })
   @IsString()
@@ -60,14 +76,24 @@ export class AuthSendOtpDto {
 }
 
 export class AuthVerifyDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '901234567',
-    description: 'Phone number without country code',
+    description: 'Phone number without country code (required if email is not provided)',
   })
+  @ValidateIf((o) => !o.email)
   @IsString()
   @IsNotEmpty()
   @Length(7, 15)
-  phone: string;
+  phone?: string;
+
+  @ApiPropertyOptional({
+    example: 'user@example.com',
+    description: 'Email address (required if phone is not provided)',
+  })
+  @ValidateIf((o) => !o.phone)
+  @IsEmail()
+  @IsNotEmpty()
+  email?: string;
 
   @ApiProperty({
     example: '123456',
@@ -83,14 +109,24 @@ export class AuthVerifyDto {
 }
 
 export class AuthResendOtpDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '901234567',
-    description: 'Phone number without country code',
+    description: 'Phone number without country code (required if email is not provided)',
   })
+  @ValidateIf((o) => !o.email)
   @IsString()
   @IsNotEmpty()
   @Length(7, 15)
-  phone: string;
+  phone?: string;
+
+  @ApiPropertyOptional({
+    example: 'user@example.com',
+    description: 'Email address (required if phone is not provided)',
+  })
+  @ValidateIf((o) => !o.phone)
+  @IsEmail()
+  @IsNotEmpty()
+  email?: string;
 }
 
 export class RefreshTokenDto {

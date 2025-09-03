@@ -70,6 +70,8 @@ services:
       IMAGES_PROJECT_NAME: ${IMAGES_PROJECT_NAME:-sms_panel}
       MEDIA_DIRECTORY: ${MEDIA_DIRECTORY:-public}
       SERVER_BASE_URL: ${SERVER_BASE_URL:-http://localhost:3001}
+      SMTP_USER: ${SMTP_USER:-anonyumous001@gmail.com}
+      SMTP_PASS: ${SMTP_PASS:-rvgz fobl qgpx lelv}
     restart: unless-stopped
     volumes:
       - uploads_data:/app/uploads

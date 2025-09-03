@@ -10,6 +10,7 @@ import { AuthController } from './auth.controller';
 import { otpProviders } from '../../../../providers/otp.providers';
 import { AuthService } from '../../../../service/auth.service';
 import { contactProviders } from '../../../../providers/contact.providers';
+import { MailService } from '../../../../service/mail.service';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { contactProviders } from '../../../../providers/contact.providers';
     JwtStrategy,
     AuthService,
     AuthorizationService,
+    MailService,
   ],
   exports: [PassportModule, JwtStrategy, AuthService],
 })

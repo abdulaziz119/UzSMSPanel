@@ -25,6 +25,7 @@ import { AuthorizationService } from '../utils/authorization.service';
 import { SingleResponse } from '../utils/dto/dto';
 import { language, UserRoleEnum } from '../utils/enum/user.enum';
 import { ContactEntity } from '../entity/contact.entity';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class AuthService {
@@ -45,6 +46,7 @@ export class AuthService {
     @Inject(MODELS.CONTACT)
     private readonly contactRepo: Repository<ContactEntity>,
     private readonly authorizationService: AuthorizationService,
+    private readonly mailService: MailService,
   ) {}
 
   async loginFrontend(payload: AuthLoginDto): Promise<
@@ -120,25 +122,54 @@ export class AuthService {
     payload: AuthSendOtpDto,
   ): Promise<SingleResponse<{ expiresIn: number }>> {
     try {
-      // Check if phone is blocked
-      await this.checkPhoneBlocked(payload.phone);
-
-      const user: UserEntity = await this.userRepo.findOne({
-        where: { phone: payload.phone, phone_ext: payload.phone_ext },
-      });
-      const hashedPassword: string = await bcrypt.hash(payload.password, 10);
-
-      if (!user) {
-        await this.createNewUser(
-          payload.phone,
-          payload.phone_ext,
-          hashedPassword,
+      // Validate that either phone or email is provided
+      if (!payload.phone && !payload.email) {
+        throw new HttpException(
+          'Phone or email is required',
+          HttpStatus.BAD_REQUEST,
         );
       }
 
-      await this.handleOtpCreation(payload.phone);
+      // Check if phone/email is blocked
+      if (payload.phone) {
+        await this.checkPhoneBlocked(payload.phone);
+      } else if (payload.email) {
+        await this.checkEmailBlocked(payload.email);
+      }
 
-      this.logger.log(`OTP sent to phone: ${payload.phone}`);
+      // Find or create user
+      let user: UserEntity;
+      const hashedPassword: string = await bcrypt.hash(payload.password, 10);
+
+      if (payload.phone) {
+        user = await this.userRepo.findOne({
+          where: { phone: payload.phone, phone_ext: payload.phone_ext },
+        });
+
+        if (!user) {
+          await this.createNewUser(
+            payload.phone,
+            payload.phone_ext,
+            hashedPassword,
+          );
+        }
+      } else {
+        // Handle email-based user creation/finding
+        user = await this.userRepo.findOne({
+          where: { email: payload.email },
+        });
+
+        if (!user) {
+          await this.createNewUserByEmail(payload.email, hashedPassword);
+        }
+      }
+
+      await this.handleOtpCreation(payload.phone, payload.email);
+
+      const contactInfo = payload.phone
+        ? `phone: ${payload.phone}`
+        : `email: ${payload.email}`;
+      this.logger.log(`OTP sent to ${contactInfo}`);
       return { result: { expiresIn: 120 } };
     } catch (error) {
       throw new HttpException(
@@ -159,7 +190,21 @@ export class AuthService {
     }>
   > {
     try {
-      const user: UserEntity = await this.findUserByPhone(payload.phone);
+      // Validate that either phone or email is provided
+      if (!payload.phone && !payload.email) {
+        throw new HttpException(
+          'Phone or email is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Find user by phone or email
+      let user: UserEntity;
+      if (payload.phone) {
+        user = await this.findUserByPhone(payload.phone);
+      } else {
+        user = await this.findUserByEmail(payload.email);
+      }
 
       const isTestUser: boolean =
         (payload.phone === '901234576' && payload.otp === '123456') ||
@@ -172,12 +217,20 @@ export class AuthService {
       if (!isTestUser) {
         // Validate OTP for regular users
         const otp: OtpEntity = await this.validateOtp(
-          payload.phone,
           payload.otp,
+          payload.phone,
+          payload.email,
         );
 
         // Update OTP retry count
-        await this.updateOtpRetryCount(payload.phone, otp.retryCount + 1);
+        if (payload.phone) {
+          await this.updateOtpRetryCount(payload.phone, otp.retryCount + 1);
+        } else {
+          await this.updateOtpRetryCountByEmail(
+            payload.email,
+            otp.retryCount + 1,
+          );
+        }
       }
 
       const token: string = await this.authorizationService.sign(
@@ -415,21 +468,43 @@ export class AuthService {
     payload: AuthResendOtpDto,
   ): Promise<SingleResponse<{ message: string }>> {
     try {
-      // Check if phone is blocked
-      await this.checkPhoneBlocked(payload.phone);
+      // Validate that either phone or email is provided
+      if (!payload.phone && !payload.email) {
+        throw new HttpException(
+          'Phone or email is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Check if phone/email is blocked
+      if (payload.phone) {
+        await this.checkPhoneBlocked(payload.phone);
+      } else {
+        await this.checkEmailBlocked(payload.email);
+      }
 
       // Check if user exists
-      const user: UserEntity = await this.userRepo.findOne({
-        where: { phone: payload.phone },
-      });
+      let user: UserEntity;
+      if (payload.phone) {
+        user = await this.userRepo.findOne({
+          where: { phone: payload.phone },
+        });
+      } else {
+        user = await this.userRepo.findOne({
+          where: { email: payload.email },
+        });
+      }
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
       // Check resend cooldown
+      const whereCondition = payload.phone
+        ? { phone: payload.phone }
+        : { email: payload.email };
       const existingOtp: OtpEntity = await this.otpRepo.findOne({
-        where: { phone: payload.phone },
+        where: whereCondition,
       });
 
       if (existingOtp) {
@@ -447,9 +522,12 @@ export class AuthService {
       }
 
       // Generate and send new OTP
-      await this.handleOtpCreation(payload.phone);
+      await this.handleOtpCreation(payload.phone, payload.email);
 
-      this.logger.log(`OTP resent to phone: ${payload.phone}`);
+      const contactInfo = payload.phone
+        ? `phone: ${payload.phone}`
+        : `email: ${payload.email}`;
+      this.logger.log(`OTP resent to ${contactInfo}`);
       return {
         result: { message: 'Verification code sent successfully' },
       };
@@ -520,14 +598,26 @@ export class AuthService {
     return await this.userRepo.save(newUser);
   }
 
-  private async handleOtpCreation(phone: string): Promise<void> {
+  private async handleOtpCreation(
+    phone?: string,
+    email?: string,
+  ): Promise<void> {
+    if (!phone && !email) {
+      throw new HttpException(
+        'Phone or email is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const whereCondition = phone ? { phone } : { email };
     const existingOtp: OtpEntity = await this.otpRepo.findOne({
-      where: { phone },
+      where: whereCondition,
     });
 
     const otp: string = this.generateOtp();
     const otpData = {
-      phone,
+      phone: phone || null,
+      email: email || null,
       otp,
       otpSendAt: new Date(),
       retryCount: existingOtp ? existingOtp.retryCount + 1 : 1,
@@ -537,10 +627,30 @@ export class AuthService {
     };
 
     if (existingOtp) {
-      await this.otpRepo.update({ phone }, otpData);
+      await this.otpRepo.update(whereCondition, otpData);
     } else {
       await this.otpRepo.save(otpData);
     }
+
+    // Send OTP via email if email is provided
+    if (email) {
+      try {
+        await this.mailService.sendOtpEmail(email, otp);
+        this.logger.log(`OTP email sent successfully to: ${email}`);
+      } catch (error) {
+        this.logger.error(
+          `Failed to send OTP email to ${email}:`,
+          error.message,
+        );
+        throw new HttpException(
+          'Failed to send OTP email',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+
+    // TODO: Send OTP via SMS if phone is provided
+    // SMS sending logic can be added here in the future
   }
 
   private generateOtp(): string {
@@ -554,11 +664,20 @@ export class AuthService {
   }
 
   private async validateOtp(
-    phone: string,
     otpCode: string,
+    phone?: string,
+    email?: string,
   ): Promise<OtpEntity> {
+    if (!phone && !email) {
+      throw new HttpException(
+        'Phone or email is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const whereCondition = phone ? { phone } : { email };
     const otp: OtpEntity = await this.otpRepo.findOne({
-      where: { phone },
+      where: whereCondition,
     });
 
     if (!otp) {
@@ -568,10 +687,11 @@ export class AuthService {
       );
     }
 
-    // Check if phone is blocked
+    // Check if phone/email is blocked
     if (otp.blockedUntil && otp.blockedUntil > new Date()) {
+      const contactType = phone ? 'phone number' : 'email address';
       throw new HttpException(
-        'The phone number is temporarily blocked. Please try again later.',
+        `The ${contactType} is temporarily blocked. Please try again later.`,
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -591,21 +711,19 @@ export class AuthService {
       const newAttempts = otp.attempts + 1;
 
       if (newAttempts >= this.MAX_ATTEMPTS) {
-        // Block the phone number
-        await this.otpRepo.update(
-          { phone },
-          {
-            attempts: newAttempts,
-            blockedUntil: new Date(Date.now() + this.BLOCK_DURATION),
-          },
-        );
+        // Block the phone/email
+        await this.otpRepo.update(whereCondition, {
+          attempts: newAttempts,
+          blockedUntil: new Date(Date.now() + this.BLOCK_DURATION),
+        });
+        const contactType = phone ? 'phone number' : 'email address';
         throw new HttpException(
-          'Too many incorrect attempts. The phone number has been blocked for 15 minutes.',
+          `Too many incorrect attempts. The ${contactType} has been blocked for 15 minutes.`,
           HttpStatus.TOO_MANY_REQUESTS,
         );
       } else {
         // Just increment attempts
-        await this.otpRepo.update({ phone }, { attempts: newAttempts });
+        await this.otpRepo.update(whereCondition, { attempts: newAttempts });
         throw new HttpException(
           `Invalid verification code. ${this.MAX_ATTEMPTS - newAttempts} There are only a few attempts left.`,
           HttpStatus.UNAUTHORIZED,
@@ -614,7 +732,7 @@ export class AuthService {
     }
 
     // Mark as verified
-    await this.otpRepo.update({ phone }, { verified: true });
+    await this.otpRepo.update(whereCondition, { verified: true });
 
     return otp;
   }
@@ -662,6 +780,13 @@ export class AuthService {
     await this.otpRepo.update({ phone }, { retryCount });
   }
 
+  private async updateOtpRetryCountByEmail(
+    email: string,
+    retryCount: number,
+  ): Promise<void> {
+    await this.otpRepo.update({ email }, { retryCount });
+  }
+
   private async checkPhoneBlocked(phone: string): Promise<void> {
     const otp: OtpEntity = await this.otpRepo.findOne({
       where: { phone },
@@ -676,5 +801,48 @@ export class AuthService {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
+  }
+
+  private async checkEmailBlocked(email: string): Promise<void> {
+    const otp: OtpEntity = await this.otpRepo.findOne({
+      where: { email },
+    });
+
+    if (otp && otp.blockedUntil && otp.blockedUntil > new Date()) {
+      const remainingTime: number = Math.ceil(
+        (otp.blockedUntil.getTime() - Date.now()) / 1000 / 60,
+      );
+      throw new HttpException(
+        `Email address is blocked. Try again in ${remainingTime} minutes.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private async createNewUserByEmail(
+    email: string,
+    hashedPassword: string,
+  ): Promise<UserEntity> {
+    const newUser = this.userRepo.create({
+      email,
+      password: hashedPassword,
+      role: UserRoleEnum.CLIENT,
+      language: language.UZ,
+      block: false,
+    });
+
+    return await this.userRepo.save(newUser);
+  }
+
+  private async findUserByEmail(email: string): Promise<UserEntity> {
+    const user: UserEntity = await this.userRepo.findOne({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    return user;
   }
 }

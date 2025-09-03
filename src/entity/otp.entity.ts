@@ -4,9 +4,13 @@ import { BaseEntity } from './base.entity';
 
 @Entity({ schema: DB_SCHEMA, name: 'otps' })
 @Unique(['phone'])
+@Unique(['email'])
 export class OtpEntity extends BaseEntity {
-  @Column()
+  @Column({ nullable: true })
   phone: string;
+
+  @Column({ nullable: true })
+  email: string;
 
   @Column({ length: 6, nullable: false })
   otp: string;
