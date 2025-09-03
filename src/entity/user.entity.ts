@@ -34,9 +34,6 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 4, nullable: true })
   country_code: string | null;
 
-  @Column({ type: 'varchar', length: 45, nullable: true })
-  ip: string | null;
-
   @Column({ type: 'timestamp', nullable: true })
   lastseen: Date | null;
 

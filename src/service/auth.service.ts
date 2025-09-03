@@ -64,13 +64,29 @@ export class AuthService {
 
       const user: UserEntity = await this.userRepo.findOne({
         where: { phone: payload.phone, phone_ext: payload.phone_ext },
-        select: ['id', 'phone', 'phone_ext', 'password', 'role'],
+        select: [
+          'id',
+          'phone',
+          'phone_ext',
+          'password',
+          'role',
+          'refreshToken',
+        ],
       });
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
       if (!user || !(await bcrypt.compare(payload.password, user.password))) {
         throw new HttpException('Invalid  password', HttpStatus.UNAUTHORIZED);
+      }
+      if (user.block) {
+        throw new HttpException('User is blocked', HttpStatus.UNAUTHORIZED);
+      }
+      if (!user.refreshToken) {
+        throw new HttpException(
+          'incomplete registration',
+          HttpStatus.UNAUTHORIZED,
+        );
       }
 
       const token: string = await this.authorizationService.sign(
@@ -498,6 +514,7 @@ export class AuthService {
       language: language.UZ,
       phone_ext: phone_ext,
       password: password,
+      country_code: 'uzb',
     });
 
     return await this.userRepo.save(newUser);
