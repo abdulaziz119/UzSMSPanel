@@ -25,11 +25,16 @@ const IMAGES_PROJECT_NAME = process.env.IMAGES_PROJECT_NAME || '';
 const DASHBOARD_PORT = process.env.DASHBOARD_PORT || 8080;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
 
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+
 if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
   throw new Error('Database environment variables are not set');
 }
 
 export {
+  SMTP_USER,
+  SMTP_PASS,
   IMAGES_PROJECT_NAME,
   IMAGES_URL,
   MY_GO_URL,

@@ -9,7 +9,7 @@ import {
   Length,
   IsDateString,
 } from 'class-validator';
-import { ContactStatusEnum, ContactTypeEnum } from '../enum/contact.enum';
+import { ContactStatusEnum } from '../enum/contact.enum';
 import { language } from '../enum/user.enum';
 
 export class CreateContactDto {
