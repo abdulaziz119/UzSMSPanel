@@ -34,35 +34,44 @@ export class SendToGroupDto {
   @IsString()
   @IsNotEmpty()
   message: string;
-
-  @ApiProperty({ 
-    example: 100, 
-    description: 'Nechta kontaktga yuborish (agar belgilanmasa, barcha kontaktlarga yuboriladi)',
-    required: false 
-  })
-  @IsNumber()
-  @IsOptional()
-  contact_count?: number;
 }
 
 export class CanSendContactDto {
-  @ApiProperty({ example: '998901234567', required: false, description: 'Telefon raqami (phone yoki contact_id dan bittasi majburiy)' })
+  @ApiProperty({
+    example: '998901234567',
+    required: false,
+    description: 'Telefon raqami (phone yoki contact_id dan bittasi majburiy)',
+  })
   @IsString()
   @IsOptional()
   @Length(7, 20)
   phone?: string;
 
-  @ApiProperty({ example: 123, required: false, description: 'Kontakt ID (phone yoki contact_id dan bittasi majburiy)' })
+  @ApiProperty({
+    example: 123,
+    required: false,
+    description: 'Kontakt ID (phone yoki contact_id dan bittasi majburiy)',
+  })
   @IsNumber()
   @IsOptional()
   contact_id?: number;
 
-  @ApiProperty({ example: 'Xizmat habari', required: false, description: 'SMS matni (message yoki sms_template_id dan bittasi majburiy)' })
+  @ApiProperty({
+    example: 'Xizmat habari',
+    required: false,
+    description:
+      'SMS matni (message yoki sms_template_id dan bittasi majburiy)',
+  })
   @IsString()
   @IsOptional()
   message?: string;
 
-  @ApiProperty({ example: 45, required: false, description: 'SMS shablon ID (message yoki sms_template_id dan bittasi majburiy)' })
+  @ApiProperty({
+    example: 45,
+    required: false,
+    description:
+      'SMS shablon ID (message yoki sms_template_id dan bittasi majburiy)',
+  })
   @IsNumber()
   @IsOptional()
   sms_template_id?: number;
@@ -74,12 +83,22 @@ export class CanSendGroupDto {
   @IsNotEmpty()
   group_id: number;
 
-  @ApiProperty({ example: 'Promo habari', required: false, description: 'SMS matni (message yoki sms_template_id dan bittasi majburiy)' })
+  @ApiProperty({
+    example: 'Promo habari',
+    required: false,
+    description:
+      'SMS matni (message yoki sms_template_id dan bittasi majburiy)',
+  })
   @IsString()
   @IsOptional()
   message?: string;
 
-  @ApiProperty({ example: 45, required: false, description: 'SMS shablon ID (message yoki sms_template_id dan bittasi majburiy)' })
+  @ApiProperty({
+    example: 45,
+    required: false,
+    description:
+      'SMS shablon ID (message yoki sms_template_id dan bittasi majburiy)',
+  })
   @IsNumber()
   @IsOptional()
   sms_template_id?: number;

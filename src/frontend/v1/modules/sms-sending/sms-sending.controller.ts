@@ -85,9 +85,9 @@ export class SmsSendingController {
   ): Promise<{
     jobId: string;
     message: string;
-    total_contacts: number;
-    valid_contacts: number;
-    invalid_contacts: number;
+    contact_count: number;
+    valid_contact_count: number;
+    invalid_contact_count: number;
   }> {
     // Queue ga tushishdan oldin validatsiya
     const validationResult =
@@ -113,9 +113,9 @@ export class SmsSendingController {
     return {
       jobId: job.id.toString(),
       message: 'Group messages queued for processing',
-      total_contacts: validationResult.total_contacts,
-      valid_contacts: validationResult.valid_contacts,
-      invalid_contacts: validationResult.invalid_contacts,
+      contact_count: validationResult.contact_count,
+      valid_contact_count: validationResult.valid_contact_count,
+      invalid_contact_count: validationResult.invalid_contact_count,
     };
   }
 
