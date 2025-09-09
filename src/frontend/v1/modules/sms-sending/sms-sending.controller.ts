@@ -46,6 +46,9 @@ export class SmsSendingController {
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<{ jobId: string; message: string }> {
+    // Queue ga tushishdan oldin validatsiya
+    await this.messagesService.validateBeforeQueueContact(user_id, body, balance);
+
     const job = await this.messageQueue.add(
       'send-to-contact',
       {
@@ -75,7 +78,16 @@ export class SmsSendingController {
     @Body() body: SendToGroupDto,
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
-  ): Promise<{ jobId: string; message: string }> {
+  ): Promise<{ 
+    jobId: string; 
+    message: string;
+    contact_count: number;
+    valid_contact_count: number;
+    invalid_contact_count: number;
+  }> {
+    // Queue ga tushishdan oldin validatsiya
+    const validationResult = await this.messagesService.validateBeforeQueueGroup(user_id, body, balance);
+
     const job = await this.messageQueue.add(
       'send-to-group',
       {
@@ -92,6 +104,9 @@ export class SmsSendingController {
     return {
       jobId: job.id.toString(),
       message: 'Group messages queued for processing',
+      contact_count: validationResult.contact_count,
+      valid_contact_count: validationResult.valid_contact_count,
+      invalid_contact_count: validationResult.invalid_contact_count,
     };
   }
 
