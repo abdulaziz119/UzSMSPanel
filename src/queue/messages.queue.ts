@@ -32,6 +32,11 @@ import {
   SendToGroupJobData,
 } from '../utils/interfaces/messages.interfaces';
 import { MessageEntity } from '../entity/message.entity';
+import {
+  BulkSendJobResult,
+  SendToContactJobResult,
+  SendToGroupJobResult,
+} from '../utils/interfaces/request/sms-sending.request.interfaces';
 
 @Processor(SMS_MESSAGE_QUEUE)
 @Injectable()
@@ -75,11 +80,9 @@ export class MessagesQueue {
   }
 
   @Process({ name: 'send-to-contact', concurrency: 3 })
-  async sendMessageToContact(job: Job<SendToContactJobData>): Promise<{
-    success: boolean;
-    messageId?: number;
-    error?: string;
-  }> {
+  async sendMessageToContact(
+    job: Job<SendToContactJobData>,
+  ): Promise<SendToContactJobResult> {
     try {
       this.logger.log(
         `Processing send-to-contact job ${job.id} for user ${job.data.user_id}`,
@@ -87,9 +90,14 @@ export class MessagesQueue {
       const { payload, user_id, balance } = job.data;
 
       // 1) Template lookup
-      const getTemplate = await this.smsTemplateRepo.findOne({
-        where: { content: payload.message, status: TemplateStatusEnum.ACTIVE },
-      });
+      const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
+        {
+          where: {
+            content: payload.message,
+            status: TemplateStatusEnum.ACTIVE,
+          },
+        },
+      );
       if (!getTemplate) {
         throw new NotFoundException('Template not found or inactive');
       }
@@ -119,20 +127,21 @@ export class MessagesQueue {
       const totalCost: number = unitPrice * partsCount;
 
       // 5) Create with billing
-      const saved = await this.smsMessageService.createSmsMessageWithBilling(
-        {
-          user_id,
-          phone: payload.phone,
-          message: payload.message,
-          operator: tariff.operator,
-          sms_template_id: getTemplate.id,
-          cost: totalCost,
-          price_provider_sms: tariff.price_provider_sms,
-        },
-        getTemplate,
-        balance,
-        totalCost,
-      );
+      const saved: MessageEntity =
+        await this.smsMessageService.createSmsMessageWithBilling(
+          {
+            user_id,
+            phone: payload.phone,
+            message: payload.message,
+            operator: tariff.operator,
+            sms_template_id: getTemplate.id,
+            cost: totalCost,
+            price_provider_sms: tariff.price_provider_sms,
+          },
+          getTemplate,
+          balance,
+          totalCost,
+        );
 
       await job.progress(100);
 
@@ -147,7 +156,6 @@ export class MessagesQueue {
         `Failed to send message to contact: ${error.message}`,
         error.stack,
       );
-
       return {
         success: false,
         error: error.message || 'Failed to send message',
@@ -156,11 +164,9 @@ export class MessagesQueue {
   }
 
   @Process({ name: 'send-to-group', concurrency: 2 })
-  async sendMessageToGroup(job: Job<SendToGroupJobData>): Promise<{
-    success: boolean;
-    messageCount?: number;
-    error?: string;
-  }> {
+  async sendMessageToGroup(
+    job: Job<SendToGroupJobData>,
+  ): Promise<SendToGroupJobResult> {
     try {
       this.logger.log(
         `Processing send-to-group job ${job.id} for user ${job.data.user_id}, group ${job.data.payload.group_id}`,
@@ -270,12 +276,7 @@ export class MessagesQueue {
       user_id: number;
       meta?: Record<string, any>;
     }>,
-  ): Promise<{
-    success: boolean;
-    processed: number;
-    failed: number;
-    errors: Array<{ phone: string; error: string }>;
-  }> {
+  ): Promise<BulkSendJobResult> {
     try {
       this.logger.log(
         `Processing bulk-send job ${job.id} with ${job.data.contacts.length} contacts`,
@@ -297,7 +298,7 @@ export class MessagesQueue {
               payload: { phone: contact.phone, message: contact.message },
               user_id: job.data.user_id,
             },
-            progress: async () => {},
+            progress: async (): Promise<void> => {},
           } as any);
 
           processed++;
@@ -340,7 +341,7 @@ export class MessagesQueue {
 
   // Queue lifecycle handlers (for observability and optional flow control)
   @OnQueueCompleted()
-  async onCompleted(job: Job) {
+  async onCompleted(job: Job): Promise<void> {
     try {
       this.logger.log(`Completed messages job ${job.id} of type ${job.name}`);
       // Optionally inspect counts
@@ -348,31 +349,27 @@ export class MessagesQueue {
       this.logger.debug(
         `Queue counts -> waiting: ${counts.waiting}, active: ${counts.active}, delayed: ${counts.delayed}`,
       );
-      // Example pause logic (disabled by default):
-      // if (!(counts.waiting || counts.active || counts.delayed)) {
-      //   await this.messageQueue.pause();
-      // }
     } catch (e) {
       this.logger.warn(`onCompleted hook error: ${e?.message || e}`);
     }
   }
 
   @OnQueueFailed()
-  onFailed(job: Job, err: any) {
+  onFailed(job: Job, err: any): void {
     this.logger.error(
       `Failed messages job ${job.id} (${job.name}): ${err?.message || err}`,
     );
   }
 
   @OnQueueProgress()
-  onProgress(job: Job, progress: number) {
+  onProgress(job: Job, progress: number): void {
     this.logger.verbose(
       `Progress messages job ${job.id} (${job.name}): ${progress}%`,
     );
   }
 
   @OnQueueStalled()
-  onStalled(job: Job) {
+  onStalled(job: Job): void {
     this.logger.warn(`Stalled messages job ${job.id} (${job.name})`);
   }
 }

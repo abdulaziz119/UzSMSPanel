@@ -6,19 +6,13 @@ import {
   ApiTags,
   ApiBadRequestResponse,
   ApiResponse,
-  ApiHeader,
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { User } from '../auth/decorators/user.decorator';
-import {
-  SendToContactDto,
-  SendToGroupDto,
-  CanSendContactDto,
-  CanSendGroupDto,
-} from './dto/sms-sending.dto';
+import { SendToContactDto, SendToGroupDto } from './dto/sms-sending.dto';
 import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
 import { SmsSendingService } from '../../../../service/sms-sending.service';
@@ -26,6 +20,10 @@ import {
   SendToContactJobData,
   SendToGroupJobData,
 } from '../../../../utils/interfaces/messages.interfaces';
+import {
+  SendContactResponse,
+  SendGroupResponse,
+} from '../../../../utils/interfaces/request/sms-sending.request.interfaces';
 
 @ApiBearerAuth()
 @ApiTags('sms-sending')
@@ -45,7 +43,7 @@ export class SmsSendingController {
     @Body() body: SendToContactDto,
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
-  ): Promise<{ jobId: string; message: string }> {
+  ): Promise<SendContactResponse> {
     // Queue ga tushishdan oldin validatsiya
     await this.messagesService.validateBeforeQueueContact(
       user_id,
@@ -82,13 +80,7 @@ export class SmsSendingController {
     @Body() body: SendToGroupDto,
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
-  ): Promise<{
-    jobId: string;
-    message: string;
-    contact_count: number;
-    valid_contact_count: number;
-    invalid_contact_count: number;
-  }> {
+  ): Promise<SendGroupResponse> {
     // Queue ga tushishdan oldin validatsiya
     const validationResult =
       await this.messagesService.validateBeforeQueueGroup(
@@ -117,45 +109,5 @@ export class SmsSendingController {
       valid_contact_count: validationResult.valid_contact_count,
       invalid_contact_count: validationResult.invalid_contact_count,
     };
-  }
-
-  @Post('/can-send-contact')
-  @HttpCode(200)
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
-  @ApiHeader({
-    name: 'balance_type',
-    required: false,
-    description:
-      'Balance manbai: individual yoki company (default: individual)',
-    schema: { type: 'string', enum: Object.values(ContactTypeEnum) },
-    example: 'individual',
-  })
-  async canSendContact(
-    @Body() body: CanSendContactDto,
-    @User('id') user_id: number,
-    @Headers('balance_type') balance: ContactTypeEnum,
-  ): Promise<any> {
-    return this.messagesService.estimateCanSendContact(user_id, body, balance);
-  }
-
-  @Post('/can-send-group')
-  @HttpCode(200)
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
-  @ApiHeader({
-    name: 'balance_type',
-    required: false,
-    description:
-      'Balance manbai: individual yoki company (default: individual)',
-    schema: { type: 'string', enum: Object.values(ContactTypeEnum) },
-    example: 'company',
-  })
-  async canSendGroup(
-    @Body() body: CanSendGroupDto,
-    @User('id') user_id: number,
-    @Headers('balance_type') balance: ContactTypeEnum,
-  ): Promise<any> {
-    return this.messagesService.estimateCanSendGroup(user_id, body, balance);
   }
 }
