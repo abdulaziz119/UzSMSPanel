@@ -102,16 +102,7 @@ export class SmsTemplateService {
 
   async update(
     updateData: UpdateSmsTemplateDto,
-    user_id: number,
   ): Promise<SingleResponse<SmsTemplateEntity>> {
-    const smsTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne({
-      where: { id: updateData.id, user_id: user_id },
-    });
-
-    if (!smsTemplate) {
-      throw new NotFoundException('SMS Template not found');
-    }
-
     try {
       await this.smsTemplateRepo.update(updateData.id, updateData);
       const updatedSmsTemplate: SmsTemplateEntity =

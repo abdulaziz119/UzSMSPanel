@@ -32,9 +32,9 @@ export class SmsTemplateDashboardController {
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @Auth()
   async update(
-    @Body() body: UpdateSmsTemplateDto & { user_id: number },
+    @Body() body: UpdateSmsTemplateDto,
   ): Promise<SingleResponse<SmsTemplateEntity>> {
-    return await this.smsTemplateService.update(body, body.user_id);
+    return await this.smsTemplateService.update(body);
   }
 
   @Post('/delete')
