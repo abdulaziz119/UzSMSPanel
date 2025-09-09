@@ -298,44 +298,57 @@ export class SmsSendingService {
     body: SendToGroupDto,
     balanceType?: ContactTypeEnum,
   ): Promise<{
-    contact_count: number;
-    valid_contact_count: number;
-    invalid_contact_count: number;
+    total_contacts: number;
+    valid_contacts: number;
+    invalid_contacts: number;
   }> {
     // 1. SMS template tekshiruvi
     await this.validateSmsTemplate(user_id, body.message);
 
-    // 2. Balance tekshiruvi
-    const current_balance: number = await this.getBalanceByType(
-      user_id,
-      balanceType,
-    );
+    // 2. Group contact count olish
+    const total_contacts: number = await this.smsContactRepo.count({
+      where: { group_id: body.group_id },
+    });
 
-    // Group contacts bilan balance tekshiruvi
     const items =
       await this.smsContactService.getValidContactsWithTariffsOptimized(
         body.group_id,
       );
 
-    // Contact count tekshiruvi
-    const total_contacts: number = await this.smsContactRepo.count({
-      where: { group_id: body.group_id },
-    });
-
-    const valid_contact_count: number = items.length;
-    const invalid_contact_count: number = Math.max(
+    const valid_contacts: number = items.length;
+    const invalid_contacts: number = Math.max(
       0,
-      total_contacts - valid_contact_count,
+      total_contacts - valid_contacts,
     );
 
-    if (items.length === 0) {
-      throw new BadRequestException('No valid contacts found in the group.');
+    if (valid_contacts === 0) {
+      throw new BadRequestException(
+        'No valid contacts were found in the group.',
+      );
     }
+
+    // 3. Contact count tekshiruvi (agar belgilangan bo'lsa)
+    if (body.contact_count && body.contact_count > valid_contacts) {
+      throw new BadRequestException(
+        `Number of contacts specified (${body.contact_count}) from the number of valid contacts in the group (${valid_contacts}) many`,
+      );
+    }
+
+    // 4. Balance tekshiruvi
+    const current_balance: number = await this.getBalanceByType(
+      user_id,
+      balanceType,
+    );
+
+    // Agar contact_count belgilangan bo'lsa, faqat shuncha kontaktni olish
+    const contactsToProcess = body.contact_count
+      ? items.slice(0, body.contact_count)
+      : items;
 
     const parts_count: number = analyzeSmsContent(body.message).parts;
     let required_cost: number = 0;
 
-    for (const item of items) {
+    for (const item of contactsToProcess) {
       const unit_price: number = Number(item.tariff.price || 0);
       required_cost += unit_price * parts_count;
     }
@@ -347,9 +360,9 @@ export class SmsSendingService {
     }
 
     return {
-      contact_count: total_contacts,
-      valid_contact_count,
-      invalid_contact_count,
+      total_contacts,
+      valid_contacts,
+      invalid_contacts,
     };
   }
 

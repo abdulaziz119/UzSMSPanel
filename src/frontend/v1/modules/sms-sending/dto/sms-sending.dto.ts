@@ -34,6 +34,15 @@ export class SendToGroupDto {
   @IsString()
   @IsNotEmpty()
   message: string;
+
+  @ApiProperty({ 
+    example: 100, 
+    description: 'Nechta kontaktga yuborish (agar belgilanmasa, barcha kontaktlarga yuboriladi)',
+    required: false 
+  })
+  @IsNumber()
+  @IsOptional()
+  contact_count?: number;
 }
 
 export class CanSendContactDto {
