@@ -1,6 +1,5 @@
-import { Injectable, HttpException, HttpStatus, Inject } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { IMAGES_URL, IMAGES_PROJECT_NAME } from '../utils/env/env';
-import { MODELS } from 'src/constants/constants';
 import { AxiosService } from '../helpers/axios.service';
 
 @Injectable()
@@ -10,26 +9,21 @@ export class FileService {
   constructor(private readonly axiosService: AxiosService) {}
 
   async create(
-    payload: any,
     file: Express.Multer.File,
   ): Promise<{ success: boolean; message: string; data: {} }> {
     try {
-      // FormData yaratish
       const FormData = require('form-data');
       const formData = new FormData();
 
-      // Faylni FormData ga qo'shish
       formData.append('files', file.buffer, {
         filename: file.originalname,
         contentType: file.mimetype,
       });
 
-      // Qo'shimcha maydonlarni qo'shish
       formData.append('source', IMAGES_PROJECT_NAME);
 
       const url: string = `${this.url}/file/upload`;
 
-      // Headers ni to'g'ri sozlash
       const config = {
         headers: {
           ...formData.getHeaders(),
@@ -43,7 +37,6 @@ export class FileService {
         config,
       );
 
-      // API dan kelgan javobni to'g'ri parse qilish
       const fileDetails = response.data?.file_details?.[0];
 
       return {
