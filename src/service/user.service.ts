@@ -281,7 +281,7 @@ export class UserService {
       const last30Days = new Date();
       last30Days.setDate(last30Days.getDate() - 30);
 
-      const newUsersThisMonth = await this.userRepo
+      const newUsersThisMonth:number = await this.userRepo
         .createQueryBuilder('user')
         .where('user.created_at >= :date', { date: last30Days })
         .getCount();

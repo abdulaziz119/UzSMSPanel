@@ -24,6 +24,7 @@ import {
   TransactionFilterDto,
   TransactionStatsDto,
 } from '../utils/dto/transaction.dto';
+import { UserRoleEnum } from '../utils/enum/user.enum';
 
 @Injectable()
 export class TransactionService {
@@ -509,7 +510,7 @@ export class TransactionService {
             "ELSE '50000+' END as balance_range",
           'COUNT(*) as user_count',
         ])
-        .where('role = :role', { role: 'CLIENT' })
+        .where('role = :role', { role: UserRoleEnum.CLIENT })
         .groupBy('balance_range')
         .orderBy('balance_range')
         .getRawMany();
