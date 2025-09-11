@@ -53,7 +53,7 @@ export class SmsContactService {
 
       try {
         const tariff: TariffEntity = await this.tariffRepo.findOne({
-          where: candidates.map((code) => ({ code })),
+          where: candidates.map((code: string) => ({ code })),
         });
 
         if (!tariff) {
@@ -133,7 +133,7 @@ export class SmsContactService {
           parsePhoneNumberFromString(normalized, 'UZ');
         if (!parsed || !parsed.isValid()) continue;
         const national: string = (parsed.nationalNumber || '').toString();
-        const codes = [
+        const codes: string[] = [
           national.substring(0, 3),
           national.substring(0, 2),
         ].filter(Boolean);
@@ -171,7 +171,7 @@ export class SmsContactService {
     return results;
   }
 
-  async normalizePhone(phone: string) {
+  async normalizePhone(phone: string): Promise<string> {
     try {
       let parsed = parsePhoneNumberFromString(phone);
       if (!parsed) parsed = parsePhoneNumberFromString(phone, 'UZ');
@@ -284,7 +284,7 @@ export class SmsContactService {
   async findAll(
     payload: SmsContactFindAllDto,
   ): Promise<PaginationResponse<SmsContactEntity[]>> {
-    const { page = 1, limit = 10, phone, status, name } = payload;
+    const { page = 1, limit = 10, phone, status, name, group_id } = payload;
     const skip: number = (page - 1) * limit;
 
     try {
@@ -304,6 +304,11 @@ export class SmsContactService {
       if (name) {
         queryBuilder.andWhere('sms_contacts.name ILIKE :name', {
           name: `%${name}%`,
+        });
+      }
+      if (group_id) {
+        queryBuilder.andWhere('sms_contacts.group_id = :group_id', {
+          group_id,
         });
       }
 

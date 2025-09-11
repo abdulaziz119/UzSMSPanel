@@ -90,4 +90,9 @@ export class SmsContactFindAllDto extends PaginationParams {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @ApiPropertyOptional({ example: 1, description: 'Filter by group ID' })
+  @IsNumber()
+  @IsOptional()
+  group_id?: number;
 }
