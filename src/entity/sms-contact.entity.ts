@@ -4,9 +4,8 @@ import { DB_SCHEMA } from '../utils/env/env';
 import { GroupEntity } from './group.entity';
 import {
   SMSContactStatusEnum,
-  SmsContactTyeEnum,
+  SmsContactTypeEnum,
 } from '../utils/enum/sms-contact.enum';
-import { GroupEnum } from '../utils/enum/group.enum';
 
 @Entity({ schema: DB_SCHEMA, name: 'sms_contacts' })
 @Index(['phone'])
@@ -26,10 +25,10 @@ export class SmsContactEntity extends BaseEntity {
 
   @Column({
     type: 'enum',
-    enum: SmsContactTyeEnum,
-    default: SmsContactTyeEnum.SMS,
+    enum: SmsContactTypeEnum,
+    default: SmsContactTypeEnum.SMS,
   })
-  type: SmsContactTyeEnum; // SMS yoki EMAIL
+  type: SmsContactTypeEnum; // SMS yoki EMAIL
 
   @Column({ type: 'varchar', nullable: true })
   group_name: string | null;

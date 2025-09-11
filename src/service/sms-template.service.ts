@@ -66,8 +66,11 @@ export class SmsTemplateService {
     try {
       const queryBuilder = this.smsTemplateRepo
         .createQueryBuilder('sms_templates')
-        .where('sms_templates.id IS NOT NULL')
-        .andWhere('sms_templates.user_id = :user_id', { user_id });
+        .where('sms_templates.id IS NOT NULL');
+
+      if (user_id) {
+        queryBuilder.andWhere('sms_templates.user_id = :user_id', { user_id });
+      }
 
       if (search) {
         queryBuilder.andWhere(

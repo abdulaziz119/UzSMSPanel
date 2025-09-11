@@ -15,7 +15,7 @@ import {
   CreateIndividualContactDto,
   CreateCompanyContactDto,
 } from '../utils/dto/contact.dto';
-import { ContactTypeEnum } from '../utils/enum/contact.enum';
+import { ContactTypeEnum, ContactStatusEnum } from '../utils/enum/contact.enum';
 import { UserEntity } from '../entity/user.entity';
 import { AxiosService } from '../helpers/axios.service';
 import { MY_GO_URL } from '../utils/env/env';
@@ -138,7 +138,7 @@ export class ContactService {
 
       const contactData: ContactEntity = await this.contactRepo.findOne({
         where: {
-          id: user_id,
+          user_id: user_id,
           type: ContactTypeEnum.COMPANY,
           company_inn: payload.company_inn,
         },
@@ -146,17 +146,22 @@ export class ContactService {
 
       if (contactData) {
         throw new HttpException(
-          { message: 'Contact already exists' },
+          { message: 'Company contact already exists' },
           HttpStatus.BAD_REQUEST,
         );
       }
 
       const newContact: ContactEntity = this.contactRepo.create({
-        // ...payload,
-        // user_id,
-        // type: ContactTypeEnum.COMPANY,
-        // phone: userData.phone,
-        // phone_ext: userData.phone_ext || '998',
+        user_id: user_id,
+        type: ContactTypeEnum.COMPANY,
+        company_name: payload.company_name,
+        company_inn: payload.company_inn,
+        company_mfo: payload.company_mfo,
+        company_okonx: payload.company_okonx,
+        company_bank_name: payload.company_bank_name,
+        company_bank_id: payload.company_bank_id,
+        status: ContactStatusEnum.ACTIVE,
+        balance: 0,
       });
 
       const savedContact: ContactEntity =

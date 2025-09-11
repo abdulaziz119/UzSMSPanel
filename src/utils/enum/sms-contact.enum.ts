@@ -4,7 +4,7 @@ export enum SMSContactStatusEnum {
   BANNED_NUMBER = 'banned_number',
 }
 
-export enum SmsContactTyeEnum {
+export enum SmsContactTypeEnum {
   SMS = 'sms',
   EMAIL = 'email',
 }
