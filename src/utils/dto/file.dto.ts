@@ -1,9 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-export class FileCreateBodyDto {
-  // Boshqa maydonlar kerak bo'lsa shu yerga qo'shish mumkin
-}
-
 export class FileUploadResponseDto {
   @ApiProperty({
     example: true,

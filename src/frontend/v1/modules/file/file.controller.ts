@@ -7,7 +7,6 @@ import {
   ParseFilePipe,
   FileTypeValidator,
   MaxFileSizeValidator,
-  Body,
 } from '@nestjs/common';
 import { FileService } from '../../../../service/file.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,7 +17,7 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { FileCreateBodyDto, FileUploadResponseDto } from '../../../../utils/dto/file.dto';
+import { FileUploadResponseDto } from '../../../../utils/dto/file.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { Auth } from '../auth/decorators/auth.decorator';
@@ -70,11 +69,10 @@ export class FileController {
       }),
     )
     file: Express.Multer.File,
-    @Body() body: FileCreateBodyDto,
   ): Promise<{ success: boolean; message: string; data: {} }> {
     if (!file) {
       throw new BadRequestException('File is missing.');
     }
-    return await this.fileService.create(body, file);
+    return await this.fileService.create(file);
   }
 }
