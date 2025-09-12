@@ -6,7 +6,10 @@ import {
   IsNumber,
   Length,
   IsEnum,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { SMSContactStatusEnum } from '../enum/sms-contact.enum';
 import { PaginationParams } from './dto';
 
@@ -31,6 +34,29 @@ export class CreateSmsContactDto {
   @IsNumber()
   @IsNotEmpty()
   group_id: number;
+}
+
+export class BulkCreateSmsContactDto {
+  @ApiProperty({
+    type: [CreateSmsContactDto],
+    description: 'Array of SMS contacts to create',
+    example: [
+      {
+        name: 'John Doe',
+        phone: '998901234567',
+        group_id: 1
+      },
+      {
+        name: 'Jane Smith',
+        phone: '998907654321',
+        group_id: 1
+      }
+    ]
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSmsContactDto)
+  contacts: CreateSmsContactDto[];
 }
 
 export class UpdateSmsContactDto {

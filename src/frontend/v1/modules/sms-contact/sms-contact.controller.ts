@@ -31,6 +31,7 @@ import {
   CreateSmsContactDto,
   UpdateSmsContactDto,
   SmsContactFindAllDto,
+  BulkCreateSmsContactDto,
 } from '../../../../utils/dto/sms-contact.dto';
 import { PaginationResponse } from '../../../../utils/pagination.response';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -60,6 +61,15 @@ export class SmsContactController {
     @Body() body: CreateSmsContactDto,
   ): Promise<SingleResponse<SmsContactEntity>> {
     return await this.smsContactService.create(body);
+  }
+
+  @Post('/bulk-create')
+  @HttpCode(201)
+  @ApiBadRequestResponse({ type: ErrorResourceDto })
+  @Roles(UserRoleEnum.CLIENT)
+  @Auth(false)
+  async bulkCreate(@Body() body: BulkCreateSmsContactDto) {
+    return await this.smsContactService.bulkCreate(body.contacts);
   }
 
   @Post('/findAll')

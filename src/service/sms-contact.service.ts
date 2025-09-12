@@ -223,6 +223,93 @@ export class SmsContactService {
     }
   }
 
+  async bulkCreate(contacts: CreateSmsContactDto[]): Promise<{
+    result: {
+      created: SmsContactEntity[];
+      failed: { contact: CreateSmsContactDto; error: string }[];
+      summary: { total: number; created: number; failed: number };
+    };
+  }> {
+    const created: SmsContactEntity[] = [];
+    const failed: { contact: CreateSmsContactDto; error: string }[] = [];
+    const groupCountUpdates = new Map<number, number>();
+
+    for (const contact of contacts) {
+      try {
+        // Validate group exists
+        const smsGroupData: GroupEntity = await this.groupRepo.findOne({
+          where: { id: contact.group_id },
+        });
+        if (!smsGroupData) {
+          failed.push({ contact, error: 'SMS Group not found' });
+          continue;
+        }
+
+        // Normalize phone and validate
+        const normalizedPhone: string = await this.normalizePhone(
+          contact.phone,
+        );
+        const status = await this.validatePhoneNumber(normalizedPhone);
+
+        // Create new contact
+        const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
+          name: contact.name,
+          phone: (normalizedPhone || contact.phone || '').replace(/^\+/, ''),
+          status: status,
+          group_name: smsGroupData.title,
+          group_id: contact.group_id,
+        });
+
+        const savedSmsContact: SmsContactEntity =
+          await this.smsContactRepo.save(newSmsContact);
+
+        created.push(savedSmsContact);
+
+        // Track group count updates
+        const currentCount: number =
+          groupCountUpdates.get(contact.group_id) || 0;
+        groupCountUpdates.set(contact.group_id, currentCount + 1);
+      } catch (error) {
+        failed.push({
+          contact,
+          error: error.message || 'Unknown error occurred',
+        });
+      }
+    }
+
+    // Update group contact counts in batch
+    for (const [groupId, incrementCount] of groupCountUpdates) {
+      try {
+        await this.groupRepo
+          .createQueryBuilder()
+          .update(GroupEntity)
+          .set({
+            contact_count: () =>
+              `COALESCE(contact_count, 0) + ${incrementCount}`,
+          })
+          .where('id = :id', { id: groupId })
+          .execute();
+      } catch (error) {
+        console.error(
+          `Failed to update group count for group ${groupId}:`,
+          error,
+        );
+      }
+    }
+
+    return {
+      result: {
+        created,
+        failed,
+        summary: {
+          total: contacts.length,
+          created: created.length,
+          failed: failed.length,
+        },
+      },
+    };
+  }
+
   async createFromRows(
     rows: ParsedContactRow[],
     default_group_id: number,
