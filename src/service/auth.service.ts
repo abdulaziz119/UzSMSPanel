@@ -170,7 +170,7 @@ export class AuthService {
         ? `phone: ${payload.phone}`
         : `email: ${payload.email}`;
       this.logger.log(`OTP sent to ${contactInfo}`);
-      return { result: { expiresIn: 120 } };
+      return { result: { expiresIn: Math.ceil(this.RESEND_COOLDOWN / 1000) } };
     } catch (error) {
       throw new HttpException(
         {
