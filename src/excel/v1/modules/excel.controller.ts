@@ -24,11 +24,6 @@ export class ExcelController {
     @InjectQueue(SMS_CONTACT_QUEUE) private readonly smsContactQueue: Queue,
   ) {}
 
-  @Post('process')
-  processExcel(@Body() data: { filePath: string; userId: number }) {
-    return this.excelService.processExcel(data.filePath, data.userId);
-  }
-
   @Post('/import-excel')
   @Roles(UserRoleEnum.CLIENT)
   @Auth(false)

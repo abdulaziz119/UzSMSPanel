@@ -40,6 +40,7 @@ import { FileUploadResponseDto } from '../../../../utils/dto/file.dto';
 import * as multer from 'multer';
 import { AxiosService } from '../../../../helpers/axios.service';
 import { EXCEL_SERVICE_URL } from '../../../../utils/env/env';
+import { User } from '../auth/decorators/user.decorator';
 
 @ApiBearerAuth()
 @ApiTags('sms-contact')
@@ -150,6 +151,7 @@ export class SmsContactController {
     )
     file: Express.Multer.File,
     @Body() body: { default_group_id: number },
+    @User('id') user_id: number,
   ) {
     if (!file || !body) {
       throw new BadRequestException('File is missing.');
@@ -165,6 +167,7 @@ export class SmsContactController {
         fileName: file.originalname,
         fileType: file.mimetype,
         default_group_id: body.default_group_id,
+        user_id: user_id,
       });
 
       return response.data;
