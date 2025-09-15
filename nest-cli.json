@@ -24,6 +24,15 @@
       "compilerOptions": {
         "tsConfigPath": "tsconfig.json"
       }
+    },
+    "excel": {
+      "type": "application",
+      "root": "src/excel",
+      "entryFile": "main",
+      "sourceRoot": "src/excel",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
     }
   }
 }

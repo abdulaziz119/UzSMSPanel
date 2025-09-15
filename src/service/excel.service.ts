@@ -17,6 +17,51 @@ export class ExcelService {
     private userRepository: Repository<UserEntity>,
   ) {}
 
+  async createExcelAnalysis(data: {
+    user_id: number;
+    fileName: string;
+    fileType: string;
+    totalRows: number;
+    status: string;
+  }): Promise<ExcelEntity> {
+    const user = await this.userRepository.findOne({ where: { id: data.user_id } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const excel = this.excelRepository.create({
+      user,
+      filePath: data.fileName, // Store filename instead of file path
+      status: data.status,
+      totalRows: data.totalRows,
+      processedRows: 0,
+      duplicateRows: 0,
+      invalidFormatRows: 0,
+      createdRows: 0,
+    });
+
+    return await this.excelRepository.save(excel);
+  }
+
+  async updateExcelAnalysis(
+    excelId: number,
+    data: {
+      processedRows?: number;
+      duplicateRows?: number;
+      invalidFormatRows?: number;
+      createdRows?: number;
+      status?: string;
+    },
+  ): Promise<ExcelEntity> {
+    const excel = await this.excelRepository.findOne({ where: { id: excelId } });
+    if (!excel) {
+      throw new Error('Excel analysis not found');
+    }
+
+    Object.assign(excel, data);
+    return await this.excelRepository.save(excel);
+  }
+
   async processExcel(filePath: string, userId: number): Promise<ExcelEntity> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {

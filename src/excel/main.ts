@@ -13,6 +13,11 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   await app.listen(EXCEL_PORT);
+  console.log('✅ Excel servisi muvaffaqiyatli ishga tushdi!');
 }
 
-bootstrap().then(() => 'connected');
+bootstrap().then(() => {
+  console.log('═══════════════════════════════════════════════════════');
+  console.log(`🌐 EXCEL API: http://0.0.0.0:${EXCEL_PORT}`);
+  console.log('═══════════════════════════════════════════════════════');
+});

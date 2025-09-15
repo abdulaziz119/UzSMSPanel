@@ -1,17 +1,5 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UploadedFile,
-  ParseFilePipe,
-  FileTypeValidator,
-  MaxFileSizeValidator,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
 import { ExcelService } from '../../../service/excel.service';
-import { Auth } from '../../../frontend/v1/modules/auth/decorators/auth.decorator';
-import { Roles } from '../../../frontend/v1/modules/auth/decorators/roles.decorator';
-import { UserRoleEnum } from '../../../utils/enum/user.enum';
 import { SmsContactExcelService } from '../../../utils/sms.contact.excel.service';
 import { SMS_CONTACT_QUEUE } from '../../../constants/constants';
 import { InjectQueue } from '@nestjs/bull';
@@ -25,28 +13,30 @@ export class ExcelController {
   ) {}
 
   @Post('/import-excel')
-  @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
   async importExcel(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new FileTypeValidator({
-            fileType:
-              /(application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application\/vnd\.ms-excel|text\/csv)$/,
-          }),
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 10 }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
-    @Body() body: { default_group_id: number },
+    @Body()
+    body: {
+      file: string;
+      fileName: string;
+      fileType: string;
+      default_group_id: number;
+      user_id: number;
+    },
   ) {
-    if (!file || !body) {
-      throw new BadRequestException('File is missing.');
+    if (
+      !body.file ||
+      !body.fileName ||
+      !body.default_group_id ||
+      !body.user_id
+    ) {
+      throw new BadRequestException('Required fields are missing.');
     }
+
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(body.file, 'base64');
+
     // Parse rows here to avoid Buffer serialization issues in Bull/Redis
-    const rows = SmsContactExcelService.parseContacts(file.buffer);
+    const rows = SmsContactExcelService.parseContacts(fileBuffer);
     if (!rows.length) {
       return {
         success: true,
@@ -55,10 +45,17 @@ export class ExcelController {
       } as any;
     }
 
-    // Queue the job for background processing with parsed rows
+    // Queue the job for background processing with parsed rows and file info
     const job = await this.smsContactQueue.add(
       'import-excel',
-      { default_group_id: body.default_group_id, rows },
+      {
+        default_group_id: body.default_group_id,
+        rows,
+        user_id: body.user_id,
+        fileName: body.fileName,
+        fileType: body.fileType,
+        totalRows: rows.length,
+      },
       {
         attempts: 3,
         removeOnComplete: true,

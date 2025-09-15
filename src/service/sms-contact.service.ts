@@ -34,6 +34,42 @@ export class SmsContactService {
     private readonly groupRepo: Repository<GroupEntity>,
   ) {}
 
+  /**
+   * Optimized phone validation without DB queries - uses pre-loaded tariffs
+   */
+  async validatePhoneNumberOptimized(
+    phone: string, 
+    tariffByCode: Map<string, TariffEntity>
+  ): Promise<SMSContactStatusEnum> {
+    const cleanPhone: string = (phone || '').toString().trim();
+
+    try {
+      let parsed = parsePhoneNumberFromString(cleanPhone);
+      if (!parsed) parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
+
+      if (!parsed || !parsed.isValid()) {
+        return SMSContactStatusEnum.INVALID_FORMAT;
+      }
+
+      const national: string = (parsed.nationalNumber || '').toString();
+      const candidates: string[] = [
+        national.substring(0, 3),
+        national.substring(0, 2),
+      ].filter(Boolean);
+
+      // Check tariffs from pre-loaded Map instead of DB query
+      for (const code of candidates) {
+        if (tariffByCode.has(code)) {
+          return SMSContactStatusEnum.ACTIVE;
+        }
+      }
+
+      return SMSContactStatusEnum.BANNED_NUMBER;
+    } catch {
+      return SMSContactStatusEnum.INVALID_FORMAT;
+    }
+  }
+
   async validatePhoneNumber(phone: string): Promise<SMSContactStatusEnum> {
     const cleanPhone: string = (phone || '').toString().trim();
 
@@ -326,17 +362,30 @@ export class SmsContactService {
     });
     if (!smsGroupData) throw new NotFoundException('SMS Group not found');
 
+    // Step 1: Pre-load all tariffs to avoid repeated DB queries
+    const allTariffs: TariffEntity[] = await this.tariffRepo.find();
+    const tariffByCode = new Map<string, TariffEntity>();
+    for (const tariff of allTariffs) {
+      if (tariff.code) {
+        tariffByCode.set(tariff.code, tariff);
+      }
+    }
+
     const batchSize = 200;
     for (let i: number = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
       const toSave: SmsContactEntity[] = [];
+      
       for (const r of batch) {
         const phoneNormalized: string = await this.normalizePhone(r.phone);
         if (!phoneNormalized) {
           skipped++;
           continue;
         }
-        const status = await this.validatePhoneNumber(phoneNormalized);
+
+        // Optimized phone validation without DB queries
+        const status = await this.validatePhoneNumberOptimized(phoneNormalized, tariffByCode);
+        
         const entity: SmsContactEntity = this.smsContactRepo.create({
           name: (r.name ?? null) as any,
           phone: (phoneNormalized || r.phone || '').replace(/^\+/, ''),
@@ -346,6 +395,7 @@ export class SmsContactService {
         });
         toSave.push(entity);
       }
+      
       if (toSave.length) {
         const saved: SmsContactEntity[] =
           await this.smsContactRepo.save(toSave);

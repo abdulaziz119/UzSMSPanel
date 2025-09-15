@@ -161,7 +161,7 @@ export class SmsContactController {
     const fileBase64 = file.buffer.toString('base64');
 
     try {
-      const url = `${this.url}`;
+      const url = `${this.url}/api/excel/import-excel`;
       const response = await this.axiosService.sendPostFileRequest(url, {
         file: fileBase64,
         fileName: file.originalname,
