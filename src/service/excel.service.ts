@@ -1,10 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import * as xlsx from 'xlsx';
-import { ExcelEntity } from '../../../entity/excel.entity';
-import { UserEntity } from '../../../entity/user.entity';
-import { ContactEntity } from '../../../entity/contact.entity';
-import { MODELS } from '../../../constants/constants';
+import { ExcelEntity } from '../entity/excel.entity';
+import { UserEntity } from '../entity/user.entity';
+import { ContactEntity } from '../entity/contact.entity';
+import { MODELS } from '../constants/constants';
 
 @Injectable()
 export class ExcelService {

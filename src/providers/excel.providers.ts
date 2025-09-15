@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
-import { ExcelEntity } from '../../../entity/excel.entity';
-import { MODELS, UZ_SMS_PANEL } from '../../../constants/constants';
+import { ExcelEntity } from '../entity/excel.entity';
+import { MODELS, UZ_SMS_PANEL } from '../constants/constants';
 
 export const excelProviders = [
   {

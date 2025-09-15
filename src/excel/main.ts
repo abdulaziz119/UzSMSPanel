@@ -1,11 +1,18 @@
-
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { AppExcelModule } from './app.module';
+import * as bodyParser from 'body-parser';
+import { ValidationPipe } from '@nestjs/common';
+import { EXCEL_PORT } from '../utils/env/env';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
-  await app.listen(3003);
+  const app = await NestFactory.create(AppExcelModule);
+
+  app.setGlobalPrefix('api');
+  app.use(bodyParser.json({ limit: '100mb' }));
+  app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+
+  await app.listen(EXCEL_PORT);
 }
-bootstrap();
+
+bootstrap().then(() => 'connected');

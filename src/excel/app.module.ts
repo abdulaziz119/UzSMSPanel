@@ -12,7 +12,7 @@ import { ModulesExcelModule } from './v1/modules.module';
     ModulesExcelModule,
   ],
 })
-export class AppModule implements NestModule {
+export class AppExcelModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(LoggerMiddleware).forRoutes('*');
   }

@@ -36,20 +36,19 @@ import {
 import { PaginationResponse } from '../../../../utils/pagination.response';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
-import { SMS_CONTACT_QUEUE } from '../../../../constants/constants';
 import { FileUploadResponseDto } from '../../../../utils/dto/file.dto';
 import * as multer from 'multer';
-import { SmsContactExcelService } from '../../../../utils/sms.contact.excel.service';
+import { AxiosService } from '../../../../helpers/axios.service';
+import { EXCEL_SERVICE_URL } from '../../../../utils/env/env';
 
 @ApiBearerAuth()
 @ApiTags('sms-contact')
 @Controller({ path: '/frontend/sms-contact', version: '1' })
 export class SmsContactController {
+  private url = EXCEL_SERVICE_URL;
   constructor(
     private readonly smsContactService: SmsContactService,
-    @InjectQueue(SMS_CONTACT_QUEUE) private readonly smsContactQueue: Queue,
+    private readonly axiosService: AxiosService,
   ) {}
 
   @Post('/create')
@@ -155,32 +154,23 @@ export class SmsContactController {
     if (!file || !body) {
       throw new BadRequestException('File is missing.');
     }
-    // Parse rows here to avoid Buffer serialization issues in Bull/Redis
-    const rows = SmsContactExcelService.parseContacts(file.buffer);
-    if (!rows.length) {
-      return {
-        success: true,
-        message: 'No valid rows found in file',
-        data: { jobId: null, created: 0, skipped: 0 },
-      } as any;
+
+    // Convert file to base64 and send to Excel microservice
+    const fileBase64 = file.buffer.toString('base64');
+
+    try {
+      const url = `${this.url}`;
+      const response = await this.axiosService.sendPostFileRequest(url, {
+        file: fileBase64,
+        fileName: file.originalname,
+        fileType: file.mimetype,
+        default_group_id: body.default_group_id,
+      });
+
+      return response.data;
+    } catch (error) {
+      throw new BadRequestException('Failed to process Excel file');
     }
-
-    // Queue the job for background processing with parsed rows
-    const job = await this.smsContactQueue.add(
-      'import-excel',
-      { default_group_id: body.default_group_id, rows },
-      {
-        attempts: 3,
-        removeOnComplete: true,
-        backoff: { type: 'exponential', delay: 2000 },
-      },
-    );
-
-    return {
-      success: true,
-      message: 'Import queued',
-      data: { jobId: job.id },
-    } as any;
   }
 
   @Post('/download-template')

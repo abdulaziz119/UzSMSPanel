@@ -21,6 +21,9 @@ const MY_GO_URL = process.env.MY_GO_URL || '';
 const IMAGES_URL = process.env.IMAGES_URL || '';
 const IMAGES_PROJECT_NAME = process.env.IMAGES_PROJECT_NAME || '';
 
+const EXCEL_SERVICE_URL = process.env.EXCEL_SERVICE_URL || '';
+
+const EXCEL_PORT = process.env.EXCEL_PORT || 3003;
 // Port konfiguratsiyasi
 const DASHBOARD_PORT = process.env.DASHBOARD_PORT || 8080;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
@@ -33,6 +36,8 @@ if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
 }
 
 export {
+  EXCEL_PORT,
+  EXCEL_SERVICE_URL,
   SMTP_USER,
   SMTP_PASS,
   IMAGES_PROJECT_NAME,

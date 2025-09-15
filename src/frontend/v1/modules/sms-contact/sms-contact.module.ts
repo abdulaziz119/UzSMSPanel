@@ -5,19 +5,16 @@ import { SmsContactService } from '../../../../service/sms-contact.service';
 import { smsContactProviders } from '../../../../providers/sms-contact.providers';
 import { tariffsProviders } from '../../../../providers/tariffs.providers';
 import { groupProviders } from '../../../../providers/group.providers';
-import { SmsContactQueue } from '../../../../queue/sms-contact.queue';
+import { AxiosModule } from '../../../../helpers/axios.module';
 
 @Module({
-  imports: [
-    DatabaseModule,
-  ],
+  imports: [DatabaseModule, AxiosModule],
   controllers: [SmsContactController],
   providers: [
     ...smsContactProviders,
     ...tariffsProviders,
     ...groupProviders,
     SmsContactService,
-    SmsContactQueue,
   ],
   exports: [SmsContactService, ...smsContactProviders, ...tariffsProviders],
 })
