@@ -8,7 +8,6 @@ import {
   DB_PORT,
   DB_SCHEMA,
   DB_USER,
-  DB_SYNCHRONIZE,
 } from '../utils/env/env';
 import { TransactionEntity } from '../entity/transaction.entity';
 import { ContactEntity } from '../entity/contact.entity';
@@ -22,6 +21,7 @@ import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { SmsSenderEntity } from '../entity/sms-sender.entity';
 import { SenderPriceEntity } from '../entity/sender-price.entity';
 import { CountryEntity } from '../entity/country.entity';
+import { ExcelEntity } from '../entity/excel.entity';
 
 export const databaseProviders = [
   {
@@ -38,6 +38,7 @@ export const databaseProviders = [
         logging: false,
         schema: DB_SCHEMA,
         entities: [
+          ExcelEntity,
           TransactionEntity,
           ContactEntity,
           OtpEntity,
