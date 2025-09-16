@@ -10,11 +10,7 @@ import { MODELS } from '../constants/constants';
 import { Repository } from 'typeorm';
 import { MessageEntity } from '../entity/message.entity';
 import { createClient, RedisClientType } from 'redis';
-import {
-  REDIS_HOST,
-  REDIS_PORT,
-  REDIS_PASSWORD,
-} from '../utils/env/env';
+import { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } from '../utils/env/env';
 
 export interface SmppConfig {
   host: string;
@@ -184,6 +180,36 @@ export class SmppService {
               this.logger.log(
                 `SMPP message ID saved: ${pdu.message_id} for message ${messageId}`,
               );
+
+              try {
+                const pending = await this.redisClient.get(
+                  `smpp:pending:${pdu.message_id}`,
+                );
+                if (pending) {
+                  try {
+                    const parsed = JSON.parse(pending);
+                    if (parsed && parsed.since) {
+                      await this.messageRepo.update(
+                        { id: messageId },
+                        { pending_since: new Date(parsed.since) },
+                      );
+                      this.logger.log(
+                        `Applied pending_since (${parsed.since}) from Redis to message ${messageId}`,
+                      );
+                    }
+                  } catch (parseErr) {
+                    this.logger.error(
+                      'Failed to parse pending payload from Redis:',
+                      parseErr,
+                    );
+                  }
+                }
+              } catch (e) {
+                this.logger.error(
+                  'Failed to apply pending_since from Redis:',
+                  e,
+                );
+              }
             } catch (error) {
               this.logger.error('Error saving SMPP message ID:', error);
             }
@@ -372,7 +398,9 @@ export class SmppService {
           `Partial report received for ID: ${deliveryReport.id}. Storing in Redis and marking as pending.`,
         );
 
-        // Message'ni topib, pending_since ni belgilash
+        const nowIso = new Date().toISOString();
+
+        // Redisga 24 soatga saqlash (86400 soniya) — bitta kalit: { pdu, since }
         const message = await this.messageRepo.findOne({
           where: { smpp_message_id: deliveryReport.id },
         });
@@ -380,17 +408,18 @@ export class SmppService {
         if (message && !message.pending_since) {
           await this.messageRepo.update(
             { id: message.id },
-            { pending_since: new Date() },
+            { pending_since: new Date(nowIso) },
+          );
+          this.logger.log(
+            `Set pending_since=${nowIso} for message ${message.id}`,
           );
         }
 
-        // Redisga 24 soatga saqlash (86400 soniya)
+        const payload = JSON.stringify({ pdu, since: nowIso });
         await this.redisClient.set(
           `smpp:pending:${deliveryReport.id}`,
-          JSON.stringify(pdu),
-          {
-            EX: 86400,
-          },
+          payload,
+          { EX: 86400 },
         );
         return; // Boshqa ishlov berishni to'xtatish
       }
@@ -401,10 +430,10 @@ export class SmppService {
           `Full delivery report parsed for message ${deliveryReport.id}: ${deliveryReport.stat}`,
         );
 
-        // Redisdan bu IDga tegishli vaqtinchalik yozuvni o'chirish
+        // Redisdan bu IDga tegishli vaqtinchalik yozuvni o'chirish (bitta kalit)
         await this.redisClient.del(`smpp:pending:${deliveryReport.id}`);
         this.logger.log(
-          `Removed pending report from Redis for ID: ${deliveryReport.id}`,
+          `Removed pending record(s) from Redis for ID: ${deliveryReport.id}`,
         );
 
         // Message ni database da yangilash
@@ -494,7 +523,7 @@ export class SmppService {
 
       if (isFullReport) {
         updateData.response_received_at = new Date();
-        updateData.pending_since = null; // To'liq report keldi, endi kutish shart emas
+        // Preserve existing pending_since value; do not set to null here
       }
 
       // SMPP message ID bo'yicha message topish va delivery report ni saqlash
