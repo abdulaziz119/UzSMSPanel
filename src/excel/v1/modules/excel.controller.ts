@@ -1,9 +1,18 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  BadRequestException,
+  HttpCode,
+} from '@nestjs/common';
 import { ExcelService } from '../../../service/excel.service';
 import { SmsContactExcelService } from '../../../utils/sms.contact.excel.service';
 import { SMS_CONTACT_QUEUE } from '../../../constants/constants';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { PaginationParams } from '../../../utils/dto/dto';
+import { PaginationResponse } from '../../../utils/pagination.response';
+import { ExcelEntity } from '../../../entity/excel.entity';
 
 @Controller('excel')
 export class ExcelController {
@@ -41,7 +50,13 @@ export class ExcelController {
       return {
         success: true,
         message: 'No valid rows found in file',
-        data: { jobId: null, created: 0, skipped: 0, duplicates: 0, invalidFormat: 0 },
+        data: {
+          jobId: null,
+          created: 0,
+          skipped: 0,
+          duplicates: 0,
+          invalidFormat: 0,
+        },
       } as any;
     }
 
@@ -65,8 +80,17 @@ export class ExcelController {
 
     return {
       success: true,
-      message: 'Import queued successfully. Only Uzbekistan phone numbers will be processed. Duplicates and invalid formats will be skipped.',
+      message:
+        'Import queued successfully. Only Uzbekistan phone numbers will be processed. Duplicates and invalid formats will be skipped.',
       data: { jobId: job.id },
-    } as any;
+    };
+  }
+
+  @Post('/findAll')
+  @HttpCode(200)
+  async findAll(
+    @Body() query: PaginationParams,
+  ): Promise<PaginationResponse<ExcelEntity[]>> {
+    return await this.excelService.findAll(query);
   }
 }

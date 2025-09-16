@@ -1,20 +1,23 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import * as xlsx from 'xlsx';
 import { ExcelEntity } from '../entity/excel.entity';
 import { UserEntity } from '../entity/user.entity';
 import { ContactEntity } from '../entity/contact.entity';
 import { MODELS } from '../constants/constants';
+import { PaginationResponse } from '../utils/pagination.response';
+import { getPaginationResponse } from '../utils/pagination.builder';
+import { PaginationParams } from '../utils/dto/dto';
 
 @Injectable()
 export class ExcelService {
   constructor(
     @Inject(MODELS.EXCEL)
-    private excelRepository: Repository<ExcelEntity>,
+    private readonly excelRepos: Repository<ExcelEntity>,
     @Inject(MODELS.CONTACT)
-    private contactRepository: Repository<ContactEntity>,
+    private readonly contactRepos: Repository<ContactEntity>,
     @Inject(MODELS.USER)
-    private userRepository: Repository<UserEntity>,
+    private readonly userRepos: Repository<UserEntity>,
   ) {}
 
   async createExcelAnalysis(data: {
@@ -24,12 +27,14 @@ export class ExcelService {
     totalRows: number;
     status: string;
   }): Promise<ExcelEntity> {
-    const user = await this.userRepository.findOne({ where: { id: data.user_id } });
+    const user = await this.userRepos.findOne({
+      where: { id: data.user_id },
+    });
     if (!user) {
       throw new Error('User not found');
     }
 
-    const excel = this.excelRepository.create({
+    const excel = this.excelRepos.create({
       user,
       filePath: data.fileName, // Store filename instead of file path
       status: data.status,
@@ -40,7 +45,7 @@ export class ExcelService {
       createdRows: 0,
     });
 
-    return await this.excelRepository.save(excel);
+    return await this.excelRepos.save(excel);
   }
 
   async updateExcelAnalysis(
@@ -53,27 +58,29 @@ export class ExcelService {
       status?: string;
     },
   ): Promise<ExcelEntity> {
-    const excel = await this.excelRepository.findOne({ where: { id: excelId } });
+    const excel = await this.excelRepos.findOne({
+      where: { id: excelId },
+    });
     if (!excel) {
       throw new Error('Excel analysis not found');
     }
 
     Object.assign(excel, data);
-    return await this.excelRepository.save(excel);
+    return await this.excelRepos.save(excel);
   }
 
   async processExcel(filePath: string, userId: number): Promise<ExcelEntity> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepos.findOne({ where: { id: userId } });
     if (!user) {
       throw new Error('User not found');
     }
 
-    const excel = this.excelRepository.create({
+    const excel = this.excelRepos.create({
       user,
       filePath,
       status: 'processing',
     });
-    await this.excelRepository.save(excel);
+    await this.excelRepos.save(excel);
 
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
@@ -81,7 +88,7 @@ export class ExcelService {
     const data = xlsx.utils.sheet_to_json(sheet);
 
     excel.totalRows = data.length;
-    await this.excelRepository.save(excel);
+    await this.excelRepos.save(excel);
 
     for (const row of data) {
       excel.processedRows++;
@@ -91,7 +98,7 @@ export class ExcelService {
         continue;
       }
 
-      const existingContact = await this.contactRepository.findOne({
+      const existingContact = await this.contactRepos.findOne({
         where: { identity_code: row['phone'], user: { id: userId } },
       });
 
@@ -100,7 +107,7 @@ export class ExcelService {
         continue;
       }
 
-      const newContact = this.contactRepository.create({
+      const newContact = this.contactRepos.create({
         identity_code: row['phone'],
         commonData: {
           first_name: row['name'],
@@ -116,11 +123,37 @@ export class ExcelService {
         },
         user,
       });
-      await this.contactRepository.save(newContact);
+      await this.contactRepos.save(newContact);
       excel.createdRows++;
     }
 
     excel.status = 'completed';
-    return this.excelRepository.save(excel);
+    return this.excelRepos.save(excel);
+  }
+
+  async findAll(
+    payload: PaginationParams,
+  ): Promise<PaginationResponse<ExcelEntity[]>> {
+    const { page = 1, limit = 10 } = payload;
+    const skip: number = (page - 1) * limit;
+
+    try {
+      const queryBuilder = this.excelRepos
+        .createQueryBuilder('excels')
+        .where('excels.id IS NOT NULL');
+
+      const [excelData, total] = await queryBuilder
+        .skip(skip)
+        .take(limit)
+        .orderBy('excels.created_at', 'DESC')
+        .getManyAndCount();
+
+      return getPaginationResponse<ExcelEntity>(excelData, page, limit, total);
+    } catch (error) {
+      throw new HttpException(
+        { message: 'Error fetching Excel', error: error.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
