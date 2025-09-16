@@ -87,17 +87,8 @@ export class UserService {
     const user: UserEntity = await this.userRepo
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.contacts', 'contacts')
-      .leftJoinAndSelect('contacts.address_file', 'address_file')
-      .leftJoinAndSelect('contacts.passport_file', 'passport_file')
       .where('user.id = :user_id', { user_id })
-      .select([
-        'user',
-        'contacts',
-        'address_file.id',
-        'address_file.public_url',
-        'passport_file.id',
-        'passport_file.public_url',
-      ])
+      .select(['user', 'contacts'])
       .addSelect('user.refreshToken')
       .getOne();
 
@@ -106,6 +97,47 @@ export class UserService {
         { message: 'User not found' },
         HttpStatus.NOT_FOUND,
       );
+    }
+
+    // Manually filter the fields from the JSON objects
+    if (user.contacts) {
+      user.contacts = user.contacts.map((contact) => {
+        const newContact: any = { id: contact.id };
+
+        if (contact.commonData) {
+          newContact.commonData = {
+            first_name: contact.commonData.first_name,
+            last_name: contact.commonData.last_name,
+            gender: contact.commonData.gender,
+            birth_place: contact.commonData.birth_place,
+            birth_country: contact.commonData.birth_country,
+            birth_date: contact.commonData.birth_date,
+            nationality: contact.commonData.nationality,
+          };
+        }
+
+        if (contact.docData) {
+          newContact.docData = {
+            pass_data: contact.docData.pass_data,
+            issued_by: contact.docData.issued_by,
+            issued_date: contact.docData.issued_date,
+            expiry_date: contact.docData.expiry_date,
+            doc_type: contact.docData.doc_type,
+          };
+        }
+
+        if (contact.address) {
+          newContact.address = contact.address.map((addr) => ({
+            region: addr.region,
+            address: addr.address,
+            country: addr.country,
+            cadastre: addr.cadastre,
+            district: addr.district,
+            registration_date: addr.registration_date,
+          }));
+        }
+        return newContact;
+      });
     }
 
     return { result: user };
