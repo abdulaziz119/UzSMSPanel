@@ -21,9 +21,10 @@ export class ExcelController {
   @Auth(false)
   async findAll(@Body() body: PaginationParams) {
     const url = `${this.url}/api/excel/findAll`;
-    return await this.axiosService.sendPostFileRequest(url, {
+    const response = await this.axiosService.sendPostFileRequest(url, {
       limit: body.limit,
       page: body.page,
     });
+    return response.data;
   }
 }
