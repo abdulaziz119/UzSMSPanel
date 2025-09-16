@@ -1,10 +1,5 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiTags,
-  ApiBadRequestResponse,
-  ApiOperation,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ErrorResourceDto } from '../../../../utils/dto/error.dto';
 import { SingleResponse } from '../../../../utils/dto/dto';
