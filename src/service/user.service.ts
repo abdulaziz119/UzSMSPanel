@@ -1,11 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { UserEntity } from '../entity/user.entity';
@@ -40,7 +33,12 @@ export class UserService {
     const user: UserEntity = await this.userRepo.findOne({
       where: { id: user_id },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) {
+      throw new HttpException(
+        { message: 'User not found' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
 
     // eski parolni tekshirish
     const isMatch: boolean = await bcrypt.compare(
@@ -48,7 +46,10 @@ export class UserService {
       user.password,
     );
     if (!isMatch) {
-      throw new BadRequestException('Old password is incorrect');
+      throw new HttpException(
+        { message: 'Old password is incorrect' },
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // yangi parolni hash qilish
@@ -66,7 +67,12 @@ export class UserService {
     const user: UserEntity = await this.userRepo.findOne({
       where: { id: user_id },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) {
+      throw new HttpException(
+        { message: 'User not found' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
 
     const hashed: string = await bcrypt.hash(dto.newPassword, 10);
     user.password = hashed;
@@ -96,7 +102,10 @@ export class UserService {
       .getOne();
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new HttpException(
+        { message: 'User not found' },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return { result: user };
@@ -168,11 +177,17 @@ export class UserService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       if (user.block) {
-        throw new BadRequestException('User is already blocked');
+        throw new HttpException(
+          { message: 'User is already blocked' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       await this.userRepo.update(payload.user_id, {
@@ -197,11 +212,17 @@ export class UserService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       if (!user.block) {
-        throw new BadRequestException('User is not blocked');
+        throw new HttpException(
+          { message: 'User is not blocked' },
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       await this.userRepo.update(payload.user_id, {
@@ -226,7 +247,10 @@ export class UserService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       let newBalance: number;
@@ -238,14 +262,20 @@ export class UserService {
         case BalanceOperationEnum.SUBTRACT:
           newBalance = user.balance - payload.amount;
           if (newBalance < 0) {
-            throw new BadRequestException('Insufficient balance');
+            throw new HttpException(
+              { message: 'Insufficient balance' },
+              HttpStatus.BAD_REQUEST,
+            );
           }
           break;
         case BalanceOperationEnum.SET:
           newBalance = payload.amount;
           break;
         default:
-          throw new BadRequestException('Invalid operation');
+          throw new HttpException(
+            { message: 'Invalid operation' },
+            HttpStatus.BAD_REQUEST,
+          );
       }
 
       await this.userRepo.update(payload.user_id, {
@@ -281,7 +311,7 @@ export class UserService {
       const last30Days = new Date();
       last30Days.setDate(last30Days.getDate() - 30);
 
-      const newUsersThisMonth:number = await this.userRepo
+      const newUsersThisMonth: number = await this.userRepo
         .createQueryBuilder('user')
         .where('user.created_at >= :date', { date: last30Days })
         .getCount();
@@ -311,7 +341,10 @@ export class UserService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       return { result: user };
