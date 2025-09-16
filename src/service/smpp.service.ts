@@ -9,6 +9,12 @@ import {
 import { MODELS } from '../constants/constants';
 import { Repository } from 'typeorm';
 import { MessageEntity } from '../entity/message.entity';
+import { createClient, RedisClientType } from 'redis';
+import {
+  REDIS_HOST,
+  REDIS_PORT,
+  REDIS_PASSWORD,
+} from '../utils/env/env';
 
 export interface SmppConfig {
   host: string;
@@ -36,6 +42,7 @@ export class SmppService {
   private session: any = null;
   private isConnected = false;
   private config: SmppConfig;
+  private redisClient: RedisClientType;
 
   constructor(
     @Inject(MODELS.SMPP) private readonly smppClient: typeof smpp,
@@ -48,6 +55,16 @@ export class SmppService {
       system_id: SMPP_SYSTEM_ID,
       password: SMPP_PASSWORD,
     };
+
+    this.redisClient = createClient({
+      url: `redis://${REDIS_HOST}:${REDIS_PORT}`,
+      password: REDIS_PASSWORD || undefined,
+    });
+
+    this.redisClient.on('error', (err) =>
+      this.logger.error('Redis Client Error', err),
+    );
+    this.redisClient.connect();
   }
 
   /**
@@ -325,7 +342,6 @@ export class SmppService {
       this.logger.log(JSON.stringify(pdu));
 
       // SMPP delivery report string ni parse qilish
-      // short_message object yoki string bo'lishi mumkin
       let reportString = '';
       if (pdu.short_message) {
         if (typeof pdu.short_message === 'string') {
@@ -341,17 +357,50 @@ export class SmppService {
 
       const deliveryReport = this.parseDeliveryReportString(reportString);
 
-      // receipted_message_id ham mavjud bo'lsa, uni ham qo'shamiz
       if (pdu.receipted_message_id && !deliveryReport.id) {
         deliveryReport.id = pdu.receipted_message_id;
       }
 
-      this.logger.log(
-        `Delivery report parsed for message ${deliveryReport.id}: ${deliveryReport.stat}`,
-      );
+      if (!deliveryReport.id) {
+        this.logger.warn('Delivery report ID not found, skipping.');
+        return;
+      }
 
-      // Message ni database da yangilash
-      await this.updateMessageDeliveryReport(deliveryReport);
+      // Agar faqat ID kelsa (to'liq bo'lmagan report)
+      if (Object.keys(deliveryReport).length === 1 && deliveryReport.id) {
+        this.logger.log(
+          `Partial report received for ID: ${deliveryReport.id}. Storing in Redis for 24 hours.`,
+        );
+        // Redisga 24 soatga saqlash (86400 soniya)
+        await this.redisClient.set(
+          `smpp:pending:${deliveryReport.id}`,
+          JSON.stringify(pdu),
+          {
+            EX: 86400,
+          },
+        );
+        return; // Boshqa ishlov berishni to'xtatish
+      }
+
+      // To'liq report kelganda
+      if (deliveryReport.id && deliveryReport.stat) {
+        this.logger.log(
+          `Full delivery report parsed for message ${deliveryReport.id}: ${deliveryReport.stat}`,
+        );
+
+        // Redisdan bu IDga tegishli vaqtinchalik yozuvni o'chirish
+        await this.redisClient.del(`smpp:pending:${deliveryReport.id}`);
+        this.logger.log(
+          `Removed pending report from Redis for ID: ${deliveryReport.id}`,
+        );
+
+        // Message ni database da yangilash
+        await this.updateMessageDeliveryReport(deliveryReport);
+      } else {
+        this.logger.warn(
+          `Could not process delivery report, missing 'id' or 'stat': ${reportString}`,
+        );
+      }
     } catch (error) {
       this.logger.error('Error handling delivery report:', error);
     }
@@ -362,6 +411,15 @@ export class SmppService {
    */
   private parseDeliveryReportString(reportString: string): any {
     const deliveryReport: any = {};
+
+    // Agar string faqat ID ni o'z ichiga olsa (masalan, "id:xxxx" yoki faqat "xxxx")
+    const idMatch = reportString.match(
+      /^(?:id:)?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i,
+    );
+    if (idMatch && reportString.split(' ').length <= 2) {
+      deliveryReport.id = idMatch[1];
+      return deliveryReport;
+    }
 
     // Misol: "id:8af6f73a-92e0-11f0-9e65-000c29b7938f sub:001 dlvrd:001 submit date:2509161435 done date:2509161435 stat:DELIVRD err:000 text:"
     const fields = reportString.split(' ');
