@@ -95,6 +95,20 @@ export class MessageEntity extends BaseEntity {
     text?: string;        // First 20 characters of original message
   } | null;
 
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: true,
+    comment: 'Time when the full delivery report was received',
+  })
+  response_received_at: Date | null;
+
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: true,
+    comment: 'Time since when the message is pending for a full report',
+  })
+  pending_since: Date | null;
+
   @OneToMany(
     () => TransactionEntity,
     (t) => t.message,

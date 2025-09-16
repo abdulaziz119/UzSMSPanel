@@ -369,8 +369,21 @@ export class SmppService {
       // Agar faqat ID kelsa (to'liq bo'lmagan report)
       if (Object.keys(deliveryReport).length === 1 && deliveryReport.id) {
         this.logger.log(
-          `Partial report received for ID: ${deliveryReport.id}. Storing in Redis for 24 hours.`,
+          `Partial report received for ID: ${deliveryReport.id}. Storing in Redis and marking as pending.`,
         );
+
+        // Message'ni topib, pending_since ni belgilash
+        const message = await this.messageRepo.findOne({
+          where: { smpp_message_id: deliveryReport.id },
+        });
+
+        if (message && !message.pending_since) {
+          await this.messageRepo.update(
+            { id: message.id },
+            { pending_since: new Date() },
+          );
+        }
+
         // Redisga 24 soatga saqlash (86400 soniya)
         await this.redisClient.set(
           `smpp:pending:${deliveryReport.id}`,
@@ -395,7 +408,7 @@ export class SmppService {
         );
 
         // Message ni database da yangilash
-        await this.updateMessageDeliveryReport(deliveryReport);
+        await this.updateMessageDeliveryReport(deliveryReport, true);
       } else {
         this.logger.warn(
           `Could not process delivery report, missing 'id' or 'stat': ${reportString}`,
@@ -467,6 +480,7 @@ export class SmppService {
    */
   private async updateMessageDeliveryReport(
     deliveryReport: any,
+    isFullReport: boolean = false,
   ): Promise<void> {
     try {
       if (!deliveryReport.id) {
@@ -474,11 +488,20 @@ export class SmppService {
         return;
       }
 
+      const updateData: Partial<MessageEntity> = {
+        delivery_report: deliveryReport,
+      };
+
+      if (isFullReport) {
+        updateData.response_received_at = new Date();
+        updateData.pending_since = null; // To'liq report keldi, endi kutish shart emas
+      }
+
       // SMPP message ID bo'yicha message topish va delivery report ni saqlash
       const result = await this.messageRepo
         .createQueryBuilder()
         .update(MessageEntity)
-        .set({ delivery_report: deliveryReport })
+        .set(updateData)
         .where('smpp_message_id = :smppMessageId', {
           smppMessageId: deliveryReport.id,
         })
