@@ -15,6 +15,7 @@ import {
   SmsContactExcelService,
   ParsedContactRow,
 } from '../utils/sms.contact.excel.service';
+import { ExcelEntity } from '../entity/excel.entity';
 
 @Processor(SMS_CONTACT_QUEUE)
 @Injectable()
@@ -29,17 +30,6 @@ export class SmsContactQueue {
       `SmsContact Queue processor initialized for queue: ${SMS_CONTACT_QUEUE}`,
     );
   }
-
-  // Job data shape
-  // {
-  //   default_group_id: number,
-  //   fileBuffer?: Buffer,
-  //   rows?: ParsedContactRow[],
-  //   user_id?: number,
-  //   fileName?: string,
-  //   fileType?: string,
-  //   totalRows?: number
-  // }
 
   @Process({ name: 'import-excel', concurrency: 5 })
   async importContactsFromExcel(
@@ -77,34 +67,30 @@ export class SmsContactQueue {
       );
     }
 
-    // Step 1: Create Excel analysis record
     let excelAnalysisId: number | undefined;
     if (user_id && fileName && fileType && totalRows) {
       try {
-        const excelAnalysis = await this.excelService.createExcelAnalysis({
-          user_id,
-          fileName,
-          fileType,
-          totalRows,
-          status: 'processing',
-        });
+        const excelAnalysis: ExcelEntity =
+          await this.excelService.createExcelAnalysis({
+            user_id,
+            fileName,
+            fileType,
+            totalRows,
+            status: 'processing',
+          });
         excelAnalysisId = excelAnalysis.id;
         this.logger.log(`Excel analysis created: ${excelAnalysisId}`);
       } catch (error) {
         this.logger.error(`Failed to create Excel analysis: ${error.message}`);
-        // Continue without Excel analysis if creation fails
       }
     }
 
-    // Step 2: Parse rows if not provided
     let parsedRows: ParsedContactRow[] = rows || [];
     if (!parsedRows.length && fileBuffer) {
       let buf: Buffer | null = null;
-      // Handle { type: 'Buffer', data: [...] }
       if (typeof fileBuffer === 'object' && Array.isArray(fileBuffer.data)) {
         buf = Buffer.from(fileBuffer.data);
       } else if (typeof fileBuffer === 'string') {
-        // base64 string case
         try {
           buf = Buffer.from(fileBuffer, 'base64');
         } catch {}
@@ -115,7 +101,6 @@ export class SmsContactQueue {
     }
 
     if (!parsedRows.length) {
-      // Update Excel analysis if no rows found
       if (excelAnalysisId) {
         await this.excelService.updateExcelAnalysis(excelAnalysisId, {
           status: 'completed',
@@ -125,10 +110,15 @@ export class SmsContactQueue {
           duplicateRows: 0,
         });
       }
-      return { created: 0, skipped: 0, duplicates: 0, invalidFormat: 0, excelAnalysisId };
+      return {
+        created: 0,
+        skipped: 0,
+        duplicates: 0,
+        invalidFormat: 0,
+        excelAnalysisId,
+      };
     }
 
-    // Step 3: Process SMS contacts
     job.progress(10);
     const res = await this.smsContactService.createFromRows(
       parsedRows,
@@ -150,22 +140,31 @@ export class SmsContactQueue {
   }
 
   @OnQueueProgress()
-  onProgress(job: Job, progress: number) {
+  onProgress(job: Job, progress: number): void {
     this.logger.debug(`Job ${job.id} progress: ${progress}%`);
   }
 
   @OnQueueCompleted()
   async onCompleted(
     job: Job,
-    result: { created: number; skipped: number; duplicates: number; invalidFormat: number; excelAnalysisId?: number },
-  ) {
+    result: {
+      created: number;
+      skipped: number;
+      duplicates: number;
+      invalidFormat: number;
+      excelAnalysisId?: number;
+    },
+  ): Promise<void> {
     this.logger.log(`Job ${job.id} completed successfully`);
 
     if (result.excelAnalysisId) {
       try {
-        // Update Excel analysis with final results
         await this.excelService.updateExcelAnalysis(result.excelAnalysisId, {
-          processedRows: result.created + result.skipped + result.duplicates + result.invalidFormat,
+          processedRows:
+            result.created +
+            result.skipped +
+            result.duplicates +
+            result.invalidFormat,
           createdRows: result.created,
           invalidFormatRows: result.invalidFormat,
           duplicateRows: result.duplicates,
@@ -184,15 +183,13 @@ export class SmsContactQueue {
   }
 
   @OnQueueFailed()
-  async onFailed(job: Job, error: Error) {
+  async onFailed(job: Job, error: Error): Promise<void> {
     this.logger.error(`Job ${job.id} failed: ${error.message}`);
 
-    // Try to get excelAnalysisId from job data or result
     const { excelAnalysisId } = job.data || {};
 
     if (excelAnalysisId) {
       try {
-        // Update Excel analysis with failed status
         await this.excelService.updateExcelAnalysis(excelAnalysisId, {
           status: 'failed',
         });
@@ -207,7 +204,7 @@ export class SmsContactQueue {
   }
 
   @OnQueueStalled()
-  onStalled(job: Job) {
+  onStalled(job: Job): void {
     this.logger.warn(`Job ${job.id} stalled`);
   }
 }
