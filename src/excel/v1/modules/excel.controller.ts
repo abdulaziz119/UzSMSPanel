@@ -41,7 +41,7 @@ export class ExcelController {
       return {
         success: true,
         message: 'No valid rows found in file',
-        data: { jobId: null, created: 0, skipped: 0 },
+        data: { jobId: null, created: 0, skipped: 0, duplicates: 0, invalidFormat: 0 },
       } as any;
     }
 
@@ -65,7 +65,7 @@ export class ExcelController {
 
     return {
       success: true,
-      message: 'Import queued',
+      message: 'Import queued successfully. Only Uzbekistan phone numbers will be processed. Duplicates and invalid formats will be skipped.',
       data: { jobId: job.id },
     } as any;
   }

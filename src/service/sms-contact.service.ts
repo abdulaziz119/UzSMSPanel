@@ -36,6 +36,7 @@ export class SmsContactService {
 
   /**
    * Optimized phone validation without DB queries - uses pre-loaded tariffs
+   * Only accepts Uzbekistan phone numbers
    */
   async validatePhoneNumberOptimized(
     phone: string, 
@@ -44,10 +45,20 @@ export class SmsContactService {
     const cleanPhone: string = (phone || '').toString().trim();
 
     try {
-      let parsed = parsePhoneNumberFromString(cleanPhone);
-      if (!parsed) parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
+      // Force parsing as Uzbekistan number
+      let parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
+      
+      // If that fails, try without country code but still validate as UZ
+      if (!parsed) {
+        parsed = parsePhoneNumberFromString(cleanPhone);
+      }
 
       if (!parsed || !parsed.isValid()) {
+        return SMSContactStatusEnum.INVALID_FORMAT;
+      }
+
+      // Check if it's actually a Uzbekistan number
+      if (parsed.country !== 'UZ') {
         return SMSContactStatusEnum.INVALID_FORMAT;
       }
 
@@ -74,10 +85,20 @@ export class SmsContactService {
     const cleanPhone: string = (phone || '').toString().trim();
 
     try {
-      let parsed = parsePhoneNumberFromString(cleanPhone);
-      if (!parsed) parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
+      // Force parsing as Uzbekistan number
+      let parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
+      
+      // If that fails, try without country code but still validate as UZ
+      if (!parsed) {
+        parsed = parsePhoneNumberFromString(cleanPhone);
+      }
 
       if (!parsed || !parsed.isValid()) {
+        return SMSContactStatusEnum.INVALID_FORMAT;
+      }
+
+      // Check if it's actually a Uzbekistan number
+      if (parsed.country !== 'UZ') {
         return SMSContactStatusEnum.INVALID_FORMAT;
       }
 
@@ -349,12 +370,14 @@ export class SmsContactService {
   async createFromRows(
     rows: ParsedContactRow[],
     default_group_id: number,
-  ): Promise<{ result: true; created: number; skipped: number }> {
+  ): Promise<{ result: true; created: number; skipped: number; duplicates: number; invalidFormat: number }> {
     if (!rows || rows.length === 0)
-      return { result: true, created: 0, skipped: 0 };
+      return { result: true, created: 0, skipped: 0, duplicates: 0, invalidFormat: 0 };
 
     let created: number = 0;
     let skipped: number = 0;
+    let duplicates: number = 0;
+    let invalidFormat: number = 0;
 
     // Preload group data once
     const smsGroupData: GroupEntity = await this.groupRepo.findOne({
@@ -371,6 +394,18 @@ export class SmsContactService {
       }
     }
 
+    // Step 2: Get existing contacts in this group to check for duplicates
+    const existingContacts = await this.smsContactRepo.find({
+      where: { group_id: default_group_id },
+      select: ['phone'],
+    });
+    const existingPhoneSet = new Set(
+      existingContacts.map(contact => contact.phone.replace(/^\+/, ''))
+    );
+
+    // Step 3: Track processed phones in current batch to avoid duplicates within the same import
+    const processedPhonesInBatch = new Set<string>();
+
     const batchSize = 200;
     for (let i: number = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
@@ -383,12 +418,35 @@ export class SmsContactService {
           continue;
         }
 
-        // Optimized phone validation without DB queries
+        // Clean phone for duplicate checking (remove + prefix)
+        const cleanPhone = phoneNormalized.replace(/^\+/, '');
+
+        // Check for duplicates within the batch
+        if (processedPhonesInBatch.has(cleanPhone)) {
+          duplicates++;
+          continue;
+        }
+
+        // Check for duplicates with existing contacts
+        if (existingPhoneSet.has(cleanPhone)) {
+          duplicates++;
+          continue;
+        }
+
+        // Optimized phone validation without DB queries - only Uzbekistan numbers
         const status = await this.validatePhoneNumberOptimized(phoneNormalized, tariffByCode);
         
+        if (status === SMSContactStatusEnum.INVALID_FORMAT) {
+          invalidFormat++;
+          continue;
+        }
+
+        // Mark this phone as processed in current batch
+        processedPhonesInBatch.add(cleanPhone);
+
         const entity: SmsContactEntity = this.smsContactRepo.create({
           name: (r.name ?? null) as any,
-          phone: (phoneNormalized || r.phone || '').replace(/^\+/, ''),
+          phone: cleanPhone,
           status,
           group_name: smsGroupData.title,
           group_id: default_group_id,
@@ -415,7 +473,7 @@ export class SmsContactService {
         .execute();
     }
 
-    return { result: true, created, skipped };
+    return { result: true, created, skipped, duplicates, invalidFormat };
   }
 
   async findAll(

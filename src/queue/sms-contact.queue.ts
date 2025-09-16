@@ -55,6 +55,8 @@ export class SmsContactQueue {
   ): Promise<{
     created: number;
     skipped: number;
+    duplicates: number;
+    invalidFormat: number;
     excelAnalysisId?: number;
   }> {
     this.logger.log(`Processing import-excel job ${job.id}`);
@@ -120,9 +122,10 @@ export class SmsContactQueue {
           processedRows: 0,
           createdRows: 0,
           invalidFormatRows: 0,
+          duplicateRows: 0,
         });
       }
-      return { created: 0, skipped: 0, excelAnalysisId };
+      return { created: 0, skipped: 0, duplicates: 0, invalidFormat: 0, excelAnalysisId };
     }
 
     // Step 3: Process SMS contacts
@@ -134,12 +137,14 @@ export class SmsContactQueue {
     job.progress(100);
 
     this.logger.log(
-      `Job ${job.id} completed: created=${res.created}, skipped=${res.skipped}`,
+      `Job ${job.id} completed: created=${res.created}, skipped=${res.skipped}, duplicates=${res.duplicates}, invalidFormat=${res.invalidFormat}`,
     );
 
     return {
       created: res.created,
       skipped: res.skipped,
+      duplicates: res.duplicates,
+      invalidFormat: res.invalidFormat,
       excelAnalysisId,
     };
   }
@@ -152,7 +157,7 @@ export class SmsContactQueue {
   @OnQueueCompleted()
   async onCompleted(
     job: Job,
-    result: { created: number; skipped: number; excelAnalysisId?: number },
+    result: { created: number; skipped: number; duplicates: number; invalidFormat: number; excelAnalysisId?: number },
   ) {
     this.logger.log(`Job ${job.id} completed successfully`);
 
@@ -160,14 +165,15 @@ export class SmsContactQueue {
       try {
         // Update Excel analysis with final results
         await this.excelService.updateExcelAnalysis(result.excelAnalysisId, {
-          processedRows: result.created + result.skipped,
+          processedRows: result.created + result.skipped + result.duplicates + result.invalidFormat,
           createdRows: result.created,
-          invalidFormatRows: result.skipped,
+          invalidFormatRows: result.invalidFormat,
+          duplicateRows: result.duplicates,
           status: 'completed',
         });
 
         this.logger.log(
-          `Excel analysis ${result.excelAnalysisId} updated: created=${result.created}, skipped=${result.skipped}`,
+          `Excel analysis ${result.excelAnalysisId} updated: created=${result.created}, skipped=${result.skipped}, duplicates=${result.duplicates}, invalidFormat=${result.invalidFormat}`,
         );
       } catch (error) {
         this.logger.error(
