@@ -23,7 +23,31 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+UzSMSPanel - Uzbekistan SMS Panel loyihasi. NestJS framework asosida qurilgan SMS yuborish tizimi.
+
+## Features
+
+- ✅ SMPP protokoli orqali SMS yuborish
+- ✅ Individual va Group SMS yuborish
+- ✅ Template boshqaruvi
+- ✅ Balance boshqaruvi
+- ✅ Queue tizimi (Bull Queue)
+- ✅ Redis cache
+- ✅ PostgreSQL database
+- ✅ JWT authentication
+- ✅ Role-based access control
+
+## SMPP Configuration
+
+Loyihada SMPP protokoli orqali SMS yuborish qo'llab-quvvatlanadi. Quyidagi environment variable larni sozlash kerak:
+
+```bash
+SMPP_HOST=185.213.228.19
+SMPP_PORT=2775
+SMPP_SYSTEM_ID=your_smpp_system_id
+SMPP_PASSWORD=your_smpp_password
+SMPP_SOURCE_ADDR=6060
+```
 
 ## Project setup
 

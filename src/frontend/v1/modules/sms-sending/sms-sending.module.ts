@@ -14,6 +14,7 @@ import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
 import { PerformanceMonitor } from '../../../../utils/performance-monitor.util';
 import { MessagesQueue } from '../../../../queue/messages.queue';
+import { SmppService } from '../../../../service/smpp.service';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MessagesQueue } from '../../../../queue/messages.queue';
     PerformanceMonitor,
     MessageService,
     SmsSendingService,
+    SmppService,
     // queue processor
     MessagesQueue,
   ],

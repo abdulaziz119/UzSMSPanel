@@ -37,6 +37,8 @@ import {
   SendToContactJobResult,
   SendToGroupJobResult,
 } from '../utils/interfaces/request/sms-sending.request.interfaces';
+import { SmppService } from '../service/smpp.service';
+import { SMPP_SOURCE_ADDR } from '../utils/env/env';
 
 @Processor(SMS_MESSAGE_QUEUE)
 @Injectable()
@@ -46,6 +48,7 @@ export class MessagesQueue {
   constructor(
     private readonly smsMessageService: MessageService,
     private readonly smsContactService: SmsContactService,
+    private readonly smppService: SmppService,
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     @Inject(MODELS.SMS_CONTACT)
@@ -126,7 +129,34 @@ export class MessagesQueue {
       const unitPrice: number = Number(tariff.price || 0);
       const totalCost: number = unitPrice * partsCount;
 
-      // 5) Create with billing
+      // 5) SMPP orqali SMS yuborish
+      await this.smppService.ensureConnection();
+      
+      // Telefon raqamini SMPP uchun to'g'ri formatda tayyorlash (plus belgisiz)
+      let smppPhone = normalizedPhone;
+      if (smppPhone.startsWith('+')) {
+        smppPhone = smppPhone.substring(1); // Plus belgisini olib tashlash
+      }
+      
+      const smppParams = {
+        source_addr_ton: 0,           // TON = 0
+        source_addr_npi: 1,           // NPI = 1
+        source_addr: SMPP_SOURCE_ADDR,          // Source address from env
+        dest_addr_ton: 1,             // TON = 1
+        dest_addr_npi: 1,             // NPI = 1
+        destination_addr: smppPhone, // Destination address (plus belgisiz)
+        short_message: payload.message,
+        service_type: "",              // Bo'sh service type
+        registered_delivery: 1,       // Delivery receipt kerak
+        data_coding: 0               // Default encoding
+      };
+
+      const smsSent = await this.smppService.sendSms(smppParams);
+      if (!smsSent) {
+        throw new Error('Failed to send SMS via SMPP');
+      }
+
+      // 6) Create with billing
       const saved: MessageEntity =
         await this.smsMessageService.createSmsMessageWithBilling(
           {
@@ -235,21 +265,58 @@ export class MessagesQueue {
         throw new BadRequestException('Insufficient contact balance');
       }
 
-      // 6) Single transactional bulk create with internal chunking
-      const smsDataArray = picked.map((it) => ({
-        user_id,
-        phone: it.phone,
-        message: payload.message,
-        operator: it.tariff.operator,
-        sms_template_id: getTemplate.id,
-        cost: it.unitPrice * partsCount,
-        price_provider_sms: it.tariff.price_provider_sms,
-        group_id: payload.group_id,
-      }));
+      // 6) SMPP orqali har bir contact uchun SMS yuborish
+      await this.smppService.ensureConnection();
+      
+      const smsSendResults: boolean[] = [];
+      for (const it of picked) {
+        try {
+          const normalizedPhone = await this.smsContactService.normalizePhone(it.phone);
+          
+          // Telefon raqamini SMPP uchun to'g'ri formatda tayyorlash (plus belgisiz)
+          let smppPhone = normalizedPhone;
+          if (smppPhone.startsWith('+')) {
+            smppPhone = smppPhone.substring(1); // Plus belgisini olib tashlash
+          }
+          
+          const smppParams = {
+            source_addr_ton: 0,           // TON = 0
+            source_addr_npi: 1,           // NPI = 1
+            source_addr: SMPP_SOURCE_ADDR,          // Source address from env
+            dest_addr_ton: 1,             // TON = 1
+            dest_addr_npi: 1,             // NPI = 1
+            destination_addr: smppPhone, // Destination address (plus belgisiz)
+            short_message: payload.message,
+            service_type: "",              // Bo'sh service type
+            registered_delivery: 1,       // Delivery receipt kerak
+            data_coding: 0               // Default encoding
+          };
+
+          const smsSent = await this.smppService.sendSms(smppParams);
+          smsSendResults.push(smsSent);
+        } catch (error) {
+          this.logger.error(`Failed to send SMS to ${it.phone}: ${error.message}`);
+          smsSendResults.push(false);
+        }
+      }
+
+      // Faqat muvaffaqiyatli yuborilgan SMS lar uchun message yaratish
+      const successfulSmsDataArray = picked
+        .filter((_, index) => smsSendResults[index])
+        .map((it) => ({
+          user_id,
+          phone: it.phone,
+          message: payload.message,
+          operator: it.tariff.operator,
+          sms_template_id: getTemplate.id,
+          cost: it.unitPrice * partsCount,
+          price_provider_sms: it.tariff.price_provider_sms,
+          group_id: payload.group_id,
+        }));
 
       const messages: MessageEntity[] =
         await this.smsMessageService.createBulkSmsMessagesWithBilling(
-          smsDataArray,
+          successfulSmsDataArray,
           getTemplate,
           balance,
           acc,

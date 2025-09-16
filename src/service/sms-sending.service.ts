@@ -20,6 +20,7 @@ import {
 } from '../frontend/v1/modules/sms-sending/dto/sms-sending.dto';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { ValidateBeforeQueueGroupResponse } from '../utils/interfaces/request/sms-sending.request.interfaces';
+import { SmppService } from './smpp.service';
 
 @Injectable()
 export class SmsSendingService {
@@ -31,6 +32,7 @@ export class SmsSendingService {
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     private readonly smsContactService: SmsContactService,
+    private readonly smppService: SmppService,
   ) {}
 
   private async getBalanceByType(
@@ -59,6 +61,9 @@ export class SmsSendingService {
     body: SendToContactDto,
     balanceType?: ContactTypeEnum,
   ): Promise<void> {
+    // 0. SMPP ulanishini tekshirish va ulanish
+    await this.smppService.ensureConnection();
+
     // 1. SMS template tekshiruvi
     await this.validateSmsTemplate(user_id, body.message);
 
@@ -102,6 +107,9 @@ export class SmsSendingService {
     body: SendToGroupDto,
     balanceType?: ContactTypeEnum,
   ): Promise<ValidateBeforeQueueGroupResponse> {
+    // 0. SMPP ulanishini tekshirish va ulanish
+    await this.smppService.ensureConnection();
+
     // 1. SMS template tekshiruvi
     await this.validateSmsTemplate(user_id, body.message);
 

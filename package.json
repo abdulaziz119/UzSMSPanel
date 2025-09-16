@@ -84,6 +84,7 @@
     "redis": "^4.7.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "smpp": "^0.6.0-rc.4",
     "sms-counter": "^1.0.0",
     "speakeasy": "^2.0.0",
     "typeorm": "^0.3.25",

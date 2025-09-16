@@ -14,6 +14,7 @@ export const MODELS = {
   TARIFFS: 'TARIFFS',
   COUNTRY: 'COUNTRY',
   EXCEL: 'EXCEL',
+  SMPP: 'SMPP',
 };
 
 export const SMS_CONTACT_QUEUE = 'smsContactNtfQueueGF';

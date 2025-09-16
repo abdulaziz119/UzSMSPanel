@@ -31,6 +31,13 @@ const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
 const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 
+// SMPP konfiguratsiyasi
+const SMPP_HOST = process.env.SMPP_HOST || '185.213.228.19';
+const SMPP_PORT = parseInt(process.env.SMPP_PORT || '2775', 10);
+const SMPP_SYSTEM_ID = process.env.SMPP_SYSTEM_ID || 'your_system_id';
+const SMPP_PASSWORD = process.env.SMPP_PASSWORD || 'your_password';
+const SMPP_SOURCE_ADDR = process.env.SMPP_SOURCE_ADDR || '6060';
+
 if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
   throw new Error('Database environment variables are not set');
 }
@@ -56,4 +63,9 @@ export {
   DB_USER,
   FRONTEND_PORT,
   JWT_SECRET,
+  SMPP_HOST,
+  SMPP_PORT,
+  SMPP_SYSTEM_ID,
+  SMPP_PASSWORD,
+  SMPP_SOURCE_ADDR,
 };
