@@ -7,6 +7,8 @@ import {
   SMPP_PASSWORD,
 } from '../utils/env/env';
 import { MODELS } from '../constants/constants';
+import { Repository } from 'typeorm';
+import { MessageEntity } from '../entity/message.entity';
 
 export interface SmppConfig {
   host: string;
@@ -35,7 +37,11 @@ export class SmppService {
   private isConnected = false;
   private config: SmppConfig;
 
-  constructor(@Inject(MODELS.SMPP) private readonly smppClient: typeof smpp) {
+  constructor(
+    @Inject(MODELS.SMPP) private readonly smppClient: typeof smpp,
+    @Inject(MODELS.MESSAGE)
+    private readonly messageRepo: Repository<MessageEntity>,
+  ) {
     this.config = {
       host: SMPP_HOST,
       port: SMPP_PORT,
@@ -122,7 +128,10 @@ export class SmppService {
   /**
    * SMS yuborish
    */
-  async sendSms(params: SmppMessageParams): Promise<boolean> {
+  async sendSms(
+    params: SmppMessageParams,
+    messageId?: number,
+  ): Promise<{ success: boolean; smppMessageId?: string }> {
     if (!this.isConnected || !this.session) {
       this.logger.error('SMPP not connected. Attempting to connect...');
       await this.connect();
@@ -142,18 +151,38 @@ export class SmppService {
         data_coding: params.data_coding || 0,
       };
 
-      this.session.submit_sm(submitSmParams, (pdu: any) => {
+      this.session.submit_sm(submitSmParams, async (pdu: any) => {
         if (pdu.command_status === 0) {
           this.logger.log(
             `SMS sent successfully to ${params.destination_addr}. Message ID: ${pdu.message_id}`,
           );
-          resolve(true);
+
+          // SMPP message ID ni database ga saqlash
+          if (messageId && pdu.message_id) {
+            try {
+              await this.messageRepo.update(
+                { id: messageId },
+                { smpp_message_id: pdu.message_id },
+              );
+              this.logger.log(
+                `SMPP message ID saved: ${pdu.message_id} for message ${messageId}`,
+              );
+            } catch (error) {
+              this.logger.error('Error saving SMPP message ID:', error);
+            }
+          }
+
+          resolve({ success: true, smppMessageId: pdu.message_id });
         } else {
           const errorMessage = this.getSmppErrorMessage(pdu.command_status);
           this.logger.error(
             `SMS send failed: ${pdu.command_status} - ${errorMessage}`,
           );
-          reject(new Error(`SMS send failed: ${pdu.command_status} - ${errorMessage}`));
+          reject(
+            new Error(
+              `SMS send failed: ${pdu.command_status} - ${errorMessage}`,
+            ),
+          );
         }
       });
     });
@@ -290,39 +319,124 @@ export class SmppService {
   /**
    * Delivery report larni handle qilish
    */
-  private handleDeliveryReport(pdu: any): void {
+  private async handleDeliveryReport(pdu: any): Promise<void> {
     try {
-      const messageId = pdu.receipted_message_id;
-      const messageState = pdu.message_state;
-      const deliveryStatus = this.getMessageStateDescription(messageState);
-      
+      this.logger.log('Received delivery report PDU:');
+      this.logger.log(JSON.stringify(pdu));
+
+      // SMPP delivery report string ni parse qilish
+      // short_message object yoki string bo'lishi mumkin
+      let reportString = '';
+      if (pdu.short_message) {
+        if (typeof pdu.short_message === 'string') {
+          reportString = pdu.short_message;
+        } else if (pdu.short_message.message) {
+          reportString = pdu.short_message.message;
+        } else if (Buffer.isBuffer(pdu.short_message)) {
+          reportString = pdu.short_message.toString();
+        }
+      }
+
+      this.logger.log(`Parsing delivery report string: "${reportString}"`);
+
+      const deliveryReport = this.parseDeliveryReportString(reportString);
+
+      // receipted_message_id ham mavjud bo'lsa, uni ham qo'shamiz
+      if (pdu.receipted_message_id && !deliveryReport.id) {
+        deliveryReport.id = pdu.receipted_message_id;
+      }
+
       this.logger.log(
-        `Delivery report received for message ${messageId}: ${deliveryStatus}`,
+        `Delivery report parsed for message ${deliveryReport.id}: ${deliveryReport.stat}`,
       );
 
-      // Bu yerda message status ni database da yangilash mumkin
-      // Masalan: MessageService orqali message status ni yangilash
-      
+      // Message ni database da yangilash
+      await this.updateMessageDeliveryReport(deliveryReport);
     } catch (error) {
       this.logger.error('Error handling delivery report:', error);
     }
   }
 
   /**
-   * Message state kodlarini tushuntirish
+   * SMPP delivery report string ni parse qilish
    */
-  private getMessageStateDescription(state: number): string {
-    const stateDescriptions: { [key: number]: string } = {
-      0: 'ENROUTE',
-      1: 'DELIVERED',
-      2: 'EXPIRED',
-      3: 'DELETED',
-      4: 'UNDELIVERABLE',
-      5: 'ACCEPTED',
-      6: 'UNKNOWN',
-      7: 'REJECTED',
-    };
+  private parseDeliveryReportString(reportString: string): any {
+    const deliveryReport: any = {};
 
-    return stateDescriptions[state] || `Unknown state: ${state}`;
+    // Misol: "id:8af6f73a-92e0-11f0-9e65-000c29b7938f sub:001 dlvrd:001 submit date:2509161435 done date:2509161435 stat:DELIVRD err:000 text:"
+    const fields = reportString.split(' ');
+
+    for (const field of fields) {
+      const [key, value] = field.split(':');
+      if (key && value !== undefined) {
+        switch (key.toLowerCase()) {
+          case 'id':
+            deliveryReport.id = value;
+            break;
+          case 'sub':
+            deliveryReport.sub = value;
+            break;
+          case 'dlvrd':
+            deliveryReport.dlvrd = value;
+            break;
+          case 'submit date':
+            deliveryReport.submit_date = value;
+            break;
+          case 'done date':
+            deliveryReport.done_date = value;
+            break;
+          case 'stat':
+            deliveryReport.stat = value;
+            break;
+          case 'err':
+            deliveryReport.err = value;
+            break;
+          case 'text':
+            // Text eng oxirida bo'ladi va bo'sh bo'lishi mumkin
+            deliveryReport.text = reportString.substring(
+              reportString.indexOf('text:') + 5,
+            );
+            break;
+        }
+      }
+    }
+
+    return deliveryReport;
+  }
+
+  /**
+   * Message entity ga delivery report ni saqlash
+   */
+  private async updateMessageDeliveryReport(
+    deliveryReport: any,
+  ): Promise<void> {
+    try {
+      if (!deliveryReport.id) {
+        this.logger.warn('Delivery report ID not found, skipping update');
+        return;
+      }
+
+      // SMPP message ID bo'yicha message topish va delivery report ni saqlash
+      const result = await this.messageRepo
+        .createQueryBuilder()
+        .update(MessageEntity)
+        .set({ delivery_report: deliveryReport })
+        .where('smpp_message_id = :smppMessageId', {
+          smppMessageId: deliveryReport.id,
+        })
+        .execute();
+
+      if (result.affected === 0) {
+        this.logger.warn(
+          `Message not found for SMPP message ID: ${deliveryReport.id}`,
+        );
+      } else {
+        this.logger.log(
+          `Delivery report saved for SMPP message ID: ${deliveryReport.id}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error('Error updating message delivery report:', error);
+    }
   }
 }

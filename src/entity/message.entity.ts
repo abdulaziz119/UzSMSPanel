@@ -80,8 +80,20 @@ export class MessageEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   error_message: string | null;
 
-  @Column({ type: 'json', nullable: true })
-  delivery_report: any | null;
+  @Column({ type: 'varchar', length: 255, nullable: true, comment: 'SMPP message ID returned after sending' })
+  smpp_message_id: string | null;
+
+  @Column({ type: 'json', nullable: true, comment: 'SMPP delivery report response data' })
+  delivery_report: {
+    id?: string;          // Message ID from SMPP
+    sub?: string;         // Number of messages submitted
+    dlvrd?: string;       // Number of messages delivered
+    submit_date?: string; // Submit date (YYMMDDhhmm)
+    done_date?: string;   // Done date (YYMMDDhhmm)
+    stat?: string;        // Message status (DELIVRD, EXPIRED, DELETED, etc.)
+    err?: string;         // Error code
+    text?: string;        // First 20 characters of original message
+  } | null;
 
   @OneToMany(
     () => TransactionEntity,

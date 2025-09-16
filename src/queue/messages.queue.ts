@@ -132,6 +132,23 @@ export class MessagesQueue {
       // 5) SMPP orqali SMS yuborish
       await this.smppService.ensureConnection();
       
+      // 6) Create with billing (SMPP dan oldin message yaratamiz, keyin SMPP message ID ni saqlaymiz)
+      const saved: MessageEntity =
+        await this.smsMessageService.createSmsMessageWithBilling(
+          {
+            user_id,
+            phone: payload.phone,
+            message: payload.message,
+            operator: tariff.operator,
+            sms_template_id: getTemplate.id,
+            cost: totalCost,
+            price_provider_sms: tariff.price_provider_sms,
+          },
+          getTemplate,
+          balance,
+          totalCost,
+        );
+      
       // Telefon raqamini SMPP uchun to'g'ri formatda tayyorlash (plus belgisiz)
       let smppPhone = normalizedPhone;
       if (smppPhone.startsWith('+')) {
@@ -151,27 +168,10 @@ export class MessagesQueue {
         data_coding: 0               // Default encoding
       };
 
-      const smsSent = await this.smppService.sendSms(smppParams);
-      if (!smsSent) {
+      const smsResult = await this.smppService.sendSms(smppParams, saved.id);
+      if (!smsResult.success) {
         throw new Error('Failed to send SMS via SMPP');
       }
-
-      // 6) Create with billing
-      const saved: MessageEntity =
-        await this.smsMessageService.createSmsMessageWithBilling(
-          {
-            user_id,
-            phone: payload.phone,
-            message: payload.message,
-            operator: tariff.operator,
-            sms_template_id: getTemplate.id,
-            cost: totalCost,
-            price_provider_sms: tariff.price_provider_sms,
-          },
-          getTemplate,
-          balance,
-          totalCost,
-        );
 
       await job.progress(100);
 
@@ -268,10 +268,30 @@ export class MessagesQueue {
       // 6) SMPP orqali har bir contact uchun SMS yuborish
       await this.smppService.ensureConnection();
       
-      const smsSendResults: boolean[] = [];
+      const smsSendResults: Array<{success: boolean, messageEntity?: MessageEntity}> = [];
       for (const it of picked) {
         try {
           const normalizedPhone = await this.smsContactService.normalizePhone(it.phone);
+          
+          // Avval message yaratamiz
+          const messageData = {
+            user_id,
+            phone: it.phone,
+            message: payload.message,
+            operator: it.tariff.operator,
+            sms_template_id: getTemplate.id,
+            cost: it.unitPrice * partsCount,
+            price_provider_sms: it.tariff.price_provider_sms,
+            group_id: payload.group_id,
+          };
+          
+          const savedMessage: MessageEntity =
+            await this.smsMessageService.createSmsMessageWithBilling(
+              messageData,
+              getTemplate,
+              balance,
+              it.unitPrice * partsCount,
+            );
           
           // Telefon raqamini SMPP uchun to'g'ri formatda tayyorlash (plus belgisiz)
           let smppPhone = normalizedPhone;
@@ -292,35 +312,18 @@ export class MessagesQueue {
             data_coding: 0               // Default encoding
           };
 
-          const smsSent = await this.smppService.sendSms(smppParams);
-          smsSendResults.push(smsSent);
+          const smsResult = await this.smppService.sendSms(smppParams, savedMessage.id);
+          smsSendResults.push({success: smsResult.success, messageEntity: savedMessage});
         } catch (error) {
           this.logger.error(`Failed to send SMS to ${it.phone}: ${error.message}`);
-          smsSendResults.push(false);
+          smsSendResults.push({success: false});
         }
       }
 
-      // Faqat muvaffaqiyatli yuborilgan SMS lar uchun message yaratish
-      const successfulSmsDataArray = picked
-        .filter((_, index) => smsSendResults[index])
-        .map((it) => ({
-          user_id,
-          phone: it.phone,
-          message: payload.message,
-          operator: it.tariff.operator,
-          sms_template_id: getTemplate.id,
-          cost: it.unitPrice * partsCount,
-          price_provider_sms: it.tariff.price_provider_sms,
-          group_id: payload.group_id,
-        }));
-
-      const messages: MessageEntity[] =
-        await this.smsMessageService.createBulkSmsMessagesWithBilling(
-          successfulSmsDataArray,
-          getTemplate,
-          balance,
-          acc,
-        );
+      // Faqat muvaffaqiyatli yuborilgan message larni qaytarish
+      const messages: MessageEntity[] = smsSendResults
+        .filter(result => result.success && result.messageEntity)
+        .map(result => result.messageEntity);
 
       await job.progress(100);
 
