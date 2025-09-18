@@ -24,7 +24,9 @@ export class StatisticsService {
     private readonly transactionRepo: Repository<TransactionEntity>,
   ) {}
 
-  async getDashboardStatistics(): Promise<SingleResponse<any>> {
+  async getDashboardStatistics(
+    filters?: DashboardStatsFilterDto,
+  ): Promise<SingleResponse<any>> {
     try {
       const totalUsers: number = await this.userRepo.count();
       const clientUsers: number = await this.userRepo.count({
