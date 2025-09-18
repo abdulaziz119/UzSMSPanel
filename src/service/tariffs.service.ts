@@ -48,7 +48,6 @@ export class TariffService {
           'tariff.updated_at',
         ]);
 
-      // Apply filters
       if (filters.operator) {
         queryBuilder.andWhere('tariff.operator = :operator', {
           operator: filters.operator,
@@ -131,14 +130,12 @@ export class TariffService {
     }
   }
 
-  // Dashboard methods
   async findAll(
     filters: TariffFilterDto,
   ): Promise<PaginationResponse<TariffEntity[]>> {
     try {
       const queryBuilder = this.tariffRepo.createQueryBuilder('tariff');
 
-      // Apply filters
       if (filters.operator) {
         queryBuilder.andWhere('tariff.operator = :operator', {
           operator: filters.operator,
@@ -211,17 +208,18 @@ export class TariffService {
       });
 
       if (existingTariff) {
-        throw new BadRequestException('Tariff with this code already exists');
+        throw new HttpException(
+          { message: 'Tariff with this code already exists' },
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      // Compute tariff price from provider base (price_provider_sms) and optional margin_percent
       const providerPrice: number = Number(data.price_provider_sms ?? 0);
       const marginPercent: number = Number((data as any).margin_percent ?? 0);
       let computedPrice: number = providerPrice;
       if (!isNaN(marginPercent) && marginPercent !== 0) {
         computedPrice = providerPrice * (1 + marginPercent / 100);
       }
-      // Round to 2 decimal places to match DECIMAL(15,2)
       computedPrice = Math.round(Math.max(0, computedPrice) * 100) / 100;
 
       const tariff: TariffEntity = this.tariffRepo.create({
@@ -254,7 +252,10 @@ export class TariffService {
       });
 
       if (!tariff) {
-        throw new NotFoundException('Tariff not found');
+        throw new HttpException(
+          { message: 'Tariff not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       if (data.code && data.code !== tariff.code) {
@@ -263,7 +264,10 @@ export class TariffService {
         });
 
         if (existingTariff) {
-          throw new BadRequestException('Tariff with this code already exists');
+          throw new HttpException(
+            { message: 'Tariff with this code already exists' },
+            HttpStatus.BAD_REQUEST,
+          );
         }
       }
 
@@ -296,7 +300,10 @@ export class TariffService {
       });
 
       if (!tariff) {
-        throw new NotFoundException('Tariff not found');
+        throw new HttpException(
+          { message: 'Tariff not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       await this.tariffRepo.delete(id);
@@ -312,7 +319,6 @@ export class TariffService {
 
   async getTariffStatistics(): Promise<SingleResponse<any>> {
     try {
-      // Summary statistics using tariff.price and tariff.price_provider_sms
       const statistics = await this.tariffRepo
         .createQueryBuilder('tariff')
         .select([
@@ -328,7 +334,6 @@ export class TariffService {
         ])
         .getRawOne();
 
-      // Operator distribution using tariff columns only
       const operatorStats = await this.tariffRepo
         .createQueryBuilder('tariff')
         .select([
@@ -373,7 +378,6 @@ export class TariffService {
       }
 
       for (const tariff of tariffs) {
-        // Use each tariff's provider base price
         const baseCost: number = Number(tariff.price_provider_sms ?? 0);
         let newPrice: number = baseCost;
 
@@ -383,7 +387,6 @@ export class TariffService {
           newPrice = baseCost + data.price_adjustment;
         }
 
-        // Round to 2 decimals (DECIMAL(15,2))
         newPrice = Math.round(Math.max(0, newPrice) * 100) / 100;
 
         await this.tariffRepo.update(tariff.id, {

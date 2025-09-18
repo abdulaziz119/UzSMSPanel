@@ -45,7 +45,10 @@ export class TransactionService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       return { result: { balance: user.balance } };
@@ -66,14 +69,16 @@ export class TransactionService {
         where: { id: user_id },
       });
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       if (payload.amount <= 0) {
         throw new BadRequestException('Amount must be greater than 0');
       }
 
-      // Tranzaktsiya yaratish
       const transaction: TransactionEntity = this.transactionRepo.create({
         user_id,
         transaction_id: this.generateExternalTransactionId(),
@@ -90,15 +95,11 @@ export class TransactionService {
       const savedTransaction: TransactionEntity =
         await this.transactionRepo.save(transaction);
 
-      // Bu yerda to'lov tizimi bilan integratsiya bo'lishi kerak
-      // Hozircha simulyatsiya qilamiz
       await this.processPayment(savedTransaction);
 
-      // Balansni yangilash (to'lov muvaffaqiyatli bo'lsa)
       const newBalance: number = user.balance + payload.amount;
       await this.userRepo.update(user_id, { balance: newBalance });
 
-      // Tranzaktsiya statusini yangilash
       await this.transactionRepo.update(savedTransaction.id, {
         status: TransactionStatusEnum.COMPLETED,
       });
@@ -129,19 +130,16 @@ export class TransactionService {
         .createQueryBuilder('transaction')
         .orderBy('transaction.created_at', 'DESC');
 
-      // Add user filter only if user_id is provided
       if (user_id) {
         queryBuilder.where('transaction.user_id = :user_id', { user_id });
       }
 
-      // Apply additional filters from dashboard
       if (filters.user_id) {
         queryBuilder.andWhere('transaction.user_id = :filter_user_id', {
           filter_user_id: filters.user_id,
         });
       }
 
-      // Filtrlarni qo'llash
       if (filters.date_from) {
         queryBuilder.andWhere('transaction.created_at >= :date_from', {
           date_from: filters.date_from,
@@ -194,7 +192,6 @@ export class TransactionService {
     }
   }
 
-  // Dashboard-specific methods
   async getTransactionDetails(
     id: number,
   ): Promise<SingleResponse<TransactionEntity>> {
@@ -207,7 +204,10 @@ export class TransactionService {
       );
 
       if (!transaction) {
-        throw new NotFoundException('Transaction not found');
+        throw new HttpException(
+          { message: 'Transaction not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       return { result: transaction };
@@ -310,10 +310,12 @@ export class TransactionService {
       });
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
-      // Create transaction record
       const transaction: TransactionEntity = this.transactionRepo.create({
         user_id: data.user_id,
         external_transaction_id: this.generateExternalTransactionId(),
@@ -327,7 +329,6 @@ export class TransactionService {
 
       await this.transactionRepo.save(transaction);
 
-      // Update user balance
       const new_balance: number = user.balance + data.amount;
       await this.userRepo.update(data.user_id, { balance: new_balance });
 
@@ -368,7 +369,7 @@ export class TransactionService {
         completed: TransactionStatusEnum.COMPLETED,
       });
 
-      let groupByField = 'DATE(transaction.created_at)';
+      let groupByField: string = 'DATE(transaction.created_at)';
       if (filters.group_by === 'week') {
         groupByField = "DATE_TRUNC('week', transaction.created_at)";
       } else if (filters.group_by === 'month') {
@@ -390,7 +391,6 @@ export class TransactionService {
         .orderBy(groupByField, 'ASC')
         .getRawMany();
 
-      // Calculate total revenue
       const totalRevenue = revenueData.reduce(
         (sum, item) => sum + parseFloat(item.deposits),
         0,
@@ -459,7 +459,6 @@ export class TransactionService {
         0,
       );
 
-      // Add percentage to each payment method
       const result = paymentStats.map((stat) => ({
         ...stat,
         percentage:
@@ -497,7 +496,6 @@ export class TransactionService {
         .where('role = :role', { role: 'CLIENT' })
         .getRawOne();
 
-      // Get balance distribution
       const balanceDistribution = await this.userRepo
         .createQueryBuilder('user')
         .select([
@@ -537,17 +535,11 @@ export class TransactionService {
   }
 
   private async processPayment(transaction: TransactionEntity): Promise<void> {
-    // Bu yerda real to'lov tizimi bilan integratsiya bo'lishi kerak
-    // Masalan: Click, Payme, Uzcard va boshqalar
-
-    // Simulyatsiya uchun
     return new Promise((resolve) => {
       setTimeout(() => {
-        // 95% muvaffaqiyat
-        const isSuccess = Math.random() > 0.05;
+        const isSuccess: boolean = Math.random() > 0.05;
 
         if (!isSuccess) {
-          // To'lov muvaffaqiyatsiz
           this.transactionRepo.update(transaction.id, {
             status: TransactionStatusEnum.FAILED,
             processed_at: new Date(),

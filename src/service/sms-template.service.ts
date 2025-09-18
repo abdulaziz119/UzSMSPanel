@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
@@ -128,7 +122,10 @@ export class SmsTemplateService {
     });
 
     if (!smsTemplate) {
-      throw new NotFoundException('SMS Template not found');
+      throw new HttpException(
+        { message: 'SMS Template not found' },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     await this.smsTemplateRepo.softDelete(id);

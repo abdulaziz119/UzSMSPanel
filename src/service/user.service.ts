@@ -168,7 +168,6 @@ export class UserService {
         ])
         .orderBy('user.created_at', 'DESC');
 
-      // Filtrlarni qo'llash
       if (filters.role) {
         queryBuilder.andWhere('user.role = :role', { role: filters.role });
       }
@@ -339,7 +338,6 @@ export class UserService {
         where: { block: false },
       });
 
-      // Son 30 kunlik yangi foydalanuvchilar
       const last30Days = new Date();
       last30Days.setDate(last30Days.getDate() - 30);
 

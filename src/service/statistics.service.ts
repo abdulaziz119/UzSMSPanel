@@ -24,11 +24,8 @@ export class StatisticsService {
     private readonly transactionRepo: Repository<TransactionEntity>,
   ) {}
 
-  async getDashboardStatistics(
-    filters?: DashboardStatsFilterDto,
-  ): Promise<SingleResponse<any>> {
+  async getDashboardStatistics(): Promise<SingleResponse<any>> {
     try {
-      // Asosiy statistikalar
       const totalUsers: number = await this.userRepo.count();
       const clientUsers: number = await this.userRepo.count({
         where: { role: UserRoleEnum.CLIENT },
@@ -37,7 +34,6 @@ export class StatisticsService {
         where: { block: false },
       });
 
-      // SMS statistikalari
       const totalSmsCount: number = await this.messageRepo.count();
       const deliveredSmsCount: number = await this.messageRepo.count({
         where: { status: MessageStatusEnum.DELIVERED },
@@ -46,12 +42,10 @@ export class StatisticsService {
         where: { status: MessageStatusEnum.FAILED },
       });
 
-      // Kampaniya statistikalari (hozircha kampaniya modul mavjud emas, 0 qaytaramiz)
       const totalCampaigns = 0;
       const activeCampaigns = 0;
       const completedCampaigns = 0;
 
-      // Moliyaviy statistikalar
       const totalRevenue = await this.transactionRepo
         .createQueryBuilder('transaction')
         .select('SUM(transaction.amount)', 'total')
@@ -63,7 +57,6 @@ export class StatisticsService {
         })
         .getRawOne();
 
-      // Bugungi statistikalar
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -94,7 +87,6 @@ export class StatisticsService {
         .andWhere('transaction.created_at < :tomorrow', { tomorrow })
         .getRawOne();
 
-      // Oxirgi 7 kunlik statistika
       const last7Days = new Date();
       last7Days.setDate(last7Days.getDate() - 7);
 
@@ -157,7 +149,6 @@ export class StatisticsService {
         Object.assign(params, param);
       }
 
-      // Operator bo'yicha statistika
       const operatorStats = await this.messageRepo
         .createQueryBuilder('message')
         .select([
@@ -176,7 +167,6 @@ export class StatisticsService {
         .groupBy('message.operator')
         .getRawMany();
 
-      // Kunlik statistika (oxirgi 30 kun)
       const dailyStats = await this.messageRepo
         .createQueryBuilder('message')
         .select([
@@ -223,7 +213,6 @@ export class StatisticsService {
         params.date_to = filters.date_to;
       }
 
-      // Umumiy daromad
       const totalRevenue = await this.transactionRepo
         .createQueryBuilder('transaction')
         .select('SUM(ABS(transaction.amount))', 'total')
@@ -237,7 +226,6 @@ export class StatisticsService {
         })
         .getRawOne();
 
-      // To'lov usullari bo'yicha statistika
       const paymentMethodStats = await this.transactionRepo
         .createQueryBuilder('transaction')
         .select([
@@ -256,7 +244,6 @@ export class StatisticsService {
         .groupBy('transaction.payment_method')
         .getRawMany();
 
-      // Oylik daromad (oxirgi 12 oy)
       const monthlyRevenue = await this.transactionRepo
         .createQueryBuilder('transaction')
         .select([
