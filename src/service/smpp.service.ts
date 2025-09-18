@@ -432,8 +432,18 @@ export class SmppService {
 
         // Redisdan bu IDga tegishli vaqtinchalik yozuvni o'chirish (bitta kalit)
         await this.redisClient.del(`smpp:pending:${deliveryReport.id}`);
+
+        await this.messageRepo
+          .createQueryBuilder()
+          .update(MessageEntity)
+          .set({ redis_removed_at: new Date() })
+          .where('smpp_message_id = :smppMessageId', {
+            smppMessageId: deliveryReport.id,
+          })
+          .execute();
+
         this.logger.log(
-          `Removed pending record(s) from Redis for ID: ${deliveryReport.id}`,
+          `Removed pending record(s) from Redis for ID: ${deliveryReport.id} and saved redis_removed_at`,
         );
 
         // Message ni database da yangilash
