@@ -1,6 +1,4 @@
 import { Body, Controller, HttpCode, Post, Headers } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -14,8 +12,6 @@ import { UserRoleEnum } from '../../../../utils/enum/user.enum';
 import { User } from '../auth/decorators/user.decorator';
 import { SendToContactDto, SendToGroupDto } from './dto/sms-sending.dto';
 import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
-import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
-import { SmsSendingService } from '../../../../service/sms-sending.service';
 import {
   SendContactResponse,
   SendGroupResponse,
@@ -28,11 +24,7 @@ import { AxiosService } from '../../../../helpers/axios.service';
 @Controller({ path: '/frontend/sms-sending', version: '1' })
 export class SmsSendingController {
   private url = SMS_SENDING_URL;
-  constructor(
-    @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
-    private readonly messagesService: SmsSendingService,
-    private readonly axiosService: AxiosService,
-  ) {}
+  constructor(private readonly axiosService: AxiosService) {}
 
   @Post('/send-contact')
   @HttpCode(202)
@@ -53,7 +45,7 @@ export class SmsSendingController {
       },
       {
         balance_type: balance,
-        Authorization: `Bearer ${user_id}`, // Agar token kerak bo'lsa
+        Authorization: `Bearer ${user_id}`,
       },
     );
 

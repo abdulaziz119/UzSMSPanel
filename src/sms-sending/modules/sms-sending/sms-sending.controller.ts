@@ -5,7 +5,6 @@ import { SMS_MESSAGE_QUEUE } from '../../../constants/constants';
 import { SmsSendingService } from '../../../service/sms-sending.service';
 import { UserRoleEnum } from '../../../utils/enum/user.enum';
 import { Roles } from '../../../frontend/v1/modules/auth/decorators/roles.decorator';
-import { Auth } from '../../../frontend/v1/modules/auth/decorators/auth.decorator';
 import {
   SendToContactJobData,
   SendToGroupJobData,
@@ -28,7 +27,6 @@ export class SmsSendingController {
   @Post('/send-contact')
   @HttpCode(202)
   @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
   async sendContact(
     @Body() body: SendToContactDto,
     @User('id') user_id: number,
@@ -62,7 +60,6 @@ export class SmsSendingController {
   @Post('/send-group')
   @HttpCode(202)
   @Roles(UserRoleEnum.CLIENT)
-  @Auth(false)
   async sendGroup(
     @Body() body: SendToGroupDto,
     @User('id') user_id: number,
