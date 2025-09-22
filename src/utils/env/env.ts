@@ -22,11 +22,12 @@ const IMAGES_URL = process.env.IMAGES_URL || '';
 const IMAGES_PROJECT_NAME = process.env.IMAGES_PROJECT_NAME || '';
 
 const EXCEL_SERVICE_URL = process.env.EXCEL_SERVICE_URL || '';
+const SMS_SENDING_URL = process.env.SMS_SENDING_URL || '';
 
 const EXCEL_PORT = process.env.EXCEL_PORT || 3003;
-// Port konfiguratsiyasi
 const DASHBOARD_PORT = process.env.DASHBOARD_PORT || 8080;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
+const SMS_SENDING_PORT = process.env.SMS_SENDING_PORT || 9000;
 
 const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
@@ -43,6 +44,8 @@ if (!DB_SCHEMA || !DB_HOST || !DB_USER || !DB_DB || !DB_PASS) {
 }
 
 export {
+  SMS_SENDING_URL,
+  SMS_SENDING_PORT,
   EXCEL_PORT,
   EXCEL_SERVICE_URL,
   SMTP_USER,

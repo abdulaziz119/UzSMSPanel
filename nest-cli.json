@@ -33,6 +33,15 @@
       "compilerOptions": {
         "tsConfigPath": "tsconfig.json"
       }
+    },
+    "sms_sending": {
+      "type": "application",
+      "root": "src/sms-sending",
+      "entryFile": "main",
+      "sourceRoot": "src/sms-sending",
+      "compilerOptions": {
+        "tsConfigPath": "tsconfig.json"
+      }
     }
   }
 }

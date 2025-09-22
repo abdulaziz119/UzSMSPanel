@@ -17,21 +17,21 @@ import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
 import { SmsSendingService } from '../../../../service/sms-sending.service';
 import {
-  SendToContactJobData,
-  SendToGroupJobData,
-} from '../../../../utils/interfaces/messages.interfaces';
-import {
   SendContactResponse,
   SendGroupResponse,
 } from '../../../../utils/interfaces/request/sms-sending.request.interfaces';
+import { SMS_SENDING_URL } from '../../../../utils/env/env';
+import { AxiosService } from '../../../../helpers/axios.service';
 
 @ApiBearerAuth()
 @ApiTags('sms-sending')
 @Controller({ path: '/frontend/sms-sending', version: '1' })
 export class SmsSendingController {
+  private url = SMS_SENDING_URL;
   constructor(
     @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
     private readonly messagesService: SmsSendingService,
+    private readonly axiosService: AxiosService,
   ) {}
 
   @Post('/send-contact')
@@ -44,30 +44,16 @@ export class SmsSendingController {
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SendContactResponse> {
-    // Queue ga tushishdan oldin validatsiya
-    await this.messagesService.validateBeforeQueueContact(
-      user_id,
-      body,
-      balance,
-    );
+    const url = `${this.url}/api/excel/import-excel`;
+    const response = await this.axiosService.sendPostFileRequest(url, {
+      file: fileBase64,
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      default_group_id: body.default_group_id,
+      user_id: user_id,
+    });
 
-    const job = await this.messageQueue.add(
-      'send-to-contact',
-      {
-        payload: body,
-        user_id,
-        balance,
-      } as SendToContactJobData,
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-      },
-    );
-
-    return {
-      jobId: job.id.toString(),
-      message: 'Message queued for processing',
-    };
+    return response.data;
   }
 
   @Post('/send-group')
@@ -81,33 +67,15 @@ export class SmsSendingController {
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SendGroupResponse> {
-    // Queue ga tushishdan oldin validatsiya
-    const validationResult =
-      await this.messagesService.validateBeforeQueueGroup(
-        user_id,
-        body,
-        balance,
-      );
+    const url = `${this.url}/api/excel/import-excel`;
+    const response = await this.axiosService.sendPostFileRequest(url, {
+      file: fileBase64,
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      default_group_id: body.default_group_id,
+      user_id: user_id,
+    });
 
-    const job = await this.messageQueue.add(
-      'send-to-group',
-      {
-        payload: body,
-        user_id,
-        balance,
-      } as SendToGroupJobData,
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-      },
-    );
-
-    return {
-      jobId: job.id.toString(),
-      message: 'Group messages queued for processing',
-      contact_count: validationResult.contact_count,
-      valid_contact_count: validationResult.valid_contact_count,
-      invalid_contact_count: validationResult.invalid_contact_count,
-    };
+    return response.data;
   }
 }
