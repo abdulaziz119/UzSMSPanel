@@ -34,7 +34,7 @@
         "tsConfigPath": "tsconfig.json"
       }
     },
-    "sms_sending": {
+    "sms-sending": {
       "type": "application",
       "root": "src/sms-sending",
       "entryFile": "main",

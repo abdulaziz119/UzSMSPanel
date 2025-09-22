@@ -15,10 +15,12 @@ import { SmsContactService } from '../../../../service/sms-contact.service';
 import { PerformanceMonitor } from '../../../../utils/performance-monitor.util';
 import { MessagesQueue } from '../../../../queue/messages.queue';
 import { SmppService } from '../../../../service/smpp.service';
+import { AxiosModule } from '../../../../helpers/axios.module';
 
 @Module({
   imports: [
     DatabaseModule,
+    AxiosModule,
   ],
   controllers: [SmsSendingController],
   providers: [

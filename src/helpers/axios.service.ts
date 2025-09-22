@@ -28,6 +28,31 @@ export class AxiosService {
     return data;
   }
 
+  public async sendPostRequest<Response>(
+    url: string,
+    params: any,
+    headers?: any,
+  ): Promise<Response> {
+    const config = {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+    };
+
+    const { data } = await firstValueFrom(
+      this.httpService.post<Response>(url, params, config).pipe(
+        catchError((error: AxiosError) => {
+          console.log(error);
+          throw new HttpException(error.response.data, error.response.status);
+        }),
+      ),
+    );
+
+    return data;
+  }
+
   public async sendPutRequest<Response>(url, params): Promise<Response> {
     const { data } = await firstValueFrom(
       this.httpService.put<Response>(url, params).pipe(

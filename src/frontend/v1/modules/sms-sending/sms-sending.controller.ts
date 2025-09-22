@@ -44,16 +44,20 @@ export class SmsSendingController {
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SendContactResponse> {
-    const url = `${this.url}/api/excel/import-excel`;
-    const response = await this.axiosService.sendPostFileRequest(url, {
-      file: fileBase64,
-      fileName: file.originalname,
-      fileType: file.mimetype,
-      default_group_id: body.default_group_id,
-      user_id: user_id,
-    });
+    const url = `${this.url}/api/v1/sms-sending/send-contact`;
+    const response: any = await this.axiosService.sendPostRequest(
+      url,
+      {
+        phone: body.phone,
+        message: body.message,
+      },
+      {
+        balance_type: balance,
+        Authorization: `Bearer ${user_id}`, // Agar token kerak bo'lsa
+      },
+    );
 
-    return response.data;
+    return response;
   }
 
   @Post('/send-group')
@@ -67,15 +71,19 @@ export class SmsSendingController {
     @User('id') user_id: number,
     @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SendGroupResponse> {
-    const url = `${this.url}/api/excel/import-excel`;
-    const response = await this.axiosService.sendPostFileRequest(url, {
-      file: fileBase64,
-      fileName: file.originalname,
-      fileType: file.mimetype,
-      default_group_id: body.default_group_id,
-      user_id: user_id,
-    });
+    const url = `${this.url}/api/v1/sms-sending/send-group`;
+    const response: any = await this.axiosService.sendPostRequest(
+      url,
+      {
+        group_id: body.group_id,
+        message: body.message,
+      },
+      {
+        balance_type: balance,
+        Authorization: `Bearer ${user_id}`, // Agar token kerak bo'lsa
+      },
+    );
 
-    return response.data;
+    return response;
   }
 }
