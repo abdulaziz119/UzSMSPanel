@@ -42,11 +42,10 @@ export class SmsSendingController {
       {
         phone: body.phone,
         message: body.message,
-      },
-      {
+        user_id: user_id,
         balance_type: balance,
-        Authorization: `Bearer ${user_id}`,
       },
+      {},
     );
 
     return response;
@@ -69,11 +68,10 @@ export class SmsSendingController {
       {
         group_id: body.group_id,
         message: body.message,
-      },
-      {
+        user_id: user_id,
         balance_type: balance,
-        Authorization: `Bearer ${user_id}`, // Agar token kerak bo'lsa
       },
+      {},
     );
 
     return response;

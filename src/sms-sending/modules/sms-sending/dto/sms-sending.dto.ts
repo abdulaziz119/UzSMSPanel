@@ -1,4 +1,5 @@
-import { IsNumber, IsString, IsNotEmpty, Length } from 'class-validator';
+import { IsNumber, IsString, IsNotEmpty, Length, IsEnum } from 'class-validator';
+import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
 
 export class SendToContactDto {
   @IsString()
@@ -9,6 +10,14 @@ export class SendToContactDto {
   @IsString()
   @IsNotEmpty()
   message: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  user_id: number;
+
+  @IsEnum(ContactTypeEnum)
+  @IsNotEmpty()
+  balance_type: ContactTypeEnum;
 }
 
 export class SendToGroupDto {
@@ -19,4 +28,12 @@ export class SendToGroupDto {
   @IsString()
   @IsNotEmpty()
   message: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  user_id: number;
+
+  @IsEnum(ContactTypeEnum)
+  @IsNotEmpty()
+  balance_type: ContactTypeEnum;
 }

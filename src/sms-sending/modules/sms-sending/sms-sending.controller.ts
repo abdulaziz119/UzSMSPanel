@@ -3,8 +3,6 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { SMS_MESSAGE_QUEUE } from '../../../constants/constants';
 import { SmsSendingService } from '../../../service/sms-sending.service';
-import { UserRoleEnum } from '../../../utils/enum/user.enum';
-import { Roles } from '../../../frontend/v1/modules/auth/decorators/roles.decorator';
 import {
   SendToContactJobData,
   SendToGroupJobData,
@@ -15,7 +13,6 @@ import {
   SendGroupResponse,
 } from '../../../utils/interfaces/request/sms-sending.request.interfaces';
 import { SendToContactDto, SendToGroupDto } from './dto/sms-sending.dto';
-import { User } from '../../../frontend/v1/modules/auth/decorators/user.decorator';
 
 @Controller({ path: '/sms-sending', version: '1' })
 export class SmsSendingController {
@@ -26,16 +23,14 @@ export class SmsSendingController {
 
   @Post('/send-contact')
   @HttpCode(202)
-  @Roles(UserRoleEnum.CLIENT)
   async sendContact(
     @Body() body: SendToContactDto,
-    @User('id') user_id: number,
-    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SendContactResponse> {
+    const { user_id, balance_type } = body;
     await this.messagesService.validateBeforeQueueContact(
       user_id,
       body,
-      balance,
+      balance_type,
     );
 
     const job = await this.messageQueue.add(
@@ -43,7 +38,7 @@ export class SmsSendingController {
       {
         payload: body,
         user_id,
-        balance,
+        balance_type,
       } as SendToContactJobData,
       {
         attempts: 3,
@@ -59,17 +54,15 @@ export class SmsSendingController {
 
   @Post('/send-group')
   @HttpCode(202)
-  @Roles(UserRoleEnum.CLIENT)
   async sendGroup(
     @Body() body: SendToGroupDto,
-    @User('id') user_id: number,
-    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SendGroupResponse> {
+    const { user_id, balance_type } = body;
     const validationResult =
       await this.messagesService.validateBeforeQueueGroup(
         user_id,
         body,
-        balance,
+        balance_type,
       );
 
     const job = await this.messageQueue.add(
@@ -77,7 +70,7 @@ export class SmsSendingController {
       {
         payload: body,
         user_id,
-        balance,
+        balance_type,
       } as SendToGroupJobData,
       {
         attempts: 3,
