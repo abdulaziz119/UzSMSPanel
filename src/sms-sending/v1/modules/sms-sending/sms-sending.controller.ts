@@ -1,16 +1,16 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { SMS_MESSAGE_QUEUE } from '../../../constants/constants';
-import { SmsSendingService } from '../../../service/sms-sending.service';
+import { SMS_MESSAGE_QUEUE } from '../../../../constants/constants';
+import { SmsSendingService } from '../../../../service/sms-sending.service';
 import {
   SendToContactJobData,
   SendToGroupJobData,
-} from '../../../utils/interfaces/messages.interfaces';
+} from '../../../../utils/interfaces/messages.interfaces';
 import {
   SendContactResponse,
   SendGroupResponse,
-} from '../../../utils/interfaces/request/sms-sending.request.interfaces';
+} from '../../../../utils/interfaces/request/sms-sending.request.interfaces';
 import { SendToContactDto, SendToGroupDto } from './dto/sms-sending.dto';
 
 @Controller({ path: '/sms-sending', version: '1' })

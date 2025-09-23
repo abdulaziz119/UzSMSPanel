@@ -1,5 +1,11 @@
-import { IsNumber, IsString, IsNotEmpty, Length, IsEnum } from 'class-validator';
-import { ContactTypeEnum } from '../../../../utils/enum/contact.enum';
+import {
+  IsNumber,
+  IsString,
+  IsNotEmpty,
+  Length,
+  IsEnum,
+} from 'class-validator';
+import { ContactTypeEnum } from '../../../../../utils/enum/contact.enum';
 
 export class SendToContactDto {
   @IsString()
