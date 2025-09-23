@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post, Headers } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { SMS_MESSAGE_QUEUE } from '../../../constants/constants';
@@ -7,7 +7,6 @@ import {
   SendToContactJobData,
   SendToGroupJobData,
 } from '../../../utils/interfaces/messages.interfaces';
-import { ContactTypeEnum } from '../../../utils/enum/contact.enum';
 import {
   SendContactResponse,
   SendGroupResponse,
@@ -54,9 +53,7 @@ export class SmsSendingController {
 
   @Post('/send-group')
   @HttpCode(202)
-  async sendGroup(
-    @Body() body: SendToGroupDto,
-  ): Promise<SendGroupResponse> {
+  async sendGroup(@Body() body: SendToGroupDto): Promise<SendGroupResponse> {
     const { user_id, balance_type } = body;
     const validationResult =
       await this.messagesService.validateBeforeQueueGroup(
