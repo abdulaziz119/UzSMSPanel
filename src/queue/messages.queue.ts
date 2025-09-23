@@ -66,20 +66,22 @@ export class MessagesQueue {
 
   private async getAvailableBudget(
     user_id: number,
-    balance?: ContactTypeEnum,
+    balance_type?: ContactTypeEnum,
   ): Promise<number> {
-    if (balance) {
-      const row = await this.contactRepo
-        .createQueryBuilder('c')
-        .select('COALESCE(SUM(c.balance), 0)', 'sum')
-        .where('c.user_id = :user_id', { user_id })
-        .andWhere('c.type = :type', { type: balance })
-        .andWhere('c.status = :status', { status: 'active' })
-        .getRawOne<{ sum: string }>();
-      return Number(row?.sum || 0);
+    if (balance_type) {
+      const balanceColumn =
+        balance_type === ContactTypeEnum.INDIVIDUAL
+          ? 'individual_balance'
+          : 'company_balance';
+
+      const contact = await this.contactRepo.findOne({
+        where: { user_id: user_id, type: balance_type },
+        select: [balanceColumn],
+      });
+      return Number(contact?.[balanceColumn] || 0);
     }
-    const user = await this.userRepo.findOne({ where: { id: user_id } });
-    return Number(user?.balance || 0);
+    // Fallback or error if balance_type is not provided
+    return 0;
   }
 
   @Process({ name: 'send-to-contact', concurrency: 3 })

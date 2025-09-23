@@ -40,9 +40,6 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   block: boolean;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
-  balance: number;
-
   @Column({ select: false, nullable: true })
   secret_key: string | null;
 

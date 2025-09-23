@@ -28,8 +28,9 @@ export class TransactionController {
   @Auth(false)
   async getBalance(
     @User('id') user_id: number,
+    @Headers('balance_type') balance_type: ContactTypeEnum,
   ): Promise<SingleResponse<{ balance: number }>> {
-    return await this.transactionService.getBalance(user_id);
+    return await this.transactionService.getBalance(user_id, balance_type);
   }
 
   /**
@@ -43,7 +44,6 @@ export class TransactionController {
   async topUpBalance(
     @Body() body: TopUpBalanceDto,
     @User('id') user_id: number,
-    @Headers('balance_type') balance: ContactTypeEnum,
   ): Promise<SingleResponse<{ transaction_id: number; new_balance: number }>> {
     return await this.transactionService.topUpBalance(body, user_id);
   }

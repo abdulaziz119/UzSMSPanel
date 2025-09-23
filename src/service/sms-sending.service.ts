@@ -42,9 +42,11 @@ export class SmsSendingService {
     const type: ContactTypeEnum =
       (balanceType as ContactTypeEnum) || ContactTypeEnum.INDIVIDUAL;
 
+    const balanceField = type === ContactTypeEnum.INDIVIDUAL ? 'c.individual_balance' : 'c.company_balance';
+    
     const raw = await this.contactRepo
       .createQueryBuilder('c')
-      .select('COALESCE(MAX(c.balance), 0)', 'max')
+      .select(`COALESCE(MAX(${balanceField}), 0)`, 'max')
       .where('c.user_id = :user_id', { user_id })
       .andWhere('c.type = :type', { type })
       .andWhere('c.status = :status', { status: ContactStatusEnum.ACTIVE })

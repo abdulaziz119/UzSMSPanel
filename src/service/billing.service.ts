@@ -42,14 +42,16 @@ export class BillingService {
     contactType: string,
     amount: number,
   ): Promise<void> {
+    const balanceField = contactType === 'individual' ? 'individual_balance' : 'company_balance';
+    
     const deductRes = await em
       .createQueryBuilder()
       .update(ContactEntity)
-      .set({ balance: () => 'balance - :amount' })
+      .set({ [balanceField]: () => `${balanceField} - :amount` })
       .where('user_id = :user_id')
       .andWhere('type = :type')
       .andWhere('status = :status')
-      .andWhere('balance >= :amount')
+      .andWhere(`${balanceField} >= :amount`)
       .setParameters({ user_id, type: contactType, status: ContactStatusEnum.ACTIVE, amount })
       .returning('*')
       .execute();

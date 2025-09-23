@@ -26,6 +26,9 @@ import {
 } from '../utils/dto/transaction.dto';
 import { UserRoleEnum } from '../utils/enum/user.enum';
 
+import { ContactEntity } from '../entity/contact.entity';
+import { ContactTypeEnum } from '../utils/enum/contact.enum';
+
 @Injectable()
 export class TransactionService {
   constructor(
@@ -33,25 +36,37 @@ export class TransactionService {
     private readonly transactionRepo: Repository<TransactionEntity>,
     @Inject(MODELS.USER)
     private readonly userRepo: Repository<UserEntity>,
+    @Inject(MODELS.CONTACT)
+    private readonly contactRepo: Repository<ContactEntity>,
   ) {}
 
   async getBalance(
     user_id: number,
+    balance_type: ContactTypeEnum,
   ): Promise<SingleResponse<{ balance: number }>> {
     try {
-      const user: UserEntity = await this.userRepo.findOne({
-        where: { id: user_id },
-        select: ['balance'],
+      if (!balance_type) {
+        throw new BadRequestException('balance_type header is required');
+      }
+
+      const balanceColumn =
+        balance_type === ContactTypeEnum.INDIVIDUAL
+          ? 'individual_balance'
+          : 'company_balance';
+
+      const contact = await this.contactRepo.findOne({
+        where: { user_id: user_id, type: balance_type },
+        select: [balanceColumn],
       });
 
-      if (!user) {
+      if (!contact) {
         throw new HttpException(
-          { message: 'User not found' },
+          { message: 'Contact not found for the specified balance type' },
           HttpStatus.NOT_FOUND,
         );
       }
 
-      return { result: { balance: user.balance } };
+      return { result: { balance: contact[balanceColumn] || 0 } };
     } catch (error) {
       throw new HttpException(
         { message: 'Error fetching balance', error: error.message },
@@ -65,12 +80,12 @@ export class TransactionService {
     user_id: number,
   ): Promise<SingleResponse<{ transaction_id: number; new_balance: number }>> {
     try {
-      const user: UserEntity = await this.userRepo.findOne({
-        where: { id: user_id },
+      const contact: ContactEntity = await this.contactRepo.findOne({
+        where: { user_id: user_id, type: payload.balance_type },
       });
-      if (!user) {
+      if (!contact) {
         throw new HttpException(
-          { message: 'User not found' },
+          { message: 'Contact not found for the specified balance type' },
           HttpStatus.NOT_FOUND,
         );
       }
@@ -79,14 +94,22 @@ export class TransactionService {
         throw new BadRequestException('Amount must be greater than 0');
       }
 
+      const balanceColumn =
+        payload.balance_type === ContactTypeEnum.INDIVIDUAL
+          ? 'individual_balance'
+          : 'company_balance';
+
+      const balance_before = Number(contact[balanceColumn] || 0);
+      const balance_after = balance_before + payload.amount;
+
       const transaction: TransactionEntity = this.transactionRepo.create({
         user_id,
         transaction_id: this.generateExternalTransactionId(),
         type: TransactionTypeEnum.DEPOSIT,
         amount: payload.amount,
         status: TransactionStatusEnum.PENDING,
-        balance_before: user.balance,
-        balance_after: user.balance + payload.amount,
+        balance_before: balance_before,
+        balance_after: balance_after,
         payment_method: payload.payment_method,
         description: payload.description || 'Balance top-up',
         external_transaction_id: this.generateExternalTransactionId(),
@@ -97,8 +120,9 @@ export class TransactionService {
 
       await this.processPayment(savedTransaction);
 
-      const newBalance: number = user.balance + payload.amount;
-      await this.userRepo.update(user_id, { balance: newBalance });
+      await this.contactRepo.update(contact.id, {
+        [balanceColumn]: balance_after,
+      });
 
       await this.transactionRepo.update(savedTransaction.id, {
         status: TransactionStatusEnum.COMPLETED,
@@ -107,7 +131,7 @@ export class TransactionService {
       return {
         result: {
           transaction_id: savedTransaction.id,
-          new_balance: newBalance,
+          new_balance: balance_after,
         },
       };
     } catch (error) {
@@ -305,16 +329,23 @@ export class TransactionService {
     data: AdminTopUpDto,
   ): Promise<SingleResponse<{ message: string; new_balance: number }>> {
     try {
-      const user: UserEntity = await this.userRepo.findOne({
-        where: { id: data.user_id },
+      const contact: ContactEntity = await this.contactRepo.findOne({
+        where: { user_id: data.user_id, type: data.balance_type },
       });
 
-      if (!user) {
+      if (!contact) {
         throw new HttpException(
-          { message: 'User not found' },
+          { message: 'Contact not found for the specified balance type' },
           HttpStatus.NOT_FOUND,
         );
       }
+      const balanceColumn =
+        data.balance_type === ContactTypeEnum.INDIVIDUAL
+          ? 'individual_balance'
+          : 'company_balance';
+
+      const new_balance: number =
+        Number(contact[balanceColumn] || 0) + data.amount;
 
       const transaction: TransactionEntity = this.transactionRepo.create({
         user_id: data.user_id,
@@ -325,12 +356,15 @@ export class TransactionService {
         payment_method: PaymentMethodEnum.SYSTEM,
         description: data.description || 'Admin top-up',
         processed_at: new Date(),
+        balance_before: Number(contact[balanceColumn] || 0),
+        balance_after: new_balance,
       });
 
       await this.transactionRepo.save(transaction);
 
-      const new_balance: number = user.balance + data.amount;
-      await this.userRepo.update(data.user_id, { balance: new_balance });
+      await this.contactRepo.update(contact.id, {
+        [balanceColumn]: new_balance,
+      });
 
       return {
         result: {
@@ -480,54 +514,10 @@ export class TransactionService {
   }
 
   async getUserBalanceSummary(): Promise<SingleResponse<any>> {
-    try {
-      const balanceStats = await this.userRepo
-        .createQueryBuilder('user')
-        .select([
-          'COUNT(*) as total_users',
-          'SUM(balance) as total_balance',
-          'AVG(balance) as average_balance',
-          'MAX(balance) as max_balance',
-          'MIN(balance) as min_balance',
-          'COUNT(CASE WHEN balance > 0 THEN 1 ELSE NULL END) as users_with_balance',
-          'COUNT(CASE WHEN balance = 0 THEN 1 ELSE NULL END) as users_zero_balance',
-          'COUNT(CASE WHEN balance < 0 THEN 1 ELSE NULL END) as users_negative_balance',
-        ])
-        .where('role = :role', { role: 'CLIENT' })
-        .getRawOne();
-
-      const balanceDistribution = await this.userRepo
-        .createQueryBuilder('user')
-        .select([
-          'CASE ' +
-            "WHEN balance = 0 THEN '0' " +
-            "WHEN balance <= 1000 THEN '1-1000' " +
-            "WHEN balance <= 5000 THEN '1001-5000' " +
-            "WHEN balance <= 10000 THEN '5001-10000' " +
-            "WHEN balance <= 50000 THEN '10001-50000' " +
-            "ELSE '50000+' END as balance_range",
-          'COUNT(*) as user_count',
-        ])
-        .where('role = :role', { role: UserRoleEnum.CLIENT })
-        .groupBy('balance_range')
-        .orderBy('balance_range')
-        .getRawMany();
-
-      const result = {
-        summary: balanceStats,
-        distribution: balanceDistribution,
-      };
-
-      return { result };
-    } catch (error) {
-      throw new HttpException(
-        {
-          message: 'Error fetching user balance summary',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    throw new HttpException(
+      'This method is deprecated.',
+      HttpStatus.GONE,
+    );
   }
 
   private generateExternalTransactionId(): string {

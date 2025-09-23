@@ -38,7 +38,7 @@ export class SmsSendingController {
       {
         payload: body,
         user_id,
-        balance_type,
+        balance: balance_type,
       } as SendToContactJobData,
       {
         attempts: 3,
@@ -70,7 +70,7 @@ export class SmsSendingController {
       {
         payload: body,
         user_id,
-        balance_type,
+        balance: balance_type,
       } as SendToGroupJobData,
       {
         attempts: 3,

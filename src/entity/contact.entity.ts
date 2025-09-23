@@ -30,7 +30,7 @@ export class ContactEntity extends BaseEntity {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @Column({ type: 'integer' })
+  @Column({ type: 'integer', nullable: true })
   my_go_id: number | null;
 
   @Column({ type: 'varchar', nullable: true })
@@ -45,7 +45,7 @@ export class ContactEntity extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   code: string | null;
 
-  @Column({ type: 'integer' })
+  @Column({ type: 'integer', nullable: true })
   step: number | null;
 
   @Column({ type: 'varchar', nullable: true })
@@ -136,5 +136,8 @@ export class ContactEntity extends BaseEntity {
   prefix: string | null;
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
-  balance: number;
+  individual_balance: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  company_balance: number;
 }

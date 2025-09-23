@@ -49,38 +49,29 @@ export class MessageService {
       // Capture balance_before
       let balanceBefore: number = 0;
       if (balance) {
-        const row = await em
-          .getRepository(ContactEntity)
-          .createQueryBuilder('c')
-          .select('COALESCE(SUM(c.balance), 0)', 'sum')
-          .where('c.user_id = :user_id', { user_id: smsData.user_id })
-          .andWhere('c.type = :type', { type: balance })
-          .andWhere('c.status = :status', { status: ContactStatusEnum.ACTIVE })
-          .getRawOne<{ sum: string }>();
-        balanceBefore = Number(row?.sum || 0);
-      } else {
-        const user: UserEntity = await em.getRepository(UserEntity).findOne({
-          where: { id: smsData.user_id },
-          select: ['balance'],
+        const balanceColumn =
+          balance === ContactTypeEnum.INDIVIDUAL
+            ? 'individual_balance'
+            : 'company_balance';
+        const contact = await em.getRepository(ContactEntity).findOne({
+          where: { user_id: smsData.user_id, type: balance },
+          select: [balanceColumn],
         });
-        balanceBefore = Number(user?.balance || 0);
+        balanceBefore = Number(contact?.[balanceColumn] || 0);
+      } else {
+        throw new HttpException(
+          'balance_type header is required for sending messages',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      // Deduct from contact balance when header is provided, otherwise from user balance
-      if (balance) {
-        await this.billingService.deductContactBalanceTransactional(
-          em,
-          smsData.user_id,
-          balance,
-          totalCost,
-        );
-      } else {
-        await this.billingService.deductBalanceTransactional(
-          em,
-          smsData.user_id,
-          totalCost,
-        );
-      }
+      // Deduct from contact balance
+      await this.billingService.deductContactBalanceTransactional(
+        em,
+        smsData.user_id,
+        balance,
+        totalCost,
+      );
 
       // Create SMS message
       const msg: MessageEntity = em.getRepository(MessageEntity).create({
@@ -154,44 +145,31 @@ export class MessageService {
           const user_id: number = smsDataArray[0].user_id;
           let balanceBefore: number = 0;
           if (balance) {
-            const row = await em
-              .getRepository(ContactEntity)
-              .createQueryBuilder('c')
-              .select('COALESCE(SUM(c.balance), 0)', 'sum')
-              .where('c.user_id = :user_id', { user_id })
-              .andWhere('c.type = :type', { type: balance })
-              .andWhere('c.status = :status', {
-                status: ContactStatusEnum.ACTIVE,
-              })
-              .getRawOne<{ sum: string }>();
-            balanceBefore = Number(row?.sum || 0);
+            const balanceColumn =
+              balance === ContactTypeEnum.INDIVIDUAL
+                ? 'individual_balance'
+                : 'company_balance';
+            const contact = await em.getRepository(ContactEntity).findOne({
+              where: { user_id: user_id, type: balance },
+              select: [balanceColumn],
+            });
+            balanceBefore = Number(contact?.[balanceColumn] || 0);
           } else {
-            const user: UserEntity = await em
-              .getRepository(UserEntity)
-              .findOne({
-                where: { id: user_id },
-                select: ['balance'],
-              });
-            balanceBefore = Number(user?.balance || 0);
+            throw new HttpException(
+              'balance_type header is required for sending messages',
+              HttpStatus.BAD_REQUEST,
+            );
           }
 
           // Deduct total from contact or user balance
           const billingTimer =
             this.performanceMonitor.startTimer('billing_deduction');
-          if (balance) {
-            await this.billingService.deductContactBalanceTransactional(
-              em,
-              user_id,
-              balance,
-              totalCost,
-            );
-          } else {
-            await this.billingService.deductBalanceTransactional(
-              em,
-              user_id,
-              totalCost,
-            );
-          }
+          await this.billingService.deductContactBalanceTransactional(
+            em,
+            user_id,
+            balance,
+            totalCost,
+          );
           billingTimer();
 
           // Optimized bulk insert

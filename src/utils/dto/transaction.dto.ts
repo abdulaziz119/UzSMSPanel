@@ -1,10 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsNotEmpty, IsOptional, IsString, IsEnum } from 'class-validator';
-import { TransactionTypeEnum, TransactionStatusEnum, PaymentMethodEnum } from '../enum/transaction.enum';
+import {
+  TransactionTypeEnum,
+  TransactionStatusEnum,
+  PaymentMethodEnum,
+} from '../enum/transaction.enum';
 import { PaginationParams } from './dto';
+import { ContactTypeEnum } from 'src/utils/enum/contact.enum';
 
 export class TopUpBalanceDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: 50000,
     description: "To'ldiriladigan summa"
   })
@@ -12,7 +17,7 @@ export class TopUpBalanceDto {
   @IsNotEmpty()
   amount: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "CLICK",
     enum: PaymentMethodEnum,
     description: "To'lov usuli"
@@ -20,7 +25,7 @@ export class TopUpBalanceDto {
   @IsEnum(PaymentMethodEnum)
   payment_method: PaymentMethodEnum;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "Balansni to'ldirish",
     description: "To'lov tavsifi",
     required: false
@@ -28,10 +33,18 @@ export class TopUpBalanceDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({
+    example: 'INDIVIDUAL',
+    enum: ContactTypeEnum,
+    description: 'Balans turi',
+  })
+  @IsEnum(ContactTypeEnum)
+  balance_type: ContactTypeEnum;
 }
 
 export class TransactionFilterDto extends PaginationParams {
-  @ApiProperty({ 
+  @ApiProperty({
     example: "2025-08-01",
     description: "Boshlanish sanasi",
     required: false
@@ -40,7 +53,7 @@ export class TransactionFilterDto extends PaginationParams {
   @IsString()
   date_from?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "2025-08-31",
     description: "Tugash sanasi",
     required: false
@@ -49,7 +62,7 @@ export class TransactionFilterDto extends PaginationParams {
   @IsString()
   date_to?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "DEPOSIT",
     enum: TransactionTypeEnum,
     description: "Tranzaksiya turi",
@@ -59,7 +72,7 @@ export class TransactionFilterDto extends PaginationParams {
   @IsEnum(TransactionTypeEnum)
   type?: TransactionTypeEnum;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "COMPLETED",
     enum: TransactionStatusEnum,
     description: "Tranzaksiya holati",
@@ -69,7 +82,7 @@ export class TransactionFilterDto extends PaginationParams {
   @IsEnum(TransactionStatusEnum)
   status?: TransactionStatusEnum;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
     description: "Foydalanuvchi ID",
     required: false
@@ -78,7 +91,7 @@ export class TransactionFilterDto extends PaginationParams {
   @IsNumber()
   user_id?: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "CLICK",
     enum: PaymentMethodEnum,
     description: "To'lov usuli",
@@ -88,7 +101,7 @@ export class TransactionFilterDto extends PaginationParams {
   @IsEnum(PaymentMethodEnum)
   payment_method?: PaymentMethodEnum;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "to'ldirish",
     description: "Qidiruv matni",
     required: false
@@ -99,7 +112,7 @@ export class TransactionFilterDto extends PaginationParams {
 }
 
 export class TransactionStatsDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: "2025-08-01",
     description: "Boshlanish sanasi",
     required: false
@@ -108,7 +121,7 @@ export class TransactionStatsDto {
   @IsString()
   date_from?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "2025-08-31",
     description: "Tugash sanasi",
     required: false
@@ -117,7 +130,7 @@ export class TransactionStatsDto {
   @IsString()
   date_to?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
     description: "Foydalanuvchi ID",
     required: false
@@ -126,7 +139,7 @@ export class TransactionStatsDto {
   @IsNumber()
   user_id?: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "DEPOSIT",
     enum: TransactionTypeEnum,
     description: "Tranzaksiya turi",
@@ -136,7 +149,7 @@ export class TransactionStatsDto {
   @IsEnum(TransactionTypeEnum)
   type?: TransactionTypeEnum;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "CLICK",
     enum: PaymentMethodEnum,
     description: "To'lov usuli",
@@ -146,7 +159,7 @@ export class TransactionStatsDto {
   @IsEnum(PaymentMethodEnum)
   payment_method?: PaymentMethodEnum;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "day",
     enum: ["day", "week", "month"],
     description: "Guruhlash turi",
@@ -158,7 +171,7 @@ export class TransactionStatsDto {
 }
 
 export class AdminTopUpDto {
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
     description: "Foydalanuvchi ID"
   })
@@ -166,7 +179,7 @@ export class AdminTopUpDto {
   @IsNotEmpty()
   user_id: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 10000,
     description: "Qo'shiladigan summa"
   })
@@ -174,7 +187,7 @@ export class AdminTopUpDto {
   @IsNotEmpty()
   amount: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "Bonus qo'shish",
     description: "Tavsif",
     required: false
@@ -183,7 +196,7 @@ export class AdminTopUpDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: "Admin tomonidan bonus",
     description: "Admin izohi",
     required: false
@@ -191,4 +204,12 @@ export class AdminTopUpDto {
   @IsOptional()
   @IsString()
   admin_note?: string;
+
+  @ApiProperty({
+    example: 'INDIVIDUAL',
+    enum: ContactTypeEnum,
+    description: 'Balans turi',
+  })
+  @IsEnum(ContactTypeEnum)
+  balance_type: ContactTypeEnum;
 }

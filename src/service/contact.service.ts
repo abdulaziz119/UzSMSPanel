@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { PaginationParams, ParamIdDto, SingleResponse } from '../utils/dto/dto';
@@ -48,7 +42,10 @@ export class ContactService {
       });
 
       if (!userData) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       const contactData: ContactEntity = await this.contactRepo.findOne({
@@ -103,6 +100,8 @@ export class ContactService {
         company_inn: null,
         company_mfo: null,
         company_okonx: null,
+        individual_balance: 0,
+        company_balance: 0,
       });
 
       const savedContact: ContactEntity =
@@ -133,7 +132,10 @@ export class ContactService {
       });
 
       if (!userData) {
-        throw new NotFoundException('User not found');
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       const contactData: ContactEntity = await this.contactRepo.findOne({
@@ -161,7 +163,8 @@ export class ContactService {
         company_bank_name: payload.company_bank_name,
         company_bank_id: payload.company_bank_id,
         status: ContactStatusEnum.ACTIVE,
-        balance: 0,
+        individual_balance: 0,
+        company_balance: 0,
       });
 
       const savedContact: ContactEntity =
@@ -212,7 +215,10 @@ export class ContactService {
     });
 
     if (!order) {
-      throw new NotFoundException('Contact not found');
+      throw new HttpException(
+        { message: 'Contact not found' },
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return { result: order };

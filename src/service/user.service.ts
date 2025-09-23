@@ -160,7 +160,6 @@ export class UserService {
           'user.name',
           'user.email',
           'user.role',
-          'user.balance',
           'user.block',
           'user.lastseen',
           'user.created_at',
@@ -272,54 +271,10 @@ export class UserService {
   async updateUserBalance(
     payload: UpdateUserBalanceDto,
   ): Promise<SingleResponse<{ new_balance: number }>> {
-    try {
-      const user: UserEntity = await this.userRepo.findOne({
-        where: { id: payload.user_id },
-      });
-
-      if (!user) {
-        throw new HttpException(
-          { message: 'User not found' },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      let newBalance: number;
-
-      switch (payload.operation) {
-        case BalanceOperationEnum.ADD:
-          newBalance = user.balance + payload.amount;
-          break;
-        case BalanceOperationEnum.SUBTRACT:
-          newBalance = user.balance - payload.amount;
-          if (newBalance < 0) {
-            throw new HttpException(
-              { message: 'Insufficient balance' },
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-          break;
-        case BalanceOperationEnum.SET:
-          newBalance = payload.amount;
-          break;
-        default:
-          throw new HttpException(
-            { message: 'Invalid operation' },
-            HttpStatus.BAD_REQUEST,
-          );
-      }
-
-      await this.userRepo.update(payload.user_id, {
-        balance: newBalance,
-      });
-
-      return { result: { new_balance: newBalance } };
-    } catch (error) {
-      throw new HttpException(
-        { message: 'Error updating user balance', error: error.message },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+    throw new HttpException(
+      'This method is deprecated. Use TransactionService to manage contact balances.',
+      HttpStatus.GONE,
+    );
   }
 
   async getUserStatistics(): Promise<SingleResponse<any>> {
