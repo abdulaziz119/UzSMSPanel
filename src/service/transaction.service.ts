@@ -34,8 +34,6 @@ export class TransactionService {
   constructor(
     @Inject(MODELS.TRANSACTION)
     private readonly transactionRepo: Repository<TransactionEntity>,
-    @Inject(MODELS.USER)
-    private readonly userRepo: Repository<UserEntity>,
     @Inject(MODELS.CONTACT)
     private readonly contactRepo: Repository<ContactEntity>,
   ) {}
@@ -46,7 +44,10 @@ export class TransactionService {
   ): Promise<SingleResponse<{ balance: number }>> {
     try {
       if (!balance_type) {
-        throw new BadRequestException('balance_type header is required');
+        throw new HttpException(
+          'balance_type header is required',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       const balanceColumn =
@@ -54,7 +55,7 @@ export class TransactionService {
           ? 'individual_balance'
           : 'company_balance';
 
-      const contact = await this.contactRepo.findOne({
+      const contact: ContactEntity = await this.contactRepo.findOne({
         where: { user_id: user_id, type: balance_type },
         select: [balanceColumn],
       });
@@ -91,7 +92,10 @@ export class TransactionService {
       }
 
       if (payload.amount <= 0) {
-        throw new BadRequestException('Amount must be greater than 0');
+        throw new HttpException(
+          'Amount must be greater than 0',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       const balanceColumn =
@@ -99,8 +103,8 @@ export class TransactionService {
           ? 'individual_balance'
           : 'company_balance';
 
-      const balance_before = Number(contact[balanceColumn] || 0);
-      const balance_after = balance_before + payload.amount;
+      const balance_before: number = Number(contact[balanceColumn] || 0);
+      const balance_after: number = balance_before + payload.amount;
 
       const transaction: TransactionEntity = this.transactionRepo.create({
         user_id,
@@ -514,10 +518,7 @@ export class TransactionService {
   }
 
   async getUserBalanceSummary(): Promise<SingleResponse<any>> {
-    throw new HttpException(
-      'This method is deprecated.',
-      HttpStatus.GONE,
-    );
+    throw new HttpException('This method is deprecated.', HttpStatus.GONE);
   }
 
   private generateExternalTransactionId(): string {

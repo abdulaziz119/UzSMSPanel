@@ -1,11 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { TariffEntity } from '../entity/tariffs.entity';
@@ -372,8 +365,9 @@ export class TariffService {
       });
 
       if (tariffs.length === 0) {
-        throw new NotFoundException(
+        throw new HttpException(
           `No tariffs found for operator: ${(data as any).operator}`,
+          HttpStatus.BAD_REQUEST,
         );
       }
 

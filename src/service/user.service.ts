@@ -40,7 +40,6 @@ export class UserService {
       );
     }
 
-    // eski parolni tekshirish
     const isMatch: boolean = await bcrypt.compare(
       dto.oldPassword,
       user.password,
@@ -52,7 +51,6 @@ export class UserService {
       );
     }
 
-    // yangi parolni hash qilish
     const hashed: string = await bcrypt.hash(dto.newPassword, 10);
     user.password = hashed;
     await this.userRepo.save(user);
@@ -99,7 +97,6 @@ export class UserService {
       );
     }
 
-    // Manually filter the fields from the JSON objects
     if (user.contacts) {
       user.contacts = user.contacts.map((contact) => {
         const newContact: any = { id: contact.id };
@@ -143,7 +140,6 @@ export class UserService {
     return { result: user };
   }
 
-  // Dashboard methods
   async findAllUsers(
     filters: UserFilterDto,
   ): Promise<PaginationResponse<UserEntity[]>> {

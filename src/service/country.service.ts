@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { ParamIdDto, SingleResponse } from '../utils/dto/dto';
@@ -53,7 +47,6 @@ export class CountryService {
         .createQueryBuilder('countries')
         .where('countries.id IS NOT NULL');
 
-      // Add search filter
       if (search) {
         queryBuilder.andWhere(
           '(countries.name ILIKE :search OR countries.code ILIKE :search OR countries.iso_code ILIKE :search)',
@@ -61,7 +54,6 @@ export class CountryService {
         );
       }
 
-      // Add is_active filter
       if (is_active !== undefined) {
         queryBuilder.andWhere('countries.is_active = :is_active', {
           is_active,
@@ -96,7 +88,7 @@ export class CountryService {
       });
 
       if (!country) {
-        throw new NotFoundException('Country not found');
+        throw new HttpException('Country not found', HttpStatus.NOT_FOUND);
       }
 
       return {
@@ -119,7 +111,7 @@ export class CountryService {
       });
 
       if (!country) {
-        throw new NotFoundException('Country not found');
+        throw new HttpException('Country not found', HttpStatus.NOT_FOUND);
       }
 
       Object.assign(country, payload);
@@ -144,7 +136,7 @@ export class CountryService {
       });
 
       if (!country) {
-        throw new NotFoundException('Country not found');
+        throw new HttpException('Country not found', HttpStatus.NOT_FOUND);
       }
 
       await this.countryRepo.remove(country);

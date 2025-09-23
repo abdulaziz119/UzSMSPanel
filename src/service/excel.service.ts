@@ -27,16 +27,16 @@ export class ExcelService {
     totalRows: number;
     status: string;
   }): Promise<ExcelEntity> {
-    const user = await this.userRepos.findOne({
+    const user: UserEntity = await this.userRepos.findOne({
       where: { id: data.user_id },
     });
     if (!user) {
-      throw new Error('User not found');
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    const excel = this.excelRepos.create({
+    const excel: ExcelEntity = this.excelRepos.create({
       user,
-      filePath: data.fileName, // Store filename instead of file path
+      filePath: data.fileName,
       status: data.status,
       totalRows: data.totalRows,
       processedRows: 0,
@@ -58,11 +58,11 @@ export class ExcelService {
       status?: string;
     },
   ): Promise<ExcelEntity> {
-    const excel = await this.excelRepos.findOne({
+    const excel: ExcelEntity = await this.excelRepos.findOne({
       where: { id: excelId },
     });
     if (!excel) {
-      throw new Error('Excel analysis not found');
+      throw new HttpException('Excel analysis not found', HttpStatus.NOT_FOUND);
     }
 
     Object.assign(excel, data);
@@ -70,12 +70,14 @@ export class ExcelService {
   }
 
   async processExcel(filePath: string, userId: number): Promise<ExcelEntity> {
-    const user = await this.userRepos.findOne({ where: { id: userId } });
+    const user: UserEntity = await this.userRepos.findOne({
+      where: { id: userId },
+    });
     if (!user) {
-      throw new Error('User not found');
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
-    const excel = this.excelRepos.create({
+    const excel: ExcelEntity = this.excelRepos.create({
       user,
       filePath,
       status: 'processing',
@@ -83,7 +85,7 @@ export class ExcelService {
     await this.excelRepos.save(excel);
 
     const workbook = xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
+    const sheetName: string = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(sheet);
 
@@ -92,13 +94,12 @@ export class ExcelService {
 
     for (const row of data) {
       excel.processedRows++;
-      // Simple validation, assuming 'phone' and 'name' columns
       if (!row['phone'] || !row['name']) {
         excel.invalidFormatRows++;
         continue;
       }
 
-      const existingContact = await this.contactRepos.findOne({
+      const existingContact: ContactEntity = await this.contactRepos.findOne({
         where: { identity_code: row['phone'], user: { id: userId } },
       });
 
@@ -107,7 +108,7 @@ export class ExcelService {
         continue;
       }
 
-      const newContact = this.contactRepos.create({
+      const newContact: ContactEntity = this.contactRepos.create({
         identity_code: row['phone'],
         commonData: {
           first_name: row['name'],

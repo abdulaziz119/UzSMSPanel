@@ -122,7 +122,6 @@ export class AuthService {
     payload: AuthSendOtpDto,
   ): Promise<SingleResponse<{ expiresIn: number }>> {
     try {
-      // Validate that either phone or email is provided
       if (!payload.phone && !payload.email) {
         throw new HttpException(
           'Phone or email is required',
@@ -130,14 +129,12 @@ export class AuthService {
         );
       }
 
-      // Check if phone/email is blocked
       if (payload.phone) {
         await this.checkPhoneBlocked(payload.phone);
       } else if (payload.email) {
         await this.checkEmailBlocked(payload.email);
       }
 
-      // Find or create user
       let user: UserEntity;
       const hashedPassword: string = await bcrypt.hash(payload.password, 10);
 
@@ -154,7 +151,6 @@ export class AuthService {
           );
         }
       } else {
-        // Handle email-based user creation/finding
         user = await this.userRepo.findOne({
           where: { email: payload.email },
         });
@@ -166,7 +162,7 @@ export class AuthService {
 
       await this.handleOtpCreation(payload.phone, payload.email);
 
-      const contactInfo = payload.phone
+      const contactInfo: string = payload.phone
         ? `phone: ${payload.phone}`
         : `email: ${payload.email}`;
       this.logger.log(`OTP sent to ${contactInfo}`);
@@ -190,7 +186,6 @@ export class AuthService {
     }>
   > {
     try {
-      // Validate that either phone or email is provided
       if (!payload.phone && !payload.email) {
         throw new HttpException(
           'Phone or email is required',
@@ -198,7 +193,6 @@ export class AuthService {
         );
       }
 
-      // Find user by phone or email
       let user: UserEntity;
       if (payload.phone) {
         user = await this.findUserByPhone(payload.phone);
@@ -215,14 +209,12 @@ export class AuthService {
         (payload.phone === '901234569' && payload.otp === '123456');
 
       if (!isTestUser) {
-        // Validate OTP for regular users
         const otp: OtpEntity = await this.validateOtp(
           payload.otp,
           payload.phone,
           payload.email,
         );
 
-        // Update OTP retry count
         if (payload.phone) {
           await this.updateOtpRetryCount(payload.phone, otp.retryCount + 1);
         } else {
@@ -239,13 +231,11 @@ export class AuthService {
         user.role,
       );
 
-      // Generate refresh token
       const refreshToken: string = this.generateRefreshToken();
       const refreshTokenExpiresAt = new Date(
         Date.now() + this.REFRESH_TOKEN_EXPIRY,
       );
 
-      // Save refresh token to database
       await this.userRepo.update(
         { id: user.id },
         {
@@ -254,7 +244,6 @@ export class AuthService {
         },
       );
 
-      // Get full user data
       const fullUser: UserEntity = await this.userRepo.findOne({
         where: { id: user.id },
         select: [
@@ -314,7 +303,6 @@ export class AuthService {
         );
       }
 
-      // Check if refresh token is expired
       if (
         user.refreshTokenExpiresAt &&
         user.refreshTokenExpiresAt < new Date()
@@ -325,8 +313,7 @@ export class AuthService {
         );
       }
 
-      // Generate new tokens
-      const newToken = await this.authorizationService.sign(
+      const newToken: string = await this.authorizationService.sign(
         user.id,
         user.phone,
         user.role,
@@ -337,7 +324,6 @@ export class AuthService {
         Date.now() + this.REFRESH_TOKEN_EXPIRY,
       );
 
-      // Update refresh token in database
       await this.userRepo.update(
         { id: user.id },
         {
@@ -363,7 +349,6 @@ export class AuthService {
 
   async logout(userId: number): Promise<SingleResponse<{ message: string }>> {
     try {
-      // Clear refresh token
       await this.userRepo.update(
         { id: userId },
         {
@@ -401,13 +386,11 @@ export class AuthService {
         user.login,
       );
 
-      // Generate refresh token
       const refreshToken: string = this.generateRefreshToken();
       const refreshTokenExpiresAt = new Date(
         Date.now() + this.REFRESH_TOKEN_EXPIRY,
       );
 
-      // Save refresh token to database
       await this.userRepo.update(
         { id: user.id },
         {
@@ -452,7 +435,7 @@ export class AuthService {
         login: payload.login,
       });
 
-      const result = await this.userRepo.save(newUser);
+      const result: UserEntity = await this.userRepo.save(newUser);
 
       this.logger.log(`New user registered: ${result.id}`);
       return { result };
@@ -468,7 +451,6 @@ export class AuthService {
     payload: AuthResendOtpDto,
   ): Promise<SingleResponse<{ message: string }>> {
     try {
-      // Validate that either phone or email is provided
       if (!payload.phone && !payload.email) {
         throw new HttpException(
           'Phone or email is required',
@@ -476,14 +458,12 @@ export class AuthService {
         );
       }
 
-      // Check if phone/email is blocked
       if (payload.phone) {
         await this.checkPhoneBlocked(payload.phone);
       } else {
         await this.checkEmailBlocked(payload.email);
       }
 
-      // Check if user exists
       let user: UserEntity;
       if (payload.phone) {
         user = await this.userRepo.findOne({
@@ -499,7 +479,6 @@ export class AuthService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      // Check resend cooldown
       const whereCondition = payload.phone
         ? { phone: payload.phone }
         : { email: payload.email };
@@ -521,10 +500,9 @@ export class AuthService {
         }
       }
 
-      // Generate and send new OTP
       await this.handleOtpCreation(payload.phone, payload.email);
 
-      const contactInfo = payload.phone
+      const contactInfo: string = payload.phone
         ? `phone: ${payload.phone}`
         : `email: ${payload.email}`;
       this.logger.log(`OTP resent to ${contactInfo}`);
@@ -632,7 +610,6 @@ export class AuthService {
       await this.otpRepo.save(otpData);
     }
 
-    // Send OTP via email if email is provided
     if (email) {
       try {
         await this.mailService.sendOtpEmail(email, otp);
@@ -648,9 +625,6 @@ export class AuthService {
         );
       }
     }
-
-    // TODO: Send OTP via SMS if phone is provided
-    // SMS sending logic can be added here in the future
   }
 
   private generateOtp(): string {
@@ -687,7 +661,6 @@ export class AuthService {
       );
     }
 
-    // Check if phone/email is blocked
     if (otp.blockedUntil && otp.blockedUntil > new Date()) {
       const contactType = phone ? 'phone number' : 'email address';
       throw new HttpException(
@@ -696,7 +669,6 @@ export class AuthService {
       );
     }
 
-    // Check if OTP is expired
     const otpExpiryTime = new Date(Date.now() - this.OTP_EXPIRY_TIME);
     if (otp.otpSendAt < otpExpiryTime) {
       throw new HttpException(
@@ -705,13 +677,10 @@ export class AuthService {
       );
     }
 
-    // Check if OTP is correct
     if (otp.otp !== otpCode) {
-      // Increment attempts
-      const newAttempts = otp.attempts + 1;
+      const newAttempts: number = otp.attempts + 1;
 
       if (newAttempts >= this.MAX_ATTEMPTS) {
-        // Block the phone/email
         await this.otpRepo.update(whereCondition, {
           attempts: newAttempts,
           blockedUntil: new Date(Date.now() + this.BLOCK_DURATION),
@@ -722,7 +691,6 @@ export class AuthService {
           HttpStatus.TOO_MANY_REQUESTS,
         );
       } else {
-        // Just increment attempts
         await this.otpRepo.update(whereCondition, { attempts: newAttempts });
         throw new HttpException(
           `Invalid verification code. ${this.MAX_ATTEMPTS - newAttempts} There are only a few attempts left.`,
@@ -731,7 +699,6 @@ export class AuthService {
       }
     }
 
-    // Mark as verified
     await this.otpRepo.update(whereCondition, { verified: true });
 
     return otp;
@@ -823,7 +790,7 @@ export class AuthService {
     email: string,
     hashedPassword: string,
   ): Promise<UserEntity> {
-    const newUser = this.userRepo.create({
+    const newUser: UserEntity = this.userRepo.create({
       email,
       password: hashedPassword,
       role: UserRoleEnum.CLIENT,

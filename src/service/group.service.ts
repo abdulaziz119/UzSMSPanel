@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { PaginationParams, ParamIdDto, SingleResponse } from '../utils/dto/dto';
@@ -111,7 +105,6 @@ export class GroupService {
         .createQueryBuilder('group')
         .leftJoinAndSelect('group.user', 'user');
 
-      // Apply filters
       if (filters.user_id) {
         queryBuilder.andWhere('group.user_id = :user_id', {
           user_id: filters.user_id,
