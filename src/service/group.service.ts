@@ -85,7 +85,7 @@ export class GroupService {
     });
 
     if (!smsGroup) {
-      throw new NotFoundException('Group not found');
+      throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
     }
 
     try {
@@ -103,7 +103,6 @@ export class GroupService {
     }
   }
 
-  // Dashboard-specific methods
   async findAllGroups(
     filters: GroupFilterDto,
   ): Promise<PaginationResponse<GroupEntity[]>> {
@@ -171,7 +170,7 @@ export class GroupService {
       });
 
       if (!group) {
-        throw new NotFoundException('Group not found');
+        throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
       }
 
       return { result: group };
@@ -183,7 +182,7 @@ export class GroupService {
     }
   }
 
-  async getGroupStatistics(): Promise<SingleResponse<any>> {
+  async getGroupStatistics() {
     try {
       const stats = await this.groupRepo
         .createQueryBuilder('group')
@@ -196,7 +195,6 @@ export class GroupService {
         ])
         .getRawOne();
 
-      // Get top groups by contact count
       const topGroups: GroupEntity[] = await this.groupRepo
         .createQueryBuilder('group')
         .leftJoinAndSelect('group.user', 'user')

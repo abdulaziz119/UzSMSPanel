@@ -30,7 +30,6 @@ export class MessageService {
     private readonly performanceMonitor: PerformanceMonitor,
   ) {}
 
-  // Create a single SMS message with billing in transaction
   async createSmsMessageWithBilling(
     smsData: {
       user_id: number;
@@ -45,200 +44,77 @@ export class MessageService {
     balance?: ContactTypeEnum,
     totalCost?: number,
   ): Promise<MessageEntity> {
-    return await this.messageRepo.manager.transaction(async (em) => {
-      // Capture balance_before
-      let balanceBefore: number = 0;
-      if (balance) {
-        const balanceColumn =
-          balance === ContactTypeEnum.INDIVIDUAL
-            ? 'individual_balance'
-            : 'company_balance';
-        const contact = await em.getRepository(ContactEntity).findOne({
-          where: { user_id: smsData.user_id, type: balance },
-          select: [balanceColumn],
-        });
-        balanceBefore = Number(contact?.[balanceColumn] || 0);
-      } else {
-        throw new HttpException(
-          'balance_type header is required for sending messages',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Deduct from contact balance
-      await this.billingService.deductContactBalanceTransactional(
-        em,
-        smsData.user_id,
-        balance,
-        totalCost,
-      );
-
-      // Create SMS message
-      const msg: MessageEntity = em.getRepository(MessageEntity).create({
-        user_id: smsData.user_id,
-        phone: smsData.phone,
-        message: smsData.message,
-        status: MessageStatusEnum.SENT,
-        message_type: MessageTypeEnum.SMS,
-        operator: smsData.operator,
-        sms_template_id: smsData.sms_template_id,
-        cost: smsData.cost,
-        price_provider_sms: smsData.price_provider_sms,
-      });
-      const saved: MessageEntity = await em
-        .getRepository(MessageEntity)
-        .save(msg);
-
-      // Update template usage
-      await em.getRepository(SmsTemplateEntity).update(
-        { id: template.id },
-        {
-          usage_count: (): string => 'usage_count + 1',
-          last_used_at: saved.created_at,
-        },
-      );
-
-      // Create Transaction record linked to this single message
-      const amount: number = Number(totalCost || smsData.cost || 0);
-      const balanceAfter: number = Math.max(0, balanceBefore - amount);
-      const trx: TransactionEntity = em
-        .getRepository(TransactionEntity)
-        .create({
-          user_id: smsData.user_id,
-          transaction_id: this.generateExternalTransactionId(),
-          type: TransactionTypeEnum.SMS_PAYMENT,
-          status: TransactionStatusEnum.COMPLETED,
-          amount: -Math.abs(amount),
-          balance_before: balanceBefore,
-          balance_after: balanceAfter,
-          description: `Single SMS send to ${smsData.phone}`,
-          message_id: saved.id,
-          group_id: null,
-        });
-      await em.getRepository(TransactionEntity).save(trx);
-
-      return saved;
-    });
-  }
-
-  // Create bulk SMS messages with billing in transaction (optimized)
-  async createBulkSmsMessagesWithBilling(
-    smsDataArray: Array<{
-      user_id: number;
-      phone: string;
-      message: string;
-      operator: string;
-      sms_template_id: number;
-      cost: number;
-      price_provider_sms: number;
-      group_id: number;
-    }>,
-    template: SmsTemplateEntity,
-    balance?: ContactTypeEnum,
-    totalCost?: number,
-  ): Promise<MessageEntity[]> {
-    return await this.performanceMonitor.measureAsync(
-      'createBulkSmsMessagesWithBilling',
-      async () => {
-        return await this.messageRepo.manager.transaction(async (em) => {
-          // Capture balance_before
-          const user_id: number = smsDataArray[0].user_id;
-          let balanceBefore: number = 0;
-          if (balance) {
-            const balanceColumn =
-              balance === ContactTypeEnum.INDIVIDUAL
-                ? 'individual_balance'
-                : 'company_balance';
-            const contact = await em.getRepository(ContactEntity).findOne({
-              where: { user_id: user_id, type: balance },
+    return await this.messageRepo.manager.transaction(
+      async (em): Promise<MessageEntity> => {
+        let balanceBefore: number = 0;
+        if (balance) {
+          const balanceColumn =
+            balance === ContactTypeEnum.INDIVIDUAL
+              ? 'individual_balance'
+              : 'company_balance';
+          const contact: ContactEntity = await em
+            .getRepository(ContactEntity)
+            .findOne({
+              where: { user_id: smsData.user_id, type: balance },
               select: [balanceColumn],
             });
-            balanceBefore = Number(contact?.[balanceColumn] || 0);
-          } else {
-            throw new HttpException(
-              'balance_type header is required for sending messages',
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-
-          // Deduct total from contact or user balance
-          const billingTimer =
-            this.performanceMonitor.startTimer('billing_deduction');
-          await this.billingService.deductContactBalanceTransactional(
-            em,
-            user_id,
-            balance,
-            totalCost,
+          balanceBefore = Number(contact?.[balanceColumn] || 0);
+        } else {
+          throw new HttpException(
+            'balance_type header is required for sending messages',
+            HttpStatus.BAD_REQUEST,
           );
-          billingTimer();
+        }
 
-          // Optimized bulk insert
-          const insertTimer = this.performanceMonitor.startTimer('bulk_insert');
-          const repo = em.getRepository(MessageEntity);
+        await this.billingService.deductContactBalanceTransactional(
+          em,
+          smsData.user_id,
+          balance,
+          totalCost,
+        );
 
-          // Create entities in batches to avoid memory issues
-          const CHUNK_SIZE = 1000;
-          const savedMessages: MessageEntity[] = [];
-
-          for (let i: number = 0; i < smsDataArray.length; i += CHUNK_SIZE) {
-            const chunk = smsDataArray.slice(i, i + CHUNK_SIZE);
-            const toSave: MessageEntity[] = chunk.map((smsData) =>
-              repo.create({
-                user_id: smsData.user_id,
-                phone: smsData.phone,
-                message: smsData.message,
-                status: MessageStatusEnum.SENT,
-                message_type: MessageTypeEnum.SMS,
-                operator: smsData.operator,
-                sms_template_id: smsData.sms_template_id,
-                cost: smsData.cost,
-                price_provider_sms: smsData.price_provider_sms,
-                group_id: smsData.group_id,
-              }),
-            );
-
-            const chunkSaved: MessageEntity[] = await repo.save(toSave, {
-              chunk: 500,
-            });
-            savedMessages.push(...chunkSaved);
-          }
-          insertTimer();
-
-          // Update template usage with single query
-          const templateTimer =
-            this.performanceMonitor.startTimer('template_update');
-          await em.getRepository(SmsTemplateEntity).update(
-            { id: template.id },
-            {
-              usage_count: (): string =>
-                `usage_count + ${savedMessages.length}`,
-              last_used_at: new Date(),
-            },
-          );
-          templateTimer();
-
-          // Create single aggregated Transaction for the group
-          const amount: number = Number(totalCost || 0);
-          const balanceAfter: number = Math.max(0, balanceBefore - amount);
-          const group_id: number = smsDataArray[0]?.group_id ?? null;
-          const trx: TransactionEntity = em
-            .getRepository(TransactionEntity)
-            .create({
-              user_id,
-              transaction_id: this.generateExternalTransactionId(),
-              type: TransactionTypeEnum.SMS_PAYMENT,
-              status: TransactionStatusEnum.COMPLETED,
-              amount: -Math.abs(amount),
-              balance_before: balanceBefore,
-              balance_after: balanceAfter,
-              description: `Group SMS send (group_id=${group_id}) x${savedMessages.length}`,
-              group_id,
-              message_id: null,
-            });
-          await em.getRepository(TransactionEntity).save(trx);
-
-          return savedMessages;
+        const msg: MessageEntity = em.getRepository(MessageEntity).create({
+          user_id: smsData.user_id,
+          phone: smsData.phone,
+          message: smsData.message,
+          status: MessageStatusEnum.SENT,
+          message_type: MessageTypeEnum.SMS,
+          operator: smsData.operator,
+          sms_template_id: smsData.sms_template_id,
+          cost: smsData.cost,
+          price_provider_sms: smsData.price_provider_sms,
         });
+        const saved: MessageEntity = await em
+          .getRepository(MessageEntity)
+          .save(msg);
+
+        await em.getRepository(SmsTemplateEntity).update(
+          { id: template.id },
+          {
+            usage_count: (): string => 'usage_count + 1',
+            last_used_at: saved.created_at,
+          },
+        );
+
+        const amount: number = Number(totalCost || smsData.cost || 0);
+        const balanceAfter: number = Math.max(0, balanceBefore - amount);
+        const trx: TransactionEntity = em
+          .getRepository(TransactionEntity)
+          .create({
+            user_id: smsData.user_id,
+            transaction_id: this.generateExternalTransactionId(),
+            type: TransactionTypeEnum.SMS_PAYMENT,
+            status: TransactionStatusEnum.COMPLETED,
+            amount: -Math.abs(amount),
+            balance_before: balanceBefore,
+            balance_after: balanceAfter,
+            description: `Single SMS send to ${smsData.phone}`,
+            message_id: saved.id,
+            group_id: null,
+          });
+        await em.getRepository(TransactionEntity).save(trx);
+
+        return saved;
       },
     );
   }
@@ -257,7 +133,6 @@ export class MessageService {
         .where('message.user_id = :user_id', { user_id })
         .orderBy('message.created_at', 'DESC');
 
-      // By default select all columns; if not dashboard, omit provider price from results
       if (isDashboard === false) {
         queryBuilder.select([
           'message.id',
@@ -270,7 +145,6 @@ export class MessageService {
           'message.message_type',
           'message.operator',
           'message.cost',
-          // omit message.price_provider_sms intentionally
           'message.error_message',
           'message.delivery_report',
           'message.created_at',

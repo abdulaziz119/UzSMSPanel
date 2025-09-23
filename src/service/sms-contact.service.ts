@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  NotFoundException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { In, Repository } from 'typeorm';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { MODELS } from '../constants/constants';
@@ -34,21 +28,15 @@ export class SmsContactService {
     private readonly groupRepo: Repository<GroupEntity>,
   ) {}
 
-  /**
-   * Optimized phone validation without DB queries - uses pre-loaded tariffs
-   * Only accepts Uzbekistan phone numbers
-   */
   async validatePhoneNumberOptimized(
-    phone: string, 
-    tariffByCode: Map<string, TariffEntity>
+    phone: string,
+    tariffByCode: Map<string, TariffEntity>,
   ): Promise<SMSContactStatusEnum> {
     const cleanPhone: string = (phone || '').toString().trim();
 
     try {
-      // Force parsing as Uzbekistan number
       let parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
-      
-      // If that fails, try without country code but still validate as UZ
+
       if (!parsed) {
         parsed = parsePhoneNumberFromString(cleanPhone);
       }
@@ -57,7 +45,6 @@ export class SmsContactService {
         return SMSContactStatusEnum.INVALID_FORMAT;
       }
 
-      // Check if it's actually a Uzbekistan number
       if (parsed.country !== 'UZ') {
         return SMSContactStatusEnum.INVALID_FORMAT;
       }
@@ -68,7 +55,6 @@ export class SmsContactService {
         national.substring(0, 2),
       ].filter(Boolean);
 
-      // Check tariffs from pre-loaded Map instead of DB query
       for (const code of candidates) {
         if (tariffByCode.has(code)) {
           return SMSContactStatusEnum.ACTIVE;
@@ -85,10 +71,8 @@ export class SmsContactService {
     const cleanPhone: string = (phone || '').toString().trim();
 
     try {
-      // Force parsing as Uzbekistan number
       let parsed = parsePhoneNumberFromString(cleanPhone, 'UZ');
-      
-      // If that fails, try without country code but still validate as UZ
+
       if (!parsed) {
         parsed = parsePhoneNumberFromString(cleanPhone);
       }
@@ -97,7 +81,6 @@ export class SmsContactService {
         return SMSContactStatusEnum.INVALID_FORMAT;
       }
 
-      // Check if it's actually a Uzbekistan number
       if (parsed.country !== 'UZ') {
         return SMSContactStatusEnum.INVALID_FORMAT;
       }
@@ -139,7 +122,7 @@ export class SmsContactService {
         national.substring(0, 2),
       ].filter(Boolean);
       const tariff: TariffEntity = await this.tariffRepo.findOne({
-        where: candidates.map((code) => ({ code })),
+        where: candidates.map((code: string) => ({ code })),
       });
       return tariff || null;
     } catch (error) {
@@ -147,14 +130,9 @@ export class SmsContactService {
     }
   }
 
-  /**
-   * Optimized version: fetch contacts once, pre-resolve all needed tariff codes with a single query,
-   * and build results without per-contact DB calls. Significantly faster for large groups.
-   */
   async getValidContactsWithTariffsOptimized(
     group_id: number,
   ): Promise<Array<{ contact: SmsContactEntity; tariff: TariffEntity }>> {
-    // Fetch only needed fields
     const contacts: Pick<
       SmsContactEntity,
       'id' | 'phone' | 'group_id' | 'name' | 'status'
@@ -171,7 +149,6 @@ export class SmsContactService {
 
     if (!contacts.length) return [];
 
-    // Normalize phones and compute candidate codes
     const normalizedList: Array<{
       contact: Pick<
         SmsContactEntity,
@@ -203,7 +180,6 @@ export class SmsContactService {
 
     if (!normalizedList.length) return [];
 
-    // Fetch all tariffs for required codes in one query
     const codesArr: string[] = Array.from(codeSet);
     const tariffs: TariffEntity[] = await this.tariffRepo.find({
       where: { code: In(codesArr) },
@@ -213,7 +189,6 @@ export class SmsContactService {
       if (t.code) tariffByCode.set(t.code, t);
     }
 
-    // Build results preferring 3-digit match then 2-digit
     const results: Array<{ contact: SmsContactEntity; tariff: TariffEntity }> =
       [];
     for (const row of normalizedList) {
@@ -221,7 +196,6 @@ export class SmsContactService {
       const tariff: TariffEntity =
         (c3 && tariffByCode.get(c3)) || (c2 && tariffByCode.get(c2));
       if (!tariff) continue;
-      // Consider as ACTIVE when tariff exists (same semantics as previous path)
       results.push({ contact: row.contact as SmsContactEntity, tariff });
     }
 
@@ -247,11 +221,12 @@ export class SmsContactService {
         where: { id: payload.group_id },
       });
       if (!smsGroupData) {
-        throw new NotFoundException('SMS Group not found');
+        throw new HttpException('SMS Group not found', HttpStatus.NOT_FOUND);
       }
 
       const normalizedPhone: string = await this.normalizePhone(payload.phone);
-      const status = await this.validatePhoneNumber(normalizedPhone);
+      const status: SMSContactStatusEnum =
+        await this.validatePhoneNumber(normalizedPhone);
 
       const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
         name: payload.name,
@@ -267,7 +242,7 @@ export class SmsContactService {
       await this.groupRepo
         .createQueryBuilder()
         .update(GroupEntity)
-        .set({ contact_count: () => 'COALESCE(contact_count, 0) + 1' })
+        .set({ contact_count: (): string => 'COALESCE(contact_count, 0) + 1' })
         .where('id = :id', { id: payload.group_id })
         .execute();
 
@@ -293,7 +268,6 @@ export class SmsContactService {
 
     for (const contact of contacts) {
       try {
-        // Validate group exists
         const smsGroupData: GroupEntity = await this.groupRepo.findOne({
           where: { id: contact.group_id },
         });
@@ -302,13 +276,12 @@ export class SmsContactService {
           continue;
         }
 
-        // Normalize phone and validate
         const normalizedPhone: string = await this.normalizePhone(
           contact.phone,
         );
-        const status = await this.validatePhoneNumber(normalizedPhone);
+        const status: SMSContactStatusEnum =
+          await this.validatePhoneNumber(normalizedPhone);
 
-        // Create new contact
         const newSmsContact: SmsContactEntity = this.smsContactRepo.create({
           name: contact.name,
           phone: (normalizedPhone || contact.phone || '').replace(/^\+/, ''),
@@ -322,7 +295,6 @@ export class SmsContactService {
 
         created.push(savedSmsContact);
 
-        // Track group count updates
         const currentCount: number =
           groupCountUpdates.get(contact.group_id) || 0;
         groupCountUpdates.set(contact.group_id, currentCount + 1);
@@ -334,14 +306,13 @@ export class SmsContactService {
       }
     }
 
-    // Update group contact counts in batch
     for (const [groupId, incrementCount] of groupCountUpdates) {
       try {
         await this.groupRepo
           .createQueryBuilder()
           .update(GroupEntity)
           .set({
-            contact_count: () =>
+            contact_count: (): string =>
               `COALESCE(contact_count, 0) + ${incrementCount}`,
           })
           .where('id = :id', { id: groupId })
@@ -370,22 +341,34 @@ export class SmsContactService {
   async createFromRows(
     rows: ParsedContactRow[],
     default_group_id: number,
-  ): Promise<{ result: true; created: number; skipped: number; duplicates: number; invalidFormat: number }> {
+  ): Promise<{
+    result: true;
+    created: number;
+    skipped: number;
+    duplicates: number;
+    invalidFormat: number;
+  }> {
     if (!rows || rows.length === 0)
-      return { result: true, created: 0, skipped: 0, duplicates: 0, invalidFormat: 0 };
+      return {
+        result: true,
+        created: 0,
+        skipped: 0,
+        duplicates: 0,
+        invalidFormat: 0,
+      };
 
     let created: number = 0;
     let skipped: number = 0;
     let duplicates: number = 0;
     let invalidFormat: number = 0;
 
-    // Preload group data once
     const smsGroupData: GroupEntity = await this.groupRepo.findOne({
       where: { id: default_group_id },
     });
-    if (!smsGroupData) throw new NotFoundException('SMS Group not found');
+    if (!smsGroupData) {
+      throw new HttpException('SMS Group not found', HttpStatus.NOT_FOUND);
+    }
 
-    // Step 1: Pre-load all tariffs to avoid repeated DB queries
     const allTariffs: TariffEntity[] = await this.tariffRepo.find();
     const tariffByCode = new Map<string, TariffEntity>();
     for (const tariff of allTariffs) {
@@ -394,23 +377,25 @@ export class SmsContactService {
       }
     }
 
-    // Step 2: Get existing contacts in this group to check for duplicates
-    const existingContacts = await this.smsContactRepo.find({
-      where: { group_id: default_group_id },
-      select: ['phone'],
-    });
+    const existingContacts: SmsContactEntity[] = await this.smsContactRepo.find(
+      {
+        where: { group_id: default_group_id },
+        select: ['phone'],
+      },
+    );
     const existingPhoneSet = new Set(
-      existingContacts.map(contact => contact.phone.replace(/^\+/, ''))
+      existingContacts.map((contact: SmsContactEntity): string =>
+        contact.phone.replace(/^\+/, ''),
+      ),
     );
 
-    // Step 3: Track processed phones in current batch to avoid duplicates within the same import
     const processedPhonesInBatch = new Set<string>();
 
     const batchSize = 200;
     for (let i: number = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
       const toSave: SmsContactEntity[] = [];
-      
+
       for (const r of batch) {
         const phoneNormalized: string = await this.normalizePhone(r.phone);
         if (!phoneNormalized) {
@@ -418,30 +403,29 @@ export class SmsContactService {
           continue;
         }
 
-        // Clean phone for duplicate checking (remove + prefix)
         const cleanPhone = phoneNormalized.replace(/^\+/, '');
 
-        // Check for duplicates within the batch
         if (processedPhonesInBatch.has(cleanPhone)) {
           duplicates++;
           continue;
         }
 
-        // Check for duplicates with existing contacts
         if (existingPhoneSet.has(cleanPhone)) {
           duplicates++;
           continue;
         }
 
-        // Optimized phone validation without DB queries - only Uzbekistan numbers
-        const status = await this.validatePhoneNumberOptimized(phoneNormalized, tariffByCode);
-        
+        const status: SMSContactStatusEnum =
+          await this.validatePhoneNumberOptimized(
+            phoneNormalized,
+            tariffByCode,
+          );
+
         if (status === SMSContactStatusEnum.INVALID_FORMAT) {
           invalidFormat++;
           continue;
         }
 
-        // Mark this phone as processed in current batch
         processedPhonesInBatch.add(cleanPhone);
 
         const entity: SmsContactEntity = this.smsContactRepo.create({
@@ -453,7 +437,7 @@ export class SmsContactService {
         });
         toSave.push(entity);
       }
-      
+
       if (toSave.length) {
         const saved: SmsContactEntity[] =
           await this.smsContactRepo.save(toSave);
@@ -537,7 +521,7 @@ export class SmsContactService {
     });
 
     if (!smsContact) {
-      throw new NotFoundException('SMS Contact not found');
+      throw new HttpException('SMS Contact not found', HttpStatus.NOT_FOUND);
     }
 
     try {

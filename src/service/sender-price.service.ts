@@ -1,11 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Inject, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { SenderPriceEntity } from '../entity/sender-price.entity';
@@ -29,15 +22,15 @@ export class SenderPriceService {
     payload: CreateSenderPriceDto,
   ): Promise<SingleResponse<SenderPriceEntity>> {
     try {
-      // Operator kodi unique ekanligini tekshirish
       const existingOperator: SenderPriceEntity =
         await this.senderPriceRepo.findOne({
           where: { operator: payload.operator },
         });
 
       if (existingOperator) {
-        throw new ConflictException(
+        throw new HttpException(
           `Operator kodi "${payload.operator}" allaqachon mavjud`,
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -78,17 +71,14 @@ export class SenderPriceService {
       .createQueryBuilder('sender_price')
       .where('sender_price.id is not null');
 
-    // Operator filter
     if (operator) {
       qb.andWhere('sender_price.operator = :operator', { operator });
     }
 
-    // Active filter
     if (active !== undefined) {
       qb.andWhere('sender_price.active = :active', { active });
     }
 
-    // Search filter
     if (search) {
       qb.andWhere(
         '(sender_price.operator ILIKE :search OR sender_price.operator_name ILIKE :search)',
@@ -96,7 +86,6 @@ export class SenderPriceService {
       );
     }
 
-    // Price range filter
     if (price_from !== undefined) {
       qb.andWhere('sender_price.monthly_fee >= :price_from', { price_from });
     }
@@ -123,7 +112,7 @@ export class SenderPriceService {
     });
 
     if (!found) {
-      throw new NotFoundException('Sender price not found');
+      throw new HttpException('Sender price not found', HttpStatus.NOT_FOUND);
     }
 
     return { result: found };
@@ -137,10 +126,9 @@ export class SenderPriceService {
     });
 
     if (!found) {
-      throw new NotFoundException('Sender price not found');
+      throw new HttpException('Sender price not found', HttpStatus.NOT_FOUND);
     }
 
-    // Agar operator kodi o'zgartirilayotgan bo'lsa, unique ekanligini tekshirish
     if (body.operator && body.operator !== found.operator) {
       const existingOperator: SenderPriceEntity =
         await this.senderPriceRepo.findOne({
@@ -148,8 +136,9 @@ export class SenderPriceService {
         });
 
       if (existingOperator) {
-        throw new ConflictException(
+        throw new HttpException(
           `Operator kodi "${body.operator}" allaqachon mavjud`,
+          HttpStatus.BAD_REQUEST,
         );
       }
     }
@@ -178,13 +167,13 @@ export class SenderPriceService {
     });
 
     if (!found) {
-      throw new NotFoundException('Sender price not found');
+      throw new HttpException('Sender price not found', HttpStatus.NOT_FOUND);
     }
 
-    // Agar sender price ishlatilayotgan bo'lsa, o'chirib bo'lmaydi
     if (found.smsSenders && found.smsSenders.length > 0) {
-      throw new ConflictException(
+      throw new HttpException(
         "Bu sender price ishlatilmoqda, o'chirib bo'lmaydi",
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -192,7 +181,6 @@ export class SenderPriceService {
     return { result: true };
   }
 
-  // Barcha faol sender price'larni olish (dropdown uchun)
   async getActivePrices(): Promise<SingleResponse<SenderPriceEntity[]>> {
     const prices: SenderPriceEntity[] = await this.senderPriceRepo.find({
       where: { active: true },
