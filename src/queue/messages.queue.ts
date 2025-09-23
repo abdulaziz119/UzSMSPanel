@@ -9,11 +9,11 @@ import {
 } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
 import {
-  BadRequestException,
   Injectable,
   Logger,
-  NotFoundException,
   Inject,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { SMS_MESSAGE_QUEUE, MODELS } from '../constants/constants';
 import { ContactTypeEnum } from '../utils/enum/contact.enum';
@@ -22,7 +22,6 @@ import { SmsContactService } from '../service/sms-contact.service';
 import { Repository } from 'typeorm';
 import { SmsTemplateEntity } from '../entity/sms-template.entity';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
-import { UserEntity } from '../entity/user.entity';
 import { ContactEntity } from '../entity/contact.entity';
 import { TemplateStatusEnum } from '../utils/enum/sms-template.enum';
 import { SMSContactStatusEnum } from '../utils/enum/sms-contact.enum';
@@ -37,7 +36,7 @@ import {
   SendToContactJobResult,
   SendToGroupJobResult,
 } from '../utils/interfaces/request/sms-sending.request.interfaces';
-import { SmppService } from '../service/smpp.service';
+import { MobiUzSmppService } from '../service/mobi-uz.smpp.service';
 import { SMPP_SOURCE_ADDR } from '../utils/env/env';
 
 @Processor(SMS_MESSAGE_QUEUE)
@@ -48,13 +47,11 @@ export class MessagesQueue {
   constructor(
     private readonly smsMessageService: MessageService,
     private readonly smsContactService: SmsContactService,
-    private readonly smppService: SmppService,
+    private readonly smppService: MobiUzSmppService,
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     @Inject(MODELS.SMS_CONTACT)
     private readonly smsContactRepo: Repository<SmsContactEntity>,
-    @Inject(MODELS.USER)
-    private readonly userRepo: Repository<UserEntity>,
     @Inject(MODELS.CONTACT)
     private readonly contactRepo: Repository<ContactEntity>,
     @InjectQueue(SMS_MESSAGE_QUEUE) private readonly messageQueue: Queue,
@@ -80,7 +77,6 @@ export class MessagesQueue {
       });
       return Number(contact?.[balanceColumn] || 0);
     }
-    // Fallback or error if balance_type is not provided
     return 0;
   }
 
@@ -94,7 +90,6 @@ export class MessagesQueue {
       );
       const { payload, user_id, balance } = job.data;
 
-      // 1) Template lookup
       const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
         {
           where: {
@@ -104,7 +99,10 @@ export class MessagesQueue {
         },
       );
       if (!getTemplate) {
-        throw new NotFoundException('Template not found or inactive');
+        throw new HttpException(
+          { message: 'Template not found or inactive' },
+          HttpStatus.NOT_FOUND,
+        );
       }
 
       // 2) Phone validation
@@ -112,18 +110,25 @@ export class MessagesQueue {
         await this.smsContactService.normalizePhone(payload.phone);
       const status: SMSContactStatusEnum =
         await this.smsContactService.validatePhoneNumber(normalizedPhone);
-      if (status === SMSContactStatusEnum.INVALID_FORMAT)
-        throw new BadRequestException('Invalid phone number format');
-      if (status === SMSContactStatusEnum.BANNED_NUMBER)
-        throw new BadRequestException('Banned phone number');
+      if (status === SMSContactStatusEnum.INVALID_FORMAT) {
+        throw new HttpException(
+          'Invalid phone number format',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (status === SMSContactStatusEnum.BANNED_NUMBER) {
+        throw new HttpException('Banned phone number', HttpStatus.BAD_REQUEST);
+      }
 
-      // 3) Tariff lookup
       const tariff: TariffEntity | null =
         await this.smsContactService.resolveTariffForPhone(normalizedPhone);
-      if (!tariff)
-        throw new NotFoundException('Tariff not found for this phone number');
+      if (!tariff) {
+        throw new HttpException(
+          'Tariff not found for this phone number',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-      // 4) Pricing calculation
       const partsCount: number = Math.max(
         1,
         Number(getTemplate.parts_count || 1),
@@ -131,10 +136,8 @@ export class MessagesQueue {
       const unitPrice: number = Number(tariff.price || 0);
       const totalCost: number = unitPrice * partsCount;
 
-      // 5) SMPP orqali SMS yuborish
       await this.smppService.ensureConnection();
-      
-      // 6) Create with billing (SMPP dan oldin message yaratamiz, keyin SMPP message ID ni saqlaymiz)
+
       const saved: MessageEntity =
         await this.smsMessageService.createSmsMessageWithBilling(
           {
@@ -150,29 +153,31 @@ export class MessagesQueue {
           balance,
           totalCost,
         );
-      
-      // Telefon raqamini SMPP uchun to'g'ri formatda tayyorlash (plus belgisiz)
+
       let smppPhone = normalizedPhone;
       if (smppPhone.startsWith('+')) {
-        smppPhone = smppPhone.substring(1); // Plus belgisini olib tashlash
+        smppPhone = smppPhone.substring(1);
       }
-      
+
       const smppParams = {
-        source_addr_ton: 0,           // TON = 0
-        source_addr_npi: 1,           // NPI = 1
-        source_addr: SMPP_SOURCE_ADDR,          // Source address from env
-        dest_addr_ton: 1,             // TON = 1
-        dest_addr_npi: 1,             // NPI = 1
+        source_addr_ton: 0, // TON = 0
+        source_addr_npi: 1, // NPI = 1
+        source_addr: SMPP_SOURCE_ADDR, // Source address from env
+        dest_addr_ton: 1, // TON = 1
+        dest_addr_npi: 1, // NPI = 1
         destination_addr: smppPhone, // Destination address (plus belgisiz)
         short_message: payload.message,
-        service_type: "",              // Bo'sh service type
-        registered_delivery: 1,       // Delivery receipt kerak
-        data_coding: 0               // Default encoding
+        service_type: '', // Bo'sh service type
+        registered_delivery: 1, // Delivery receipt kerak
+        data_coding: 0, // Default encoding
       };
 
       const smsResult = await this.smppService.sendSms(smppParams, saved.id);
       if (!smsResult.success) {
-        throw new Error('Failed to send SMS via SMPP');
+        throw new HttpException(
+          'Failed to send SMS via SMPP',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       await job.progress(100);
@@ -205,22 +210,26 @@ export class MessagesQueue {
       );
       const { payload, user_id, balance } = job.data;
 
-      // 1) Template lookup
       const getTemplate: SmsTemplateEntity = await this.smsTemplateRepo.findOne(
         {
           where: { content: payload.message },
         },
       );
-      if (!getTemplate) throw new NotFoundException('Template not found');
+      if (!getTemplate) {
+        throw new HttpException('Template not found', HttpStatus.NOT_FOUND);
+      }
 
-      // 2) Group existence check
       const contact: SmsContactEntity = await this.smsContactRepo.findOne({
         where: { group_id: payload.group_id },
       });
       const hasAny: boolean = !!contact;
-      if (!hasAny) throw new NotFoundException('No contacts found for group');
+      if (!hasAny) {
+        throw new HttpException(
+          'No contacts found for group',
+          HttpStatus.NOT_FOUND,
+        );
+      }
 
-      // 3) Valid contacts with tariffs (optimized)
       const data =
         await this.smsContactService.getValidContactsWithTariffsOptimized(
           payload.group_id,
@@ -236,24 +245,26 @@ export class MessagesQueue {
         tariff: d.tariff,
         unitPrice: Number(d.tariff.price || 0),
       }));
-      if (items.length === 0)
-        throw new NotFoundException(
+      if (items.length === 0) {
+        throw new HttpException(
           'No valid contacts with tariffs in the group',
+          HttpStatus.BAD_REQUEST,
         );
+      }
 
-      // 4) Pricing
       const partsCount: number = Math.max(
         1,
         Number(getTemplate.parts_count || 1),
       );
 
-      // 5) Compute available budget by header balance type or user balance
       const availableBudget: number = await this.getAvailableBudget(
         user_id,
         balance,
       );
-      // Sort by unit price ascending to maximize count within budget
-      const sorted = items.slice().sort((a, b) => a.unitPrice - b.unitPrice);
+
+      const sorted = items
+        .slice()
+        .sort((a, b): number => a.unitPrice - b.unitPrice);
       const picked: typeof items = [];
       let acc: number = 0;
       for (const it of sorted) {
@@ -264,18 +275,23 @@ export class MessagesQueue {
       }
 
       if (picked.length === 0) {
-        throw new BadRequestException('Insufficient contact balance');
+        throw new HttpException(
+          'Insufficient contact balance',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      // 6) SMPP orqali har bir contact uchun SMS yuborish
       await this.smppService.ensureConnection();
-      
-      const smsSendResults: Array<{success: boolean, messageEntity?: MessageEntity}> = [];
+
+      const smsSendResults: Array<{
+        success: boolean;
+        messageEntity?: MessageEntity;
+      }> = [];
       for (const it of picked) {
         try {
-          const normalizedPhone = await this.smsContactService.normalizePhone(it.phone);
-          
-          // Avval message yaratamiz
+          const normalizedPhone: string =
+            await this.smsContactService.normalizePhone(it.phone);
+
           const messageData = {
             user_id,
             phone: it.phone,
@@ -286,7 +302,7 @@ export class MessagesQueue {
             price_provider_sms: it.tariff.price_provider_sms,
             group_id: payload.group_id,
           };
-          
+
           const savedMessage: MessageEntity =
             await this.smsMessageService.createSmsMessageWithBilling(
               messageData,
@@ -294,38 +310,47 @@ export class MessagesQueue {
               balance,
               it.unitPrice * partsCount,
             );
-          
+
           // Telefon raqamini SMPP uchun to'g'ri formatda tayyorlash (plus belgisiz)
-          let smppPhone = normalizedPhone;
+          let smppPhone: string = normalizedPhone;
           if (smppPhone.startsWith('+')) {
-            smppPhone = smppPhone.substring(1); // Plus belgisini olib tashlash
+            smppPhone = smppPhone.substring(1);
           }
-          
+
           const smppParams = {
-            source_addr_ton: 0,           // TON = 0
-            source_addr_npi: 1,           // NPI = 1
-            source_addr: SMPP_SOURCE_ADDR,          // Source address from env
-            dest_addr_ton: 1,             // TON = 1
-            dest_addr_npi: 1,             // NPI = 1
+            source_addr_ton: 0, // TON = 0
+            source_addr_npi: 1, // NPI = 1
+            source_addr: SMPP_SOURCE_ADDR, // Source address from env
+            dest_addr_ton: 1, // TON = 1
+            dest_addr_npi: 1, // NPI = 1
             destination_addr: smppPhone, // Destination address (plus belgisiz)
             short_message: payload.message,
-            service_type: "",              // Bo'sh service type
-            registered_delivery: 1,       // Delivery receipt kerak
-            data_coding: 0               // Default encoding
+            service_type: '', // Bo'sh service type
+            registered_delivery: 1, // Delivery receipt kerak
+            data_coding: 0, // Default encoding
           };
 
-          const smsResult = await this.smppService.sendSms(smppParams, savedMessage.id);
-          smsSendResults.push({success: smsResult.success, messageEntity: savedMessage});
+          const smsResult = await this.smppService.sendSms(
+            smppParams,
+            savedMessage.id,
+          );
+          smsSendResults.push({
+            success: smsResult.success,
+            messageEntity: savedMessage,
+          });
         } catch (error) {
-          this.logger.error(`Failed to send SMS to ${it.phone}: ${error.message}`);
-          smsSendResults.push({success: false});
+          this.logger.error(
+            `Failed to send SMS to ${it.phone}: ${error.message}`,
+          );
+          smsSendResults.push({ success: false });
         }
       }
 
-      // Faqat muvaffaqiyatli yuborilgan message larni qaytarish
       const messages: MessageEntity[] = smsSendResults
-        .filter(result => result.success && result.messageEntity)
-        .map(result => result.messageEntity);
+        .filter(
+          (result): MessageEntity => result.success && result.messageEntity,
+        )
+        .map((result): MessageEntity => result.messageEntity);
 
       await job.progress(100);
 
@@ -361,7 +386,8 @@ export class MessagesQueue {
       const totalContacts: number = job.data.contacts.length;
 
       for (let i: number = 0; i < job.data.contacts.length; i++) {
-        const contact = job.data.contacts[i];
+        const contact: { phone: string; message: string } =
+          job.data.contacts[i];
 
         try {
           await this.sendMessageToContact({
@@ -382,7 +408,6 @@ export class MessagesQueue {
           });
         }
 
-        // Update progress
         const progress: number = Math.round(((i + 1) / totalContacts) * 100);
         await job.progress(progress);
       }
@@ -411,12 +436,10 @@ export class MessagesQueue {
     }
   }
 
-  // Queue lifecycle handlers (for observability and optional flow control)
   @OnQueueCompleted()
   async onCompleted(job: Job): Promise<void> {
     try {
       this.logger.log(`Completed messages job ${job.id} of type ${job.name}`);
-      // Optionally inspect counts
       const counts = await this.messageQueue.getJobCounts();
       this.logger.debug(
         `Queue counts -> waiting: ${counts.waiting}, active: ${counts.active}, delayed: ${counts.delayed}`,

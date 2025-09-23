@@ -33,10 +33,10 @@ export interface SmppMessageParams {
 }
 
 @Injectable()
-export class SmppService {
-  private readonly logger = new Logger(SmppService.name);
+export class MobiUzSmppService {
+  private readonly logger: Logger = new Logger(MobiUzSmppService.name);
   private session: any = null;
-  private isConnected = false;
+  private isConnected: boolean = false;
   private config: SmppConfig;
   private redisClient: RedisClientType;
 
@@ -57,17 +57,14 @@ export class SmppService {
       password: REDIS_PASSWORD || undefined,
     });
 
-    this.redisClient.on('error', (err) =>
+    this.redisClient.on('error', (err): void =>
       this.logger.error('Redis Client Error', err),
     );
     this.redisClient.connect();
   }
 
-  /**
-   * SMPP serverga ulanish
-   */
   async connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject): void => {
       if (this.isConnected && this.session) {
         this.logger.log('SMPP already connected');
         resolve();
@@ -80,13 +77,13 @@ export class SmppService {
             url: `smpp://${this.config.host}:${this.config.port}`,
             debug: true,
           },
-          (session: any) => {
+          (session: any): void => {
             session.bind_transceiver(
               {
                 system_id: this.config.system_id,
                 password: this.config.password,
               },
-              (pdu: any) => {
+              (pdu: any): void => {
                 if (pdu.command_status === 0) {
                   this.isConnected = true;
                   this.logger.log('SMPP connected successfully');
@@ -100,19 +97,18 @@ export class SmppService {
           },
         );
 
-        this.session.on('error', (error: any) => {
+        this.session.on('error', (error: any): void => {
           this.logger.error('SMPP connection error:', error);
           this.isConnected = false;
           reject(error);
         });
 
-        this.session.on('close', () => {
+        this.session.on('close', (): void => {
           this.logger.log('SMPP connection closed');
           this.isConnected = false;
         });
 
-        // Delivery report larni handle qilish
-        this.session.on('deliver_sm', (pdu: any) => {
+        this.session.on('deliver_sm', (pdu: any): void => {
           this.handleDeliveryReport(pdu);
         });
       } catch (error) {
@@ -122,25 +118,6 @@ export class SmppService {
     });
   }
 
-  /**
-   * SMPP serverdan uzilish
-   */
-  async disconnect(): Promise<void> {
-    if (this.session && this.isConnected) {
-      return new Promise((resolve) => {
-        this.session.close();
-        this.session.on('close', () => {
-          this.isConnected = false;
-          this.logger.log('SMPP disconnected');
-          resolve();
-        });
-      });
-    }
-  }
-
-  /**
-   * SMS yuborish
-   */
   async sendSms(
     params: SmppMessageParams,
     messageId?: number,
@@ -170,7 +147,6 @@ export class SmppService {
             `SMS sent successfully to ${params.destination_addr}. Message ID: ${pdu.message_id}`,
           );
 
-          // SMPP message ID ni database ga saqlash
           if (messageId && pdu.message_id) {
             try {
               await this.messageRepo.update(
@@ -182,7 +158,7 @@ export class SmppService {
               );
 
               try {
-                const pending = await this.redisClient.get(
+                const pending: string = await this.redisClient.get(
                   `smpp:pending:${pdu.message_id}`,
                 );
                 if (pending) {
@@ -217,30 +193,17 @@ export class SmppService {
 
           resolve({ success: true, smppMessageId: pdu.message_id });
         } else {
-          const errorMessage = this.getSmppErrorMessage(pdu.command_status);
-          this.logger.error(
-            `SMS send failed: ${pdu.command_status} - ${errorMessage}`,
-          );
-          reject(
-            new Error(
-              `SMS send failed: ${pdu.command_status} - ${errorMessage}`,
-            ),
-          );
+          this.logger.error(`SMS send failed: ${pdu.command_status}`);
+          reject(new Error(`SMS send failed: ${pdu.command_status} `));
         }
       });
     });
   }
 
-  /**
-   * Ulanish holatini tekshirish
-   */
   isSmppConnected(): boolean {
     return this.isConnected && this.session !== null;
   }
 
-  /**
-   * Ulanish holatini tekshirish va kerak bo'lsa qayta ulanish
-   */
   async ensureConnection(): Promise<void> {
     if (!this.isSmppConnected()) {
       this.logger.log('SMPP not connected, attempting to reconnect...');
@@ -248,127 +211,12 @@ export class SmppService {
     }
   }
 
-  /**
-   * SMPP xatolik kodlarini tushuntirish
-   */
-  private getSmppErrorMessage(errorCode: number): string {
-    const errorMessages: { [key: number]: string } = {
-      0: 'No Error',
-      1: 'Message Length is invalid',
-      2: 'Command Length is invalid',
-      3: 'Invalid Command ID',
-      4: 'Bind Failed',
-      5: 'Invalid Priority Flag',
-      6: 'Registered Delivery Flag is invalid',
-      7: 'System Error',
-      8: 'Invalid Source Address TON',
-      9: 'Invalid Dest Addr TON',
-      10: 'Invalid Dest Addr NPI',
-      11: 'Invalid Destination Address',
-      12: 'Invalid Source Address NPI',
-      13: 'Invalid Source Address',
-      14: 'Invalid ESME Address',
-      15: 'Invalid Dest Addr Subunit',
-      16: 'Invalid Source Addr Subunit',
-      17: 'Invalid Dest Network Type',
-      18: 'Invalid Source Network Type',
-      19: 'Invalid Dest Bearer Type',
-      20: 'Invalid Source Bearer Type',
-      21: 'Invalid Dest Telematics ID',
-      22: 'Invalid Source Telematics ID',
-      23: 'Invalid Source Port',
-      24: 'Invalid Dest Port',
-      25: 'Invalid Registration Flag',
-      26: 'Invalid Addr Range',
-      27: 'Invalid Parameter Replace',
-      28: 'Invalid Number of Messages',
-      29: 'Throttling Error',
-      30: 'Invalid Scheduled Delivery Time',
-      31: 'Invalid Validity Period',
-      32: 'Pre-emption Error',
-      33: 'Provisioning Error',
-      34: 'Invalid Message ID',
-      35: 'Invalid Message Length',
-      36: 'Invalid Message Type',
-      37: 'Invalid Message State',
-      38: 'Invalid Error Code',
-      39: 'Invalid Service Type',
-      40: 'Invalid Source Address Subunit',
-      41: 'Invalid Dest Address Subunit',
-      42: 'Invalid Broadcast Type',
-      43: 'Invalid Broadcast Area Identifier',
-      44: 'Invalid Broadcast Frequency Interval',
-      45: 'Invalid Broadcast Content Type',
-      46: 'Invalid Broadcast Content Name',
-      47: 'Invalid Broadcast Message Class',
-      48: 'Invalid Broadcast Repetition',
-      49: 'Invalid Broadcast Service Group',
-      50: 'Query SM Failed',
-      51: 'Replace SM Failed',
-      52: 'Cancel SM Failed',
-      53: 'Invalid Message ID Range',
-      54: 'Invalid Number of Destinations',
-      55: 'Invalid Dest Flag',
-      56: 'Invalid Submit with Replace',
-      57: 'Invalid Submit with Replace',
-      58: 'Invalid Submit with Replace',
-      59: 'Invalid Submit with Replace',
-      60: 'Invalid Submit with Replace',
-      61: 'Invalid Submit with Replace',
-      62: 'Invalid Submit with Replace',
-      63: 'Invalid Submit with Replace',
-      64: 'Invalid Submit with Replace',
-      65: 'Invalid Submit with Replace',
-      66: 'Invalid Submit with Replace',
-      67: 'Invalid Submit with Replace',
-      68: 'Invalid Submit with Replace',
-      69: 'Invalid Submit with Replace',
-      70: 'Invalid Submit with Replace',
-      71: 'Invalid Submit with Replace',
-      72: 'Invalid Submit with Replace',
-      73: 'Invalid Submit with Replace',
-      74: 'Invalid Submit with Replace',
-      75: 'Invalid Submit with Replace',
-      76: 'Invalid Submit with Replace',
-      77: 'Invalid Submit with Replace',
-      78: 'Invalid Submit with Replace',
-      79: 'Invalid Submit with Replace',
-      80: 'Invalid Submit with Replace',
-      81: 'Invalid Submit with Replace',
-      82: 'Invalid Submit with Replace',
-      83: 'Invalid Submit with Replace',
-      84: 'Invalid Submit with Replace',
-      85: 'Invalid Submit with Replace',
-      86: 'Invalid Submit with Replace',
-      87: 'Invalid Submit with Replace',
-      88: 'Invalid Submit with Replace',
-      89: 'Invalid Submit with Replace',
-      90: 'Invalid Submit with Replace',
-      91: 'Invalid Submit with Replace',
-      92: 'Invalid Submit with Replace',
-      93: 'Invalid Submit with Replace',
-      94: 'Invalid Submit with Replace',
-      95: 'Invalid Submit with Replace',
-      96: 'Invalid Submit with Replace',
-      97: 'Invalid Submit with Replace',
-      98: 'Invalid Submit with Replace',
-      99: 'Invalid Submit with Replace',
-      100: 'Invalid Submit with Replace',
-    };
-
-    return errorMessages[errorCode] || `Unknown error code: ${errorCode}`;
-  }
-
-  /**
-   * Delivery report larni handle qilish
-   */
   private async handleDeliveryReport(pdu: any): Promise<void> {
     try {
       this.logger.log('Received delivery report PDU:');
       this.logger.log(JSON.stringify(pdu));
 
-      // SMPP delivery report string ni parse qilish
-      let reportString = '';
+      let reportString: string = '';
       if (pdu.short_message) {
         if (typeof pdu.short_message === 'string') {
           reportString = pdu.short_message;
@@ -392,16 +240,14 @@ export class SmppService {
         return;
       }
 
-      // Agar faqat ID kelsa (to'liq bo'lmagan report)
       if (Object.keys(deliveryReport).length === 1 && deliveryReport.id) {
         this.logger.log(
           `Partial report received for ID: ${deliveryReport.id}. Storing in Redis and marking as pending.`,
         );
 
-        const nowIso = new Date().toISOString();
+        const nowIso: string = new Date().toISOString();
 
-        // Redisga 24 soatga saqlash (86400 soniya) — bitta kalit: { pdu, since }
-        const message = await this.messageRepo.findOne({
+        const message: MessageEntity = await this.messageRepo.findOne({
           where: { smpp_message_id: deliveryReport.id },
         });
 
@@ -415,22 +261,20 @@ export class SmppService {
           );
         }
 
-        const payload = JSON.stringify({ pdu, since: nowIso });
+        const payload: string = JSON.stringify({ pdu, since: nowIso });
         await this.redisClient.set(
           `smpp:pending:${deliveryReport.id}`,
           payload,
           { EX: 86400 },
         );
-        return; // Boshqa ishlov berishni to'xtatish
+        return;
       }
 
-      // To'liq report kelganda
       if (deliveryReport.id && deliveryReport.stat) {
         this.logger.log(
           `Full delivery report parsed for message ${deliveryReport.id}: ${deliveryReport.stat}`,
         );
 
-        // Redisdan bu IDga tegishli vaqtinchalik yozuvni o'chirish (bitta kalit)
         await this.redisClient.del(`smpp:pending:${deliveryReport.id}`);
 
         await this.messageRepo
@@ -446,7 +290,6 @@ export class SmppService {
           `Removed pending record(s) from Redis for ID: ${deliveryReport.id} and saved redis_removed_at`,
         );
 
-        // Message ni database da yangilash
         await this.updateMessageDeliveryReport(deliveryReport, true);
       } else {
         this.logger.warn(
@@ -458,13 +301,9 @@ export class SmppService {
     }
   }
 
-  /**
-   * SMPP delivery report string ni parse qilish
-   */
   private parseDeliveryReportString(reportString: string): any {
     const deliveryReport: any = {};
 
-    // Agar string faqat ID ni o'z ichiga olsa (masalan, "id:xxxx" yoki faqat "xxxx")
     const idMatch = reportString.match(
       /^(?:id:)?([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i,
     );
@@ -473,8 +312,7 @@ export class SmppService {
       return deliveryReport;
     }
 
-    // Misol: "id:8af6f73a-92e0-11f0-9e65-000c29b7938f sub:001 dlvrd:001 submit date:2509161435 done date:2509161435 stat:DELIVRD err:000 text:"
-    const fields = reportString.split(' ');
+    const fields: string[] = reportString.split(' ');
 
     for (const field of fields) {
       const [key, value] = field.split(':');
@@ -502,7 +340,6 @@ export class SmppService {
             deliveryReport.err = value;
             break;
           case 'text':
-            // Text eng oxirida bo'ladi va bo'sh bo'lishi mumkin
             deliveryReport.text = reportString.substring(
               reportString.indexOf('text:') + 5,
             );
@@ -514,9 +351,6 @@ export class SmppService {
     return deliveryReport;
   }
 
-  /**
-   * Message entity ga delivery report ni saqlash
-   */
   private async updateMessageDeliveryReport(
     deliveryReport: any,
     isFullReport: boolean = false,
@@ -533,10 +367,8 @@ export class SmppService {
 
       if (isFullReport) {
         updateData.response_received_at = new Date();
-        // Preserve existing pending_since value; do not set to null here
       }
 
-      // SMPP message ID bo'yicha message topish va delivery report ni saqlash
       const result = await this.messageRepo
         .createQueryBuilder()
         .update(MessageEntity)

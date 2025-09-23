@@ -13,7 +13,7 @@ import { BillingService } from '../../../service/billing.service';
 import { PerformanceMonitor } from '../../../utils/performance-monitor.util';
 import { MessageService } from '../../../service/message.service';
 import { SmsSendingService } from '../../../service/sms-sending.service';
-import { SmppService } from '../../../service/smpp.service';
+import { MobiUzSmppService } from '../../../service/mobi-uz.smpp.service';
 import { MessagesQueue } from '../../../queue/messages.queue';
 
 @Module({
@@ -30,7 +30,7 @@ import { MessagesQueue } from '../../../queue/messages.queue';
     PerformanceMonitor,
     MessageService,
     SmsSendingService,
-    SmppService,
+    MobiUzSmppService,
     // queue processor
     MessagesQueue,
   ],

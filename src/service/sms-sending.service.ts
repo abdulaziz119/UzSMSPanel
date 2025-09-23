@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  Inject,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Inject, HttpException, HttpStatus } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MODELS } from '../constants/constants';
 import { SmsContactEntity } from '../entity/sms-contact.entity';
@@ -20,7 +15,7 @@ import {
 } from '../frontend/v1/modules/sms-sending/dto/sms-sending.dto';
 import { TariffEntity } from '../entity/tariffs.entity';
 import { ValidateBeforeQueueGroupResponse } from '../utils/interfaces/request/sms-sending.request.interfaces';
-import { SmppService } from './smpp.service';
+import { MobiUzSmppService } from './mobi-uz.smpp.service';
 
 @Injectable()
 export class SmsSendingService {
@@ -32,7 +27,7 @@ export class SmsSendingService {
     @Inject(MODELS.SMS_TEMPLATE)
     private readonly smsTemplateRepo: Repository<SmsTemplateEntity>,
     private readonly smsContactService: SmsContactService,
-    private readonly smppService: SmppService,
+    private readonly smppService: MobiUzSmppService,
   ) {}
 
   private async getBalanceByType(
@@ -42,8 +37,11 @@ export class SmsSendingService {
     const type: ContactTypeEnum =
       (balanceType as ContactTypeEnum) || ContactTypeEnum.INDIVIDUAL;
 
-    const balanceField = type === ContactTypeEnum.INDIVIDUAL ? 'c.individual_balance' : 'c.company_balance';
-    
+    const balanceField =
+      type === ContactTypeEnum.INDIVIDUAL
+        ? 'c.individual_balance'
+        : 'c.company_balance';
+
     const raw = await this.contactRepo
       .createQueryBuilder('c')
       .select(`COALESCE(MAX(${balanceField}), 0)`, 'max')
@@ -55,79 +53,68 @@ export class SmsSendingService {
     return Number(raw?.max || 0);
   }
 
-  /**
-   * Queue ga tushishdan oldin contact uchun balance va template tekshiruvi
-   */
   async validateBeforeQueueContact(
     user_id: number,
     body: SendToContactDto,
     balanceType?: ContactTypeEnum,
   ): Promise<void> {
-    // 0. SMPP ulanishini tekshirish va ulanish
     await this.smppService.ensureConnection();
 
-    // 1. SMS template tekshiruvi
     await this.validateSmsTemplate(user_id, body.message);
 
-    // 2. Balance tekshiruvi
     const current_balance: number = await this.getBalanceByType(
       user_id,
       balanceType,
     );
 
-    // Phone va tariff tekshiruvi
     const normalized: string = await this.smsContactService.normalizePhone(
       body.phone,
     );
     const status: SMSContactStatusEnum =
       await this.smsContactService.validatePhoneNumber(normalized);
     if (status !== SMSContactStatusEnum.ACTIVE) {
-      throw new BadRequestException('Phone number is invalid or banned.');
+      throw new HttpException(
+        'Phone number is invalid or banned.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const tariff: TariffEntity =
       await this.smsContactService.resolveTariffForPhone(normalized);
     if (!tariff) {
-      throw new BadRequestException('Tariff not found');
+      throw new HttpException('Tariff not found', HttpStatus.NOT_FOUND);
     }
 
     const parts_count: number = analyzeSmsContent(body.message).parts;
     const required_cost: number = Number(tariff.price || 0) * parts_count;
 
     if (current_balance < required_cost) {
-      throw new BadRequestException(
+      throw new HttpException(
         `The balance is not enough. It is necessary: ${required_cost}, There is: ${current_balance}`,
+        HttpStatus.BAD_REQUEST,
       );
     }
   }
 
-  /**
-   * Queue ga tushishdan oldin group uchun balance va template tekshiruvi
-   */
   async validateBeforeQueueGroup(
     user_id: number,
     body: SendToGroupDto,
     balanceType?: ContactTypeEnum,
   ): Promise<ValidateBeforeQueueGroupResponse> {
-    // 0. SMPP ulanishini tekshirish va ulanish
     await this.smppService.ensureConnection();
 
-    // 1. SMS template tekshiruvi
     await this.validateSmsTemplate(user_id, body.message);
 
-    // 2. Balance tekshiruvi
     const current_balance: number = await this.getBalanceByType(
       user_id,
       balanceType,
     );
 
-    // Group contacts bilan balance tekshiruvi
     const items =
       await this.smsContactService.getValidContactsWithTariffsOptimized(
         body.group_id,
       );
 
-    // Contact count tekshiruvi
     const total_contacts: number = await this.smsContactRepo.count({
       where: { group_id: body.group_id },
     });
@@ -139,7 +126,10 @@ export class SmsSendingService {
     );
 
     if (items.length === 0) {
-      throw new BadRequestException('No valid contacts found in the group.');
+      throw new HttpException(
+        'No valid contacts found in the group.',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const parts_count: number = analyzeSmsContent(body.message).parts;
@@ -151,8 +141,9 @@ export class SmsSendingService {
     }
 
     if (current_balance < required_cost) {
-      throw new BadRequestException(
+      throw new HttpException(
         `The balance is not enough. It is necessary: ${required_cost}, There is: ${current_balance}`,
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -163,9 +154,6 @@ export class SmsSendingService {
     };
   }
 
-  /**
-   * SMS template active tekshiruvi
-   */
   private async validateSmsTemplate(
     user_id: number,
     message: string,
@@ -179,7 +167,10 @@ export class SmsSendingService {
     });
 
     if (!template) {
-      throw new NotFoundException('SMS template not found or inactive');
+      throw new HttpException(
+        'SMS template not found or inactive',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 }

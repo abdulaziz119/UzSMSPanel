@@ -14,14 +14,11 @@ import { BillingService } from '../../../../service/billing.service';
 import { SmsContactService } from '../../../../service/sms-contact.service';
 import { PerformanceMonitor } from '../../../../utils/performance-monitor.util';
 import { MessagesQueue } from '../../../../queue/messages.queue';
-import { SmppService } from '../../../../service/smpp.service';
+import { MobiUzSmppService } from '../../../../service/mobi-uz.smpp.service';
 import { AxiosModule } from '../../../../helpers/axios.module';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    AxiosModule,
-  ],
+  imports: [DatabaseModule, AxiosModule],
   controllers: [SmsSendingController],
   providers: [
     ...messageProviders,
@@ -36,7 +33,7 @@ import { AxiosModule } from '../../../../helpers/axios.module';
     PerformanceMonitor,
     MessageService,
     SmsSendingService,
-    SmppService,
+    MobiUzSmppService,
     // queue processor
     MessagesQueue,
   ],
