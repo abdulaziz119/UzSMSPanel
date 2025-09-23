@@ -42,7 +42,7 @@ import { SMPP_SOURCE_ADDR } from '../utils/env/env';
 @Processor(SMS_MESSAGE_QUEUE)
 @Injectable()
 export class MessagesQueue {
-  private readonly logger = new Logger(MessagesQueue.name);
+  private readonly logger: Logger = new Logger(MessagesQueue.name);
 
   constructor(
     private readonly smsMessageService: MessageService,
@@ -105,7 +105,6 @@ export class MessagesQueue {
         );
       }
 
-      // 2) Phone validation
       const normalizedPhone: string =
         await this.smsContactService.normalizePhone(payload.phone);
       const status: SMSContactStatusEnum =
@@ -154,7 +153,7 @@ export class MessagesQueue {
           totalCost,
         );
 
-      let smppPhone = normalizedPhone;
+      let smppPhone: string = normalizedPhone;
       if (smppPhone.startsWith('+')) {
         smppPhone = smppPhone.substring(1);
       }
@@ -311,7 +310,6 @@ export class MessagesQueue {
               it.unitPrice * partsCount,
             );
 
-          // Telefon raqamini SMPP uchun to'g'ri formatda tayyorlash (plus belgisiz)
           let smppPhone: string = normalizedPhone;
           if (smppPhone.startsWith('+')) {
             smppPhone = smppPhone.substring(1);
