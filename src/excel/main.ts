@@ -4,7 +4,7 @@ import * as bodyParser from 'body-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { EXCEL_PORT } from '../utils/env/env';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppExcelModule);
 
   app.setGlobalPrefix('api');
@@ -17,7 +17,5 @@ async function bootstrap() {
 }
 
 bootstrap().then(() => {
-  console.log('═══════════════════════════════════════════════════════');
-  console.log(`🌐 EXCEL API: http://0.0.0.0:${EXCEL_PORT}`);
-  console.log('═══════════════════════════════════════════════════════');
+  console.log(`EXCEL API: http://0.0.0.0:${EXCEL_PORT}`);
 });

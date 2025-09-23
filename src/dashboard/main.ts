@@ -6,8 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { DASHBOARD_PORT } from '../utils/env/env';
 import { ModulesDashboardModule } from './v1/modules/modules.module';
 
-async function bootstrap() {
-  console.log('🚀 Dashboard servisi ishga tushirilmoqda...');
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(
     ModulesDashboardModule,
   );
@@ -46,8 +45,6 @@ async function bootstrap() {
   console.log('✅ Dashboard servisi muvaffaqiyatli ishga tushdi!');
 }
 
-bootstrap().then(() => {
-  console.log('═══════════════════════════════════════════════════════');
-  console.log(`🎛️ Dashboard API: http://0.0.0.0:${DASHBOARD_PORT}/api/v1/swagger`);
-  console.log('═══════════════════════════════════════════════════════');
+bootstrap().then((): void => {
+  console.log(`Dashboard API: http://0.0.0.0:${DASHBOARD_PORT}/api/v1/swagger`);
 });

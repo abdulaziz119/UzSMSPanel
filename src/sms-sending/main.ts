@@ -22,7 +22,5 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().then(() => {
-  console.log('═══════════════════════════════════════════════════════');
-  console.log(`🌐 EXCEL API: http://0.0.0.0:${SMS_SENDING_PORT}`);
-  console.log('═══════════════════════════════════════════════════════');
+  console.log(`SMS-Sending API: http://0.0.0.0:${SMS_SENDING_PORT}`);
 });

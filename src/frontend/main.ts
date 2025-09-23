@@ -7,8 +7,7 @@ import * as cookieParser from 'cookie-parser';
 import { FRONTEND_PORT } from '../utils/env/env';
 import { ModulesFrontendModule } from './v1/modules/modules.module';
 
-async function bootstrap() {
-  console.log('🚀 Frontend servisi ishga tushirilmoqda...');
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(
     ModulesFrontendModule,
   );
@@ -16,7 +15,6 @@ async function bootstrap() {
   app.enableCors();
 
   app.use(cookieParser());
-  // Optimized body parser settings
 
   app.use(
     bodyParser.json({
@@ -57,10 +55,6 @@ async function bootstrap() {
   console.log('✅ Frontend servisi muvaffaqiyatli ishga tushdi!');
 }
 
-bootstrap().then(() => {
-  console.log('═══════════════════════════════════════════════════════');
-  console.log(
-    `🌐 Frontend API: http://0.0.0.0:${FRONTEND_PORT}/api/v1/swagger`,
-  );
-  console.log('═══════════════════════════════════════════════════════');
+bootstrap().then((): void => {
+  console.log(`Frontend API: http://0.0.0.0:${FRONTEND_PORT}/api/v1/swagger`);
 });
