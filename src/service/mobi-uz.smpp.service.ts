@@ -11,26 +11,10 @@ import { Repository } from 'typeorm';
 import { MessageEntity } from '../entity/message.entity';
 import { createClient, RedisClientType } from 'redis';
 import { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } from '../utils/env/env';
-
-export interface SmppConfig {
-  host: string;
-  port: number;
-  system_id: string;
-  password: string;
-}
-
-export interface SmppMessageParams {
-  source_addr_ton: number;
-  source_addr_npi: number;
-  source_addr: string;
-  dest_addr_ton: number;
-  dest_addr_npi: number;
-  destination_addr: string;
-  short_message: string;
-  service_type?: string;
-  registered_delivery?: number;
-  data_coding?: number;
-}
+import {
+  SmppConfig,
+  SmppMessageParams,
+} from '../utils/interfaces/mobi-uz.smpp.interfaces';
 
 @Injectable()
 export class MobiUzSmppService {
@@ -127,7 +111,7 @@ export class MobiUzSmppService {
       await this.connect();
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject): void => {
       const submitSmParams = {
         service_type: params.service_type || '',
         source_addr_ton: params.source_addr_ton,
@@ -141,62 +125,65 @@ export class MobiUzSmppService {
         data_coding: params.data_coding || 0,
       };
 
-      this.session.submit_sm(submitSmParams, async (pdu: any) => {
-        if (pdu.command_status === 0) {
-          this.logger.log(
-            `SMS sent successfully to ${params.destination_addr}. Message ID: ${pdu.message_id}`,
-          );
+      this.session.submit_sm(
+        submitSmParams,
+        async (pdu: any): Promise<void> => {
+          if (pdu.command_status === 0) {
+            this.logger.log(
+              `SMS sent successfully to ${params.destination_addr}. Message ID: ${pdu.message_id}`,
+            );
 
-          if (messageId && pdu.message_id) {
-            try {
-              await this.messageRepo.update(
-                { id: messageId },
-                { smpp_message_id: pdu.message_id },
-              );
-              this.logger.log(
-                `SMPP message ID saved: ${pdu.message_id} for message ${messageId}`,
-              );
-
+            if (messageId && pdu.message_id) {
               try {
-                const pending: string = await this.redisClient.get(
-                  `smpp:pending:${pdu.message_id}`,
+                await this.messageRepo.update(
+                  { id: messageId },
+                  { smpp_message_id: pdu.message_id },
                 );
-                if (pending) {
-                  try {
-                    const parsed = JSON.parse(pending);
-                    if (parsed && parsed.since) {
-                      await this.messageRepo.update(
-                        { id: messageId },
-                        { pending_since: new Date(parsed.since) },
-                      );
-                      this.logger.log(
-                        `Applied pending_since (${parsed.since}) from Redis to message ${messageId}`,
+                this.logger.log(
+                  `SMPP message ID saved: ${pdu.message_id} for message ${messageId}`,
+                );
+
+                try {
+                  const pending: string = await this.redisClient.get(
+                    `smpp:pending:${pdu.message_id}`,
+                  );
+                  if (pending) {
+                    try {
+                      const parsed = JSON.parse(pending);
+                      if (parsed && parsed.since) {
+                        await this.messageRepo.update(
+                          { id: messageId },
+                          { pending_since: new Date(parsed.since) },
+                        );
+                        this.logger.log(
+                          `Applied pending_since (${parsed.since}) from Redis to message ${messageId}`,
+                        );
+                      }
+                    } catch (parseErr) {
+                      this.logger.error(
+                        'Failed to parse pending payload from Redis:',
+                        parseErr,
                       );
                     }
-                  } catch (parseErr) {
-                    this.logger.error(
-                      'Failed to parse pending payload from Redis:',
-                      parseErr,
-                    );
                   }
+                } catch (e) {
+                  this.logger.error(
+                    'Failed to apply pending_since from Redis:',
+                    e,
+                  );
                 }
-              } catch (e) {
-                this.logger.error(
-                  'Failed to apply pending_since from Redis:',
-                  e,
-                );
+              } catch (error) {
+                this.logger.error('Error saving SMPP message ID:', error);
               }
-            } catch (error) {
-              this.logger.error('Error saving SMPP message ID:', error);
             }
-          }
 
-          resolve({ success: true, smppMessageId: pdu.message_id });
-        } else {
-          this.logger.error(`SMS send failed: ${pdu.command_status}`);
-          reject(new Error(`SMS send failed: ${pdu.command_status} `));
-        }
-      });
+            resolve({ success: true, smppMessageId: pdu.message_id });
+          } else {
+            this.logger.error(`SMS send failed: ${pdu.command_status}`);
+            reject(new Error(`SMS send failed: ${pdu.command_status} `));
+          }
+        },
+      );
     });
   }
 
